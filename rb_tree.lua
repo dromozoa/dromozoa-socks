@@ -22,13 +22,14 @@ local RED = 0
 local BLACK = 1
 local NIL = 0
 
-local ROOT = 1
-local COLOR = 2
-local PARENT = 3
-local LEFT = 4
-local RIGHT = 5
-local KEY = 6
-local VALUE = 7
+local COLOR = 1
+local PARENT = 2
+local LEFT = 3
+local RIGHT = 4
+local KEY = 5
+local VALUE = 6
+local ROOT = 7
+local HANDLE = 8
 
 local function inorder_tree_walk(T, x, fn)
   local left = T[LEFT]
@@ -425,13 +426,14 @@ for i = 1, 3 do
     end
 
     local T = {
-      NIL; -- [1] root
-      { [0] = BLACK };  -- [2] color
-      {};  -- [3] parent
-      {};  -- [4] left
-      {};  -- [5] right
-      {};  -- [6] key
-      {};  -- [7] value
+      { [0] = BLACK };  -- color
+      {};  -- parent
+      {};  -- left
+      {};  -- right
+      {};  -- key
+      {};  -- value
+      NIL; -- root
+      0; -- handle
     }
 
     test_insert(T, keys)
