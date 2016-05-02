@@ -15,8 +15,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local json = require "dromozoa.commons.json"
-local xml = require "dromozoa.commons.xml"
+local rb_node = require "dromozoa.socks.rb_node"
 
 local RED = 0
 local BLACK = 1
@@ -66,6 +65,7 @@ local function tree_minimum(T, x)
   end
   return x
 end
+
 
 local function tree_maximum(T, x)
   local right = T[RIGHT]
@@ -321,145 +321,90 @@ local function rb_delete(T, z)
   end
 end
 
-local function dump_node(out, T, x)
-  if x ~= NIL then
-    local color = T[COLOR]
-    local left = T[LEFT]
-    local right = T[RIGHT]
-    local key = T[KEY]
+local class = {}
 
-    local c
-    if color[x] == RED then
-      c = "red"
-    else
-      c = "black"
-    end
-    out:write(x, " [label =  <<font color=\"white\">", xml.escape(key[x]), "</font>>, fillcolor = ", c, "];\n")
-    dump_node(out, T, left[x])
-    dump_node(out, T, right[x])
-  end
+function class.new()
+  return {
+    { [0] = BLACK };  -- color
+    {};  -- parent
+    {};  -- left
+    {};  -- right
+    {};  -- key
+    {};  -- value
+    NIL; -- root
+    0; -- handle
+  }
 end
 
-local function dump_edge(out, T, x, y)
-  if y ~= NIL then
-    local left = T[LEFT]
-    local right = T[RIGHT]
-
-    out:write(x, " -> ", y, ";\n")
-    dump_edge(out, T, y, left[y])
-    dump_edge(out, T, y, right[y])
-  end
+function class:search(k)
+  local h = tree_search(self, self[ROOT], k)
+  return rb_node(self, h)
 end
 
-local function dump(out, T)
-  local left = T[LEFT]
-  local right = T[RIGHT]
-
-  out:write("digraph g {\n")
-  out:write("graph [rankdir = LR];\n")
-  out:write("node [color = black, style = filled];\n")
-  dump_node(out, T, T[ROOT])
-  dump_edge(out, T, T[ROOT], left[T[ROOT]])
-  dump_edge(out, T, T[ROOT], right[T[ROOT]])
-  out:write("}\n")
-
-  return out
+function class:minimum()
+  local h = tree_minimum(self, self[ROOT])
+  return rb_node(self, h)
 end
 
-local function shuffle(keys)
-  for i = #keys, 2, -1 do
-    local j = math.random(1, i)
-    local k = keys[i]
-    keys[i] = keys[j]
-    keys[j] = k
-  end
+function class:maximum()
+  local h = tree_maximum(self, self[ROOT])
+  return rb_node(self, h)
 end
 
-local function reverse(keys)
-  table.sort(keys, function (a, b) return a > b end)
+function class:empty()
+  return self[ROOT] == NIL
 end
 
+function class:insert(k, v)
+  local key = self[KEY]
+  local value = self[VALUE]
 
-local function test_insert(T, keys)
-  local key = T[KEY]
-  for i = 1, #keys do
-    key[i] = keys[i]
-    rb_insert(T, i)
-  end
+  local h = self[HANDLE] + 1
+  key[h] = k
+  value[h] = v
+  self[HANDLE] = h
+  rb_insert(self, h)
+  return rb_node(self, h)
 end
 
-local function test_search(T, keys)
-  local key = T[KEY]
-  for i = 1, #keys do
-    local k = keys[i]
-    local j = assert(tree_search(T, T[ROOT], k))
-    assert(key[j] == k)
-  end
+function class:delete(h)
+  local color = self[COLOR]
+  local p = self[PARENT]
+  local left = self[LEFT]
+  local right = self[RIGHT]
+  local key = self[KEY]
+  local value = self[VALUE]
+
+  local k = key[h]
+  local v = value[h]
+  rb_delete(self, h)
+  color[h] = nil
+  p[h] = nil
+  left[h] = nil
+  right[h] = nil
+  key[h] = nil
+  value[h] = nil
+  return k, v
 end
 
-local function test_delete(T, keys)
-  for i = 1, #keys do
-    local k = keys[i]
-    local j = assert(tree_search(T, T[ROOT], k))
-    if k == 9 and j == 9 then
-      dump(io.open("test.dot", "w"), T):close()
-    end
-    rb_delete(T, j)
-  end
+function class:key(h)
+  return self[KEY][h]
 end
 
--- reverse(keys)
--- shuffle(keys)
-
-for i = 1, 3 do
-  for j = 1, 3 do
-    local keys = {}
-
-    for i = 1, 25 do
-      keys[i] = i
-    end
-
-    if i % 3 == 1 then
-      reverse(keys)
-    elseif i % 3 == 2 then
-      shuffle(keys)
-    end
-
-    local T = {
-      { [0] = BLACK };  -- color
-      {};  -- parent
-      {};  -- left
-      {};  -- right
-      {};  -- key
-      {};  -- value
-      NIL; -- root
-      0; -- handle
-    }
-
-    test_insert(T, keys)
-
-    local min = tree_minimum(T, T[ROOT])
-    local max = tree_maximum(T, T[ROOT])
-
-    local x = min
-    for i = 1, 24 do
-      assert(T[KEY][x] == i)
-      x = tree_successor(T, x)
-    end
-    assert(x == max)
-    assert(T[KEY][x] == 25)
-
-    inorder_tree_walk(T, T[ROOT], print)
-
-    if j % 3 == 1 then
-      reverse(keys)
-    elseif j % 3 == 2 then
-      shuffle(keys)
-    end
-
-    test_search(T, keys)
-    test_delete(T, keys)
-    assert(T[ROOT] == NIL)
-    print(json.encode(T))
-  end
+function class:get(h)
+  return self[VALUE][h]
 end
+
+function class:set(h, v)
+  self[VALUE][h] = v
+end
+
+local metatable = {
+  __index = class;
+}
+
+return setmetatable(class, {
+  __call = function ()
+    return setmetatable(class.new(), metatable)
+  end;
+})
