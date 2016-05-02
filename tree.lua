@@ -24,6 +24,14 @@ local BLACK = 1
 -- local NIL = nil
 local NIL = 0
 
+local ROOT = 1
+local COLOR = 2
+local PARENT = 3
+local LEFT = 4
+local RIGHT = 5
+local KEY = 6
+local VALUE = 7
+
 -- [1] root
 -- [2] color
 -- [3] parent
@@ -33,9 +41,9 @@ local NIL = 0
 -- [7] value
 
 local function left_rotate(T, x)
-  local p = T[3]
-  local left = T[4]
-  local right = T[5]
+  local p = T[PARENT]
+  local left = T[LEFT]
+  local right = T[RIGHT]
 
   local y = right[x]
   right[x] = left[y]
@@ -44,7 +52,7 @@ local function left_rotate(T, x)
   end
   p[y] = p[x]
   if p[x] == NIL then
-    T[1] = y
+    T[ROOT] = y
   elseif x == left[p[x]] then
     left[p[x]] = y
   else
@@ -73,9 +81,9 @@ local function left_rotate(T, x)
 end
 
 local function right_rotate(T, x)
-  local p = T[3]
-  local left = T[4]
-  local right = T[5]
+  local p = T[PARENT]
+  local left = T[LEFT]
+  local right = T[RIGHT]
 
   local y = left[x]
   left[x] = right[y]
@@ -84,7 +92,7 @@ local function right_rotate(T, x)
   end
   p[y] = p[x]
   if p[x] == NIL then
-    T[1] = y
+    T[ROOT] = y
   elseif x == right[p[x]] then
     right[p[x]] = y
   else
@@ -113,10 +121,10 @@ local function right_rotate(T, x)
 end
 
 local function insert_fixup(T, z)
-  local color = T[2]
-  local p = T[3]
-  local left = T[4]
-  local right = T[5]
+  local color = T[COLOR]
+  local p = T[PARENT]
+  local left = T[LEFT]
+  local right = T[RIGHT]
 
   while color[p[z]] == RED do
     if p[z] == left[p[p[z]]] then
@@ -153,7 +161,7 @@ local function insert_fixup(T, z)
       end
     end
   end
-  color[T[1]] = BLACK
+  color[T[ROOT]] = BLACK
 
 --[[
   while z.p.color == RED do
@@ -196,14 +204,14 @@ local function insert_fixup(T, z)
 end
 
 local function insert(T, z)
-  local color = T[2]
-  local p = T[3]
-  local left = T[4]
-  local right = T[5]
-  local key = T[6]
+  local color = T[COLOR]
+  local p = T[PARENT]
+  local left = T[LEFT]
+  local right = T[RIGHT]
+  local key = T[KEY]
 
   local y = NIL
-  local x = T[1]
+  local x = T[ROOT]
   while x ~= NIL do
     y = x
     if key[z] < key[x] then
@@ -214,7 +222,7 @@ local function insert(T, z)
   end
   p[z] = y
   if y == NIL then
-    T[1] = z
+    T[ROOT] = z
   elseif key[z] < key[y] then
     left[y] = z
   else
@@ -252,9 +260,9 @@ local function insert(T, z)
 end
 
 local function search(T, x, k)
-  local left = T[4]
-  local right = T[5]
-  local key = T[6]
+  local left = T[LEFT]
+  local right = T[RIGHT]
+  local key = T[KEY]
 
   if x == NIL or k == key[x] then
     return x
@@ -267,7 +275,7 @@ local function search(T, x, k)
 end
 
 local function minimum(T, x)
-  local left = T[4]
+  local left = T[LEFT]
   while left[x] ~= NIL do
     x = left[x]
   end
@@ -282,12 +290,12 @@ local function minimum(T, x)
 end
 
 local function transplant(T, u, v)
-  local p = T[3]
-  local left = T[4]
-  local right = T[5]
+  local p = T[PARENT]
+  local left = T[LEFT]
+  local right = T[RIGHT]
 
   if p[u] == NIL then
-    T[1] = v
+    T[ROOT] = v
   elseif u == left[p[u]] then
     left[p[u]] = v
   else
@@ -308,12 +316,12 @@ local function transplant(T, u, v)
 end
 
 local function delete_fixup(T, x)
-  local color = T[2]
-  local p = T[3]
-  local left = T[4]
-  local right = T[5]
+  local color = T[COLOR]
+  local p = T[PARENT]
+  local left = T[LEFT]
+  local right = T[RIGHT]
 
-  while x ~= T[1] and color[x] == BLACK do
+  while x ~= T[ROOT] and color[x] == BLACK do
     if x == left[p[x]] then
       local w = right[p[x]]
       if color[w] == RED then
@@ -336,7 +344,7 @@ local function delete_fixup(T, x)
         color[p[x]] = BLACK
         color[right[w]] = BLACK
         left_rotate(T, p[x])
-        x = T[1]
+        x = T[ROOT]
       end
     else
       local w = left[p[x]]
@@ -360,7 +368,7 @@ local function delete_fixup(T, x)
         color[p[x]] = BLACK
         color[left[w]] = BLACK
         right_rotate(T, p[x])
-        x = T[1]
+        x = T[ROOT]
       end
     end
   end
@@ -423,11 +431,11 @@ local function delete_fixup(T, x)
 end
 
 local function delete(T, z)
-  local color = T[2]
-  local p = T[3]
-  local left = T[4]
-  local right = T[5]
-  local key = T[6]
+  local color = T[COLOR]
+  local p = T[PARENT]
+  local left = T[LEFT]
+  local right = T[RIGHT]
+  local key = T[KEY]
 
   local y = z
   local y_original_color = color[y]
@@ -441,7 +449,7 @@ local function delete(T, z)
     y = minimum(T, right[z])
     y_original_color = color[y]
     x = right[y]
-    if p[x] == z then
+    if p[y] == z then
       p[x] = y
     else
       transplant(T, y, right[y])
@@ -490,10 +498,10 @@ end
 
 local function dump_node(out, T, x)
   if x ~= NIL then
-    local color = T[2]
-    local left = T[4]
-    local right = T[5]
-    local key = T[6]
+    local color = T[COLOR]
+    local left = T[LEFT]
+    local right = T[RIGHT]
+    local key = T[KEY]
 
     local c
     if color[x] == RED then
@@ -509,8 +517,8 @@ end
 
 local function dump_edge(out, T, x, y)
   if y ~= NIL then
-    local left = T[4]
-    local right = T[5]
+    local left = T[LEFT]
+    local right = T[RIGHT]
 
     out:write(x, " -> ", y, ";\n")
     dump_edge(out, T, y, left[y])
@@ -519,16 +527,18 @@ local function dump_edge(out, T, x, y)
 end
 
 local function dump(out, T)
-  local left = T[4]
-  local right = T[5]
+  local left = T[LEFT]
+  local right = T[RIGHT]
 
   out:write("digraph g {\n")
   out:write("graph [rankdir = LR];\n")
   out:write("node [color = black, style = filled];\n")
-  dump_node(out, T, T[1])
-  dump_edge(out, T, T[1], left[T[1]])
-  dump_edge(out, T, T[1], right[T[1]])
+  dump_node(out, T, T[ROOT])
+  dump_edge(out, T, T[ROOT], left[T[ROOT]])
+  dump_edge(out, T, T[ROOT], right[T[ROOT]])
   out:write("}\n")
+
+  return out
 end
 
 local function shuffle(keys)
@@ -546,7 +556,7 @@ end
 
 
 local function test_insert(T, keys)
-  local key = T[6]
+  local key = T[KEY]
   for i = 1, #keys do
     key[i] = keys[i]
     insert(T, i)
@@ -554,10 +564,10 @@ local function test_insert(T, keys)
 end
 
 local function test_search(T, keys)
-  local key = T[6]
+  local key = T[KEY]
   for i = 1, #keys do
     local k = keys[i]
-    local j = assert(search(T, T[1], k))
+    local j = assert(search(T, T[ROOT], k))
     assert(key[j] == k)
   end
 end
@@ -565,47 +575,52 @@ end
 local function test_delete(T, keys)
   for i = 1, #keys do
     local k = keys[i]
-    local j = assert(search(T, T[1], k))
+    local j = assert(search(T, T[ROOT], k))
+    if k == 9 and j == 9 then
+      dump(io.open("test.dot", "w"), T):close()
+    end
     delete(T, j)
   end
 end
 
-local keys = {}
+-- reverse(keys)
+-- shuffle(keys)
 
-for i = 1, 25 do
-  keys[i] = i
+for i = 1, 3 do
+  for j = 1, 3 do
+    local keys = {}
+
+    for i = 1, 25 do
+      keys[i] = i
+    end
+
+    if i % 3 == 1 then
+      reverse(keys)
+    elseif i % 3 == 2 then
+      shuffle(keys)
+    end
+
+    local T = {
+      NIL; -- [1] root
+      { [0] = BLACK };  -- [2] color
+      {};  -- [3] parent
+      {};  -- [4] left
+      {};  -- [5] right
+      {};  -- [6] key
+      {};  -- [7] value
+    }
+
+    test_insert(T, keys)
+
+    if j % 3 == 1 then
+      reverse(keys)
+    elseif j % 3 == 2 then
+      shuffle(keys)
+    end
+
+    test_search(T, keys)
+    test_delete(T, keys)
+    assert(T[ROOT] == NIL)
+    print(json.encode(T))
+  end
 end
-
--- reverse(keys)
--- shuffle(keys)
-
-local T = {
-  NIL; -- [1] root
-  {};  -- [2] color
-  {};  -- [3] parent
-  {};  -- [4] left
-  {};  -- [5] right
-  {};  -- [6] key
-  {};  -- [7] value
-}
-
--- local T = {
---   root = NIL;
---   p = {};
---   left = {};
---   right = {};
---   color = {};
---   key = {};
--- }
-test_insert(T, keys)
--- dump(io.stdout, T)
--- print(json.encode(T))
-
--- reverse(keys)
--- shuffle(keys)
-
-test_search(T, keys)
-test_delete(T, keys)
-assert(T[1] == NIL)
--- dump(io.stdout, T)
-
