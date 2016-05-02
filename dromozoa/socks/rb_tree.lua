@@ -15,7 +15,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local rb_node = require "dromozoa.socks.rb_node"
+local rb_tree_iterator = require "dromozoa.socks.rb_tree_iterator"
+local rb_tree_range = require "dromozoa.socks.rb_tree_range"
 
 local RED = 0
 local BLACK = 1
@@ -338,21 +339,21 @@ end
 
 function class:search(k)
   local h = tree_search(self, self[ROOT], k)
-  return rb_node(self, h)
+  return rb_tree_iterator(self, h)
 end
 
 function class:minimum()
   local h = tree_minimum(self, self[ROOT])
-  return rb_node(self, h)
+  return rb_tree_iterator(self, h)
 end
 
 function class:maximum()
   local h = tree_maximum(self, self[ROOT])
-  return rb_node(self, h)
+  return rb_tree_iterator(self, h)
 end
 
 function class:successor(h)
-  return rb_node(self, tree_successor(self, h))
+  return rb_tree_iterator(self, tree_successor(self, h))
 end
 
 -- k以上の最初の要素を返す
@@ -392,16 +393,20 @@ end
 
 function class:lower_bound(k)
   local h = lower_bound(self, self[ROOT], k)
-  return rb_node(self, h)
+  return rb_tree_iterator(self, h)
 end
 
 function class:upper_bound(k)
   local h = upper_bound(self, self[ROOT], k)
-  return rb_node(self, h)
+  return rb_tree_iterator(self, h)
 end
 
 function class:equal_range(k)
-  return lower_bound(k), upper_bound(k)
+  return rb_tree_range(self:lower_bound(k), self:upper_bound(k))
+end
+
+function class:each()
+  return rb_tree_range(self:minimum(), self:maximum():successor()):each()
 end
 
 function class:empty()
@@ -417,7 +422,7 @@ function class:insert(k, v)
   value[h] = v
   self[HANDLE] = h
   rb_insert(self, h)
-  return rb_node(self, h)
+  return rb_tree_iterator(self, h)
 end
 
 function class:delete(h)

@@ -125,3 +125,14 @@ local x = T:upper_bound(2.5)
 assert(x:key() == 3)
 assert(x:get() == "foo")
 
+print("--")
+for k, v in T:each() do
+  print(k, v)
+end
+
+print("--")
+for k, v in T:equal_range(2):each() do
+  print(k, v)
+end
+
+
