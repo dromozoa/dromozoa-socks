@@ -122,6 +122,120 @@ local function insert(T, z)
   insert_fixup(T, z)
 end
 
+local function search(x, k)
+  if x == NIL or k == x.key then
+    return x
+  end
+  if k < x.key then
+    return search(x.left, k)
+  else
+    return search(x.right, k)
+  end
+end
+
+local function minimum(x)
+  while x.left ~= NIL do
+    x = x.left
+  end
+  return x
+end
+
+local function transplant(T, u, v)
+  if u.p == NIL then
+    T.root = v
+  elseif u == u.p.left then
+    u.p.left = v
+  else
+    u.p.right = v
+  end
+  v.p = u.p
+end
+
+local function delete_fixup(T, x)
+  while x ~= T.root and x.color == BLACK do
+    if x == x.p.left then
+      local w = x.p.right
+      if w.color == RED then
+        w.color = BLACK
+        x.p.color = RED
+        left_rotate(T, x.p)
+        w = x.p.right
+      end
+      if w.left.color == BLACK and w.right.color == BLACK then
+        w.color = RED
+        x = x.p
+      else
+        if w.right.color == BLACK then
+          w.left.color = BLACK
+          w.color = RED
+          right_rotate(T, w)
+          w = x.p.right
+        end
+        w.color = x.p.color
+        x.p.color = BLACK
+        w.right.color = BLACK
+        left_rotate(T, x.p)
+        x = T.root
+      end
+    else
+      local w = x.p.left
+      if w.color == RED then
+        w.color = BLACK
+        x.p.color = RED
+        right_rotate(T, x.p)
+        w = x.p.left
+      end
+      if w.right.color == BLACK and w.left.color == BLACK then
+        w.color = RED
+        x = x.p
+      else
+        if w.left.color == BLACK then
+          w.right.color = BLACK
+          w.color = RED
+          left_rotate(T, w)
+          w = x.p.left
+        end
+        w.color = x.p.color
+        x.p.color = BLACK
+        w.left.color = BLACK
+        right_rotate(T, x.p)
+        x = T.root
+      end
+    end
+  end
+  x.color = BLACK
+end
+
+local function delete(T, z)
+  local y = z
+  local y_original_color = y.color
+  if z.left == NIL then
+    x = z.right
+    transplant(T, z, z.right)
+  elseif z.right == NIL then
+    x = z.left
+    transplant(T, z, z.left)
+  else
+    y = minimum(z.right)
+    y_original_color = y.color
+    x = y.right
+    if x.p == z then
+      x.p = y
+    else
+      transplant(T, y, y.right)
+      y.right = z.right
+      y.right.p = y
+    end
+    transplant(T, z, y)
+    y.left = z.left
+    y.left.p = y
+    y.color = z.color
+  end
+  if y_original_color == BLACK then
+    delete_fixup(T, x)
+  end
+end
+
 local uid = 0
 
 local function dump_node(out, T, x)
@@ -158,21 +272,58 @@ local function dump(out, T)
   out:write("}\n")
 end
 
+local function shuffle(keys)
+  for i = #keys, 2, -1 do
+    local j = math.random(1, i)
+    local k = keys[i]
+    keys[i] = keys[j]
+    keys[j] = k
+  end
+end
+
+local function reverse(keys)
+  table.sort(keys, function (a, b) return a > b end)
+end
+
+
+local function test_insert(T, keys)
+  for i = 1, #keys do
+    insert(T, { key = keys[i] })
+  end
+end
+
+local function test_search(T, keys)
+  for i = 1, #keys do
+    local k = keys[i]
+    assert(search(T.root, k).key == k)
+  end
+end
+
+local function test_delete(T, keys)
+  for i = 1, #keys do
+    local k = keys[i]
+    delete(T, search(T.root, k))
+  end
+end
+
+local keys = {}
+
+for i = 1, 25 do
+  keys[i] = i
+end
+
+-- reverse(keys)
+-- shuffle(keys)
+
 local T = { root = NIL }
+test_insert(T, keys)
 
-insert(T, { key = 1 })
-insert(T, { key = 2 })
-insert(T, { key = 3 })
-insert(T, { key = 4 })
-insert(T, { key = 5 })
-insert(T, { key = 6 })
-insert(T, { key = 7 })
-insert(T, { key = 8 })
+-- reverse(keys)
+shuffle(keys)
+shuffle(keys)
 
--- for i = 1, 10000 do
---   insert(T, { key = math.random() })
--- end
+test_search(T, keys)
+test_delete(T, keys)
+assert(T.root == NIL)
+-- dump(io.stdout, T)
 
--- print(json.encode(T))
-
-dump(io.stdout, T)
