@@ -351,6 +351,59 @@ function class:maximum()
   return rb_node(self, h)
 end
 
+function class:successor(h)
+  return rb_node(self, tree_successor(self, h))
+end
+
+-- k以上の最初の要素を返す
+local function lower_bound(T, x, k)
+  local left = T[LEFT]
+  local right = T[RIGHT]
+  local key = T[KEY]
+
+  local y = NIL
+  while x ~= NIL do
+    if not (key[x] < k) then
+      y = x
+      x = left[x]
+    else
+      x = right[x]
+    end
+  end
+  return y
+end
+
+local function upper_bound(T, x, k)
+  local left = T[LEFT]
+  local right = T[RIGHT]
+  local key = T[KEY]
+
+  local y = NIL
+  while x ~= NIL do
+    if k < key[x] then
+      y = x
+      x = left[x]
+    else
+      x = right[x]
+    end
+  end
+  return y
+end
+
+function class:lower_bound(k)
+  local h = lower_bound(self, self[ROOT], k)
+  return rb_node(self, h)
+end
+
+function class:upper_bound(k)
+  local h = upper_bound(self, self[ROOT], k)
+  return rb_node(self, h)
+end
+
+function class:equal_range(k)
+  return lower_bound(k), upper_bound(k)
+end
+
 function class:empty()
   return self[ROOT] == NIL
 end

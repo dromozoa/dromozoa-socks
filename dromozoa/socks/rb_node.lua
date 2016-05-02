@@ -36,6 +36,10 @@ function class:set(v)
   return self.tree:set(self.handle, v)
 end
 
+function class:successor()
+  return self.tree:successor(self.handle)
+end
+
 function class:delete()
   return self.tree:delete(self.handle)
 end

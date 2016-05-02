@@ -77,3 +77,51 @@ for i = 1, 3 do
     print(dumper.encode(T))
   end
 end
+
+local T = rb_tree()
+T:insert(1, "foo")
+T:insert(2, "foo")
+T:insert(3, "foo")
+T:insert(1, "bar")
+T:insert(2, "bar")
+T:insert(3, "bar")
+T:insert(1, "baz")
+T:insert(2, "baz")
+T:insert(3, "baz")
+
+local x = T:minimum()
+local max = T:maximum()
+while true do
+  print(x:key(), x:get())
+  if x.handle == max.handle then
+    x = x:successor()
+    assert(x.handle == 0)
+    break
+  else
+    x = x:successor()
+  end
+end
+
+local x = T:search(2)
+assert(x:key() == 2)
+assert(x:get() == "foo")
+
+local x = T:search(1.5)
+assert(x.handle == 0)
+
+local x = T:lower_bound(2)
+assert(x:key() == 2)
+assert(x:get() == "foo")
+
+local x = T:lower_bound(1.5)
+assert(x:key() == 2)
+assert(x:get() == "foo")
+
+local x = T:upper_bound(2)
+assert(x:key() == 3)
+assert(x:get() == "foo")
+
+local x = T:upper_bound(2.5)
+assert(x:key() == 3)
+assert(x:get() == "foo")
+
