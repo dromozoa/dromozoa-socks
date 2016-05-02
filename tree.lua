@@ -20,8 +20,6 @@ local xml = require "dromozoa.commons.xml"
 
 local RED = 0
 local BLACK = 1
--- local NIL = {}
--- local NIL = nil
 local NIL = 0
 
 local ROOT = 1
@@ -31,14 +29,6 @@ local LEFT = 4
 local RIGHT = 5
 local KEY = 6
 local VALUE = 7
-
--- [1] root
--- [2] color
--- [3] parent
--- [4] left
--- [5] right
--- [6] key
--- [7] value
 
 local function left_rotate(T, x)
   local p = T[PARENT]
@@ -60,24 +50,6 @@ local function left_rotate(T, x)
   end
   left[y] = x
   p[x] = y
-
---[[
-  local y = x.right
-  x.right = y.left
-  if y.left ~= NIL then
-    y.left.p = x
-  end
-  y.p = x.p
-  if x.p == NIL then
-    T.root = y
-  elseif x == x.p.left then
-    x.p.left = y
-  else
-    x.p.right = y
-  end
-  y.left = x
-  x.p = y
-]]
 end
 
 local function right_rotate(T, x)
@@ -100,24 +72,6 @@ local function right_rotate(T, x)
   end
   right[y] = x
   p[x] = y
-
---[[
-  local y = x.left
-  x.left = y.right
-  if y.right ~= NIL then
-    y.right.p = x
-  end
-  y.p = x.p
-  if x.p == NIL then
-    T.root = y
-  elseif x == x.p.right then
-    x.p.right = y
-  else
-    x.p.left = y
-  end
-  y.right = x
-  x.p = y
-]]
 end
 
 local function insert_fixup(T, z)
@@ -162,45 +116,6 @@ local function insert_fixup(T, z)
     end
   end
   color[T[ROOT]] = BLACK
-
---[[
-  while z.p.color == RED do
-    if z.p == z.p.p.left then
-      local y = z.p.p.right
-      if y.color == RED then
-        z.p.color = BLACK
-        y.color = BLACK
-        z.p.p.color = RED
-        z = z.p.p
-      else
-        if z == z.p.right then
-          z = z.p
-          left_rotate(T, z)
-        end
-        z.p.color = BLACK
-        z.p.p.color = RED
-        right_rotate(T, z.p.p)
-      end
-    else
-      local y = z.p.p.left
-      if y.color == RED then
-        z.p.color = BLACK
-        y.color = BLACK
-        z.p.p.color = RED
-        z = z.p.p
-      else
-        if z == z.p.left then
-          z = z.p
-          right_rotate(T, z)
-        end
-        z.p.color = BLACK
-        z.p.p.color = RED
-        left_rotate(T, z.p.p)
-      end
-    end
-  end
-  T.root.color = BLACK
-]]
 end
 
 local function insert(T, z)
@@ -232,31 +147,6 @@ local function insert(T, z)
   right[z] = NIL
   color[z] = RED
   insert_fixup(T, z)
-
---[[
-  local y = NIL
-  local x = T.root
-  while x ~= NIL do
-    y = x
-    if z.key < x.key then
-      x = x.left
-    else
-      x = x.right
-    end
-  end
-  z.p = y
-  if y == NIL then
-    T.root = z
-  elseif z.key < y.key then
-    y.left = z
-  else
-    y.right = z
-  end
-  z.left = NIL
-  z.right = NIL
-  z.color = RED
-  insert_fixup(T, z)
-]]
 end
 
 local function search(T, x, k)
@@ -280,13 +170,6 @@ local function minimum(T, x)
     x = left[x]
   end
   return x
-
---[[
-  while x.left ~= NIL do
-    x = x.left
-  end
-  return x
-]]
 end
 
 local function transplant(T, u, v)
@@ -302,17 +185,6 @@ local function transplant(T, u, v)
     right[p[u]] = v
   end
   p[v] = p[u]
-
---[[
-  if u.p == NIL then
-    T.root = v
-  elseif u == u.p.left then
-    u.p.left = v
-  else
-    u.p.right = v
-  end
-  v.p = u.p
-]]
 end
 
 local function delete_fixup(T, x)
@@ -373,61 +245,6 @@ local function delete_fixup(T, x)
     end
   end
   color[x] = BLACK
-
---[[
-  while x ~= T.root and x.color == BLACK do
-    if x == x.p.left then
-      local w = x.p.right
-      if w.color == RED then
-        w.color = BLACK
-        x.p.color = RED
-        left_rotate(T, x.p)
-        w = x.p.right
-      end
-      if w.left.color == BLACK and w.right.color == BLACK then
-        w.color = RED
-        x = x.p
-      else
-        if w.right.color == BLACK then
-          w.left.color = BLACK
-          w.color = RED
-          right_rotate(T, w)
-          w = x.p.right
-        end
-        w.color = x.p.color
-        x.p.color = BLACK
-        w.right.color = BLACK
-        left_rotate(T, x.p)
-        x = T.root
-      end
-    else
-      local w = x.p.left
-      if w.color == RED then
-        w.color = BLACK
-        x.p.color = RED
-        right_rotate(T, x.p)
-        w = x.p.left
-      end
-      if w.right.color == BLACK and w.left.color == BLACK then
-        w.color = RED
-        x = x.p
-      else
-        if w.left.color == BLACK then
-          w.right.color = BLACK
-          w.color = RED
-          left_rotate(T, w)
-          w = x.p.left
-        end
-        w.color = x.p.color
-        x.p.color = BLACK
-        w.left.color = BLACK
-        right_rotate(T, x.p)
-        x = T.root
-      end
-    end
-  end
-  x.color = BLACK
-]]
 end
 
 local function delete(T, z)
@@ -464,36 +281,6 @@ local function delete(T, z)
   if y_original_color == BLACK then
     delete_fixup(T, x)
   end
-
---[[
-  local y = z
-  local y_original_color = y.color
-  if z.left == NIL then
-    x = z.right
-    transplant(T, z, z.right)
-  elseif z.right == NIL then
-    x = z.left
-    transplant(T, z, z.left)
-  else
-    y = minimum(T, z.right)
-    y_original_color = y.color
-    x = y.right
-    if x.p == z then
-      x.p = y
-    else
-      transplant(T, y, y.right)
-      y.right = z.right
-      y.right.p = y
-    end
-    transplant(T, z, y)
-    y.left = z.left
-    y.left.p = y
-    y.color = z.color
-  end
-  if y_original_color == BLACK then
-    delete_fixup(T, x)
-  end
-]]
 end
 
 local function dump_node(out, T, x)
