@@ -30,6 +30,66 @@ local RIGHT = 5
 local KEY = 6
 local VALUE = 7
 
+local function inorder_tree_walk(T, x, fn)
+  local left = T[LEFT]
+  local right = T[RIGHT]
+  local key = T[KEY]
+
+  if x ~= NIL then
+    inorder_tree_walk(T, left[x], fn)
+    fn(key[x])
+    inorder_tree_walk(T, right[x], fn)
+  end
+end
+
+local function tree_search(T, x, k)
+  local left = T[LEFT]
+  local right = T[RIGHT]
+  local key = T[KEY]
+
+  if x == NIL or k == key[x] then
+    return x
+  end
+  if k < key[x] then
+    return tree_search(T, left[x], k)
+  else
+    return tree_search(T, right[x], k)
+  end
+end
+
+local function tree_minimum(T, x)
+  local left = T[LEFT]
+
+  while left[x] ~= NIL do
+    x = left[x]
+  end
+  return x
+end
+
+local function tree_maximum(T, x)
+  local right = T[RIGHT]
+
+  while right[x] ~= NIL do
+    x = right[x]
+  end
+  return x
+end
+
+local function tree_successor(T, x)
+  local p = T[PARENT]
+  local right = T[RIGHT]
+
+  if right[x] ~= NIL then
+    return tree_minimum(T, right[x])
+  end
+  local y = p[x]
+  while y ~= NIL and x == right[y] do
+    x = y
+    y = p[y]
+  end
+  return y
+end
+
 local function left_rotate(T, x)
   local p = T[PARENT]
   local left = T[LEFT]
@@ -74,7 +134,7 @@ local function right_rotate(T, x)
   p[x] = y
 end
 
-local function insert_fixup(T, z)
+local function rb_insert_fixup(T, z)
   local color = T[COLOR]
   local p = T[PARENT]
   local left = T[LEFT]
@@ -118,7 +178,7 @@ local function insert_fixup(T, z)
   color[T[ROOT]] = BLACK
 end
 
-local function insert(T, z)
+local function rb_insert(T, z)
   local color = T[COLOR]
   local p = T[PARENT]
   local left = T[LEFT]
@@ -146,33 +206,10 @@ local function insert(T, z)
   left[z] = NIL
   right[z] = NIL
   color[z] = RED
-  insert_fixup(T, z)
+  rb_insert_fixup(T, z)
 end
 
-local function search(T, x, k)
-  local left = T[LEFT]
-  local right = T[RIGHT]
-  local key = T[KEY]
-
-  if x == NIL or k == key[x] then
-    return x
-  end
-  if k < key[x] then
-    return search(T, left[x], k)
-  else
-    return search(T, right[x], k)
-  end
-end
-
-local function minimum(T, x)
-  local left = T[LEFT]
-  while left[x] ~= NIL do
-    x = left[x]
-  end
-  return x
-end
-
-local function transplant(T, u, v)
+local function rb_transplant(T, u, v)
   local p = T[PARENT]
   local left = T[LEFT]
   local right = T[RIGHT]
@@ -187,7 +224,7 @@ local function transplant(T, u, v)
   p[v] = p[u]
 end
 
-local function delete_fixup(T, x)
+local function rb_delete_fixup(T, x)
   local color = T[COLOR]
   local p = T[PARENT]
   local left = T[LEFT]
@@ -247,7 +284,7 @@ local function delete_fixup(T, x)
   color[x] = BLACK
 end
 
-local function delete(T, z)
+local function rb_delete(T, z)
   local color = T[COLOR]
   local p = T[PARENT]
   local left = T[LEFT]
@@ -258,28 +295,28 @@ local function delete(T, z)
   local y_original_color = color[y]
   if left[z] == NIL then
     x = right[z]
-    transplant(T, z, right[z])
+    rb_transplant(T, z, right[z])
   elseif right[z] == NIL then
     x = left[z]
-    transplant(T, z, left[z])
+    rb_transplant(T, z, left[z])
   else
-    y = minimum(T, right[z])
+    y = tree_minimum(T, right[z])
     y_original_color = color[y]
     x = right[y]
     if p[y] == z then
       p[x] = y
     else
-      transplant(T, y, right[y])
+      rb_transplant(T, y, right[y])
       right[y] = right[z]
       p[right[y]] = y
     end
-    transplant(T, z, y)
+    rb_transplant(T, z, y)
     left[y] = left[z]
     p[left[y]] = y
     color[y] = color[z]
   end
   if y_original_color == BLACK then
-    delete_fixup(T, x)
+    rb_delete_fixup(T, x)
   end
 end
 
@@ -346,7 +383,7 @@ local function test_insert(T, keys)
   local key = T[KEY]
   for i = 1, #keys do
     key[i] = keys[i]
-    insert(T, i)
+    rb_insert(T, i)
   end
 end
 
@@ -354,7 +391,7 @@ local function test_search(T, keys)
   local key = T[KEY]
   for i = 1, #keys do
     local k = keys[i]
-    local j = assert(search(T, T[ROOT], k))
+    local j = assert(tree_search(T, T[ROOT], k))
     assert(key[j] == k)
   end
 end
@@ -362,11 +399,11 @@ end
 local function test_delete(T, keys)
   for i = 1, #keys do
     local k = keys[i]
-    local j = assert(search(T, T[ROOT], k))
+    local j = assert(tree_search(T, T[ROOT], k))
     if k == 9 and j == 9 then
       dump(io.open("test.dot", "w"), T):close()
     end
-    delete(T, j)
+    rb_delete(T, j)
   end
 end
 
@@ -398,6 +435,19 @@ for i = 1, 3 do
     }
 
     test_insert(T, keys)
+
+    local min = tree_minimum(T, T[ROOT])
+    local max = tree_maximum(T, T[ROOT])
+
+    local x = min
+    for i = 1, 24 do
+      assert(T[KEY][x] == i)
+      x = tree_successor(T, x)
+    end
+    assert(x == max)
+    assert(T[KEY][x] == 25)
+
+    inorder_tree_walk(T, T[ROOT], print)
 
     if j % 3 == 1 then
       reverse(keys)
