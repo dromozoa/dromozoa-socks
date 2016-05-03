@@ -67,7 +67,6 @@ local function tree_minimum(T, x)
   return x
 end
 
-
 local function tree_maximum(T, x)
   local right = T[RIGHT]
 
