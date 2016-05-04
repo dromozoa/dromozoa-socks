@@ -123,7 +123,7 @@ local function right_rotate(T, x)
   p[x] = y
 end
 
-local function rb_insert_fixup(T, z)
+local function insert_fixup(T, z)
   local color = T[COLOR]
   local p = T[PARENT]
   local left = T[LEFT]
@@ -167,7 +167,7 @@ local function rb_insert_fixup(T, z)
   color[T[ROOT]] = BLACK
 end
 
-local function rb_insert(T, z)
+local function insert(T, z)
   local color = T[COLOR]
   local p = T[PARENT]
   local left = T[LEFT]
@@ -195,7 +195,7 @@ local function rb_insert(T, z)
   left[z] = NIL
   right[z] = NIL
   color[z] = RED
-  rb_insert_fixup(T, z)
+  insert_fixup(T, z)
 end
 
 local function rb_transplant(T, u, v)
@@ -399,8 +399,8 @@ function class:insert(k, v)
   key[h] = k
   value[h] = v
   self[HANDLE] = h
-  rb_insert(self, h)
-  return rb_tree_iterator(self, h)
+  insert(self, h)
+  return h
 end
 
 function class:delete(h)
