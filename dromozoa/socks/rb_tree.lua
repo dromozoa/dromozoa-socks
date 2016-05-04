@@ -31,23 +31,23 @@ local VALUE = 6
 local ROOT = 7
 local HANDLE = 8
 
-local function tree_search(self, x, k)
-  local left = self[LEFT]
-  local right = self[RIGHT]
-  local key = self[KEY]
+local function tree_search(T, x, k)
+  local left = T[LEFT]
+  local right = T[RIGHT]
+  local key = T[KEY]
 
   if x == NIL or k == key[x] then
     return x
   end
   if k < key[x] then
-    return tree_search(self, left[x], k)
+    return tree_search(T, left[x], k)
   else
-    return tree_search(self, right[x], k)
+    return tree_search(T, right[x], k)
   end
 end
 
-local function tree_minimum(self, x)
-  local left = self[LEFT]
+local function tree_minimum(T, x)
+  local left = T[LEFT]
 
   while left[x] ~= NIL do
     x = left[x]
@@ -55,8 +55,8 @@ local function tree_minimum(self, x)
   return x
 end
 
-local function tree_maximum(self, x)
-  local right = self[RIGHT]
+local function tree_maximum(T, x)
+  local right = T[RIGHT]
 
   while right[x] ~= NIL do
     x = right[x]
@@ -64,118 +64,118 @@ local function tree_maximum(self, x)
   return x
 end
 
-local function tree_successor(self, x)
-  local parent = self[PARENT]
-  local right = self[RIGHT]
+local function tree_successor(T, x)
+  local p = T[PARENT]
+  local right = T[RIGHT]
 
   if right[x] ~= NIL then
-    return tree_minimum(self, right[x])
+    return tree_minimum(T, right[x])
   end
-  local y = parent[x]
+  local y = p[x]
   while y ~= NIL and x == right[y] do
     x = y
-    y = parent[y]
+    y = p[y]
   end
   return y
 end
 
-local function left_rotate(self, x)
-  local parent = self[PARENT]
-  local left = self[LEFT]
-  local right = self[RIGHT]
+local function left_rotate(T, x)
+  local p = T[PARENT]
+  local left = T[LEFT]
+  local right = T[RIGHT]
 
   local y = right[x]
   right[x] = left[y]
   if left[y] ~= NIL then
-    parent[left[y]] = x
+    p[left[y]] = x
   end
-  parent[y] = parent[x]
-  if parent[x] == NIL then
-    self[ROOT] = y
-  elseif x == left[parent[x]] then
-    left[parent[x]] = y
+  p[y] = p[x]
+  if p[x] == NIL then
+    T[ROOT] = y
+  elseif x == left[p[x]] then
+    left[p[x]] = y
   else
-    right[parent[x]] = y
+    right[p[x]] = y
   end
   left[y] = x
-  parent[x] = y
+  p[x] = y
 end
 
-local function right_rotate(self, x)
-  local parent = self[PARENT]
-  local left = self[LEFT]
-  local right = self[RIGHT]
+local function right_rotate(T, x)
+  local p = T[PARENT]
+  local left = T[LEFT]
+  local right = T[RIGHT]
 
   local y = left[x]
   left[x] = right[y]
   if right[y] ~= NIL then
-    parent[right[y]] = x
+    p[right[y]] = x
   end
-  parent[y] = parent[x]
-  if parent[x] == NIL then
-    self[ROOT] = y
-  elseif x == right[parent[x]] then
-    right[parent[x]] = y
+  p[y] = p[x]
+  if p[x] == NIL then
+    T[ROOT] = y
+  elseif x == right[p[x]] then
+    right[p[x]] = y
   else
-    left[parent[x]] = y
+    left[p[x]] = y
   end
   right[y] = x
-  parent[x] = y
+  p[x] = y
 end
 
-local function rb_insert_fixup(self, z)
-  local color = self[COLOR]
-  local parent = self[PARENT]
-  local left = self[LEFT]
-  local right = self[RIGHT]
+local function rb_insert_fixup(T, z)
+  local color = T[COLOR]
+  local p = T[PARENT]
+  local left = T[LEFT]
+  local right = T[RIGHT]
 
-  while color[parent[z]] == RED do
-    if parent[z] == left[parent[parent[z]]] then
-      local y = right[parent[parent[z]]]
+  while color[p[z]] == RED do
+    if p[z] == left[p[p[z]]] then
+      local y = right[p[p[z]]]
       if color[y] == RED then
-        color[parent[z]] = BLACK
+        color[p[z]] = BLACK
         color[y] = BLACK
-        color[parent[parent[z]]] = RED
-        z = parent[parent[z]]
+        color[p[p[z]]] = RED
+        z = p[p[z]]
       else
-        if z == right[parent[z]] then
-          z = parent[z]
-          left_rotate(self, z)
+        if z == right[p[z]] then
+          z = p[z]
+          left_rotate(T, z)
         end
-        color[parent[z]] = BLACK
-        color[parent[parent[z]]] = RED
-        right_rotate(self, parent[parent[z]])
+        color[p[z]] = BLACK
+        color[p[p[z]]] = RED
+        right_rotate(T, p[p[z]])
       end
     else
-      local y = left[parent[parent[z]]]
+      local y = left[p[p[z]]]
       if color[y] == RED then
-        color[parent[z]] = BLACK
+        color[p[z]] = BLACK
         color[y] = BLACK
-        color[parent[parent[z]]] = RED
-        z = parent[parent[z]]
+        color[p[p[z]]] = RED
+        z = p[p[z]]
       else
-        if z == left[parent[z]] then
-          z = parent[z]
-          right_rotate(self, z)
+        if z == left[p[z]] then
+          z = p[z]
+          right_rotate(T, z)
         end
-        color[parent[z]] = BLACK
-        color[parent[parent[z]]] = RED
-        left_rotate(self, parent[parent[z]])
+        color[p[z]] = BLACK
+        color[p[p[z]]] = RED
+        left_rotate(T, p[p[z]])
       end
     end
   end
-  color[self[ROOT]] = BLACK
+  color[T[ROOT]] = BLACK
 end
 
-local function rb_insert(self, z)
-  local color = self[COLOR]
-  local parent = self[PARENT]
-  local left = self[LEFT]
-  local right = self[RIGHT]
-  local key = self[KEY]
+local function rb_insert(T, z)
+  local color = T[COLOR]
+  local p = T[PARENT]
+  local left = T[LEFT]
+  local right = T[RIGHT]
+  local key = T[KEY]
 
   local y = NIL
-  local x = self[ROOT]
+  local x = T[ROOT]
   while x ~= NIL do
     y = x
     if key[z] < key[x] then
@@ -184,9 +184,9 @@ local function rb_insert(self, z)
       x = right[x]
     end
   end
-  parent[z] = y
+  p[z] = y
   if y == NIL then
-    self[ROOT] = z
+    T[ROOT] = z
   elseif key[z] < key[y] then
     left[y] = z
   else
@@ -195,133 +195,124 @@ local function rb_insert(self, z)
   left[z] = NIL
   right[z] = NIL
   color[z] = RED
-  rb_insert_fixup(self, z)
+  rb_insert_fixup(T, z)
 end
 
-local function rb_transplant(self, u, v)
-  local parent = self[PARENT]
-  local left = self[LEFT]
-  local right = self[RIGHT]
+local function rb_transplant(T, u, v)
+  local p = T[PARENT]
+  local left = T[LEFT]
+  local right = T[RIGHT]
 
-  if parent[u] == NIL then
-    self[ROOT] = v
-  elseif u == left[parent[u]] then
-    left[parent[u]] = v
+  if p[u] == NIL then
+    T[ROOT] = v
+  elseif u == left[p[u]] then
+    left[p[u]] = v
   else
-    right[parent[u]] = v
+    right[p[u]] = v
   end
-  parent[v] = parent[u]
+  p[v] = p[u]
 end
 
-local function rb_delete_fixup(self, x)
-  local color = self[COLOR]
-  local parent = self[PARENT]
-  local left = self[LEFT]
-  local right = self[RIGHT]
+local function rb_delete_fixup(T, x)
+  local color = T[COLOR]
+  local p = T[PARENT]
+  local left = T[LEFT]
+  local right = T[RIGHT]
 
-  while x ~= self[ROOT] and color[x] == BLACK do
-    if x == left[parent[x]] then
-      local w = right[parent[x]]
+  while x ~= T[ROOT] and color[x] == BLACK do
+    if x == left[p[x]] then
+      local w = right[p[x]]
       if color[w] == RED then
         color[w] = BLACK
-        color[parent[x]] = RED
-        left_rotate(self, parent[x])
-        w = right[parent[x]]
+        color[p[x]] = RED
+        left_rotate(T, p[x])
+        w = right[p[x]]
       end
       if color[left[w]] == BLACK and color[right[w]] == BLACK then
         color[w] = RED
-        x = parent[x]
+        x = p[x]
       else
         if color[right[w]] == BLACK then
           color[left[w]] = BLACK
           color[w] = RED
-          right_rotate(self, w)
-          w = right[parent[x]]
+          right_rotate(T, w)
+          w = right[p[x]]
         end
-        color[w] = color[parent[x]]
-        color[parent[x]] = BLACK
+        color[w] = color[p[x]]
+        color[p[x]] = BLACK
         color[right[w]] = BLACK
-        left_rotate(self, parent[x])
-        x = self[ROOT]
+        left_rotate(T, p[x])
+        x = T[ROOT]
       end
     else
-      local w = left[parent[x]]
+      local w = left[p[x]]
       if color[w] == RED then
         color[w] = BLACK
-        color[parent[x]] = RED
-        right_rotate(self, parent[x])
-        w = left[parent[x]]
+        color[p[x]] = RED
+        right_rotate(T, p[x])
+        w = left[p[x]]
       end
       if color[right[w]] == BLACK and color[left[w]] == BLACK then
         color[w] = RED
-        x = parent[x]
+        x = p[x]
       else
         if color[left[w]] == BLACK then
           color[right[w]] = BLACK
           color[w] = RED
-          left_rotate(self, w)
-          w = left[parent[x]]
+          left_rotate(T, w)
+          w = left[p[x]]
         end
-        color[w] = color[parent[x]]
-        color[parent[x]] = BLACK
+        color[w] = color[p[x]]
+        color[p[x]] = BLACK
         color[left[w]] = BLACK
-        right_rotate(self, parent[x])
-        x = self[ROOT]
+        right_rotate(T, p[x])
+        x = T[ROOT]
       end
     end
   end
   color[x] = BLACK
 end
 
-local function rb_delete(self, z)
-  local color = self[COLOR]
-  local parent = self[PARENT]
-  local left = self[LEFT]
-  local right = self[RIGHT]
-  local key = self[KEY]
+local function rb_delete(T, z)
+  local color = T[COLOR]
+  local p = T[PARENT]
+  local left = T[LEFT]
+  local right = T[RIGHT]
+  local key = T[KEY]
 
   local y = z
   local y_original_color = color[y]
   if left[z] == NIL then
     x = right[z]
-    rb_transplant(self, z, right[z])
+    rb_transplant(T, z, right[z])
   elseif right[z] == NIL then
     x = left[z]
-    rb_transplant(self, z, left[z])
+    rb_transplant(T, z, left[z])
   else
-    y = tree_minimum(self, right[z])
+    y = tree_minimum(T, right[z])
     y_original_color = color[y]
     x = right[y]
-    if parent[y] == z then
-      parent[x] = y
+    if p[y] == z then
+      p[x] = y
     else
-      rb_transplant(self, y, right[y])
+      rb_transplant(T, y, right[y])
       right[y] = right[z]
-      parent[right[y]] = y
+      p[right[y]] = y
     end
-    rb_transplant(self, z, y)
+    rb_transplant(T, z, y)
     left[y] = left[z]
-    parent[left[y]] = y
+    p[left[y]] = y
     color[y] = color[z]
   end
   if y_original_color == BLACK then
-    rb_delete_fixup(self, x)
+    rb_delete_fixup(T, x)
   end
 end
 
 local class = {}
 
 function class.new()
-  return {
-    { [0] = BLACK };  -- color
-    {};  -- parent
-    {};  -- left
-    {};  -- right
-    {};  -- key
-    {};  -- value
-    NIL; -- root
-    0; -- handle
-  }
+  return { { [0] = BLACK }, {}, {}, {}, {}, {}, NIL, 0 }
 end
 
 function class:search(k)
@@ -344,10 +335,10 @@ function class:successor(h)
 end
 
 -- k以上の最初の要素を返す
-local function lower_bound(self, x, k)
-  local left = self[LEFT]
-  local right = self[RIGHT]
-  local key = self[KEY]
+local function lower_bound(T, x, k)
+  local left = T[LEFT]
+  local right = T[RIGHT]
+  local key = T[KEY]
 
   local y = NIL
   while x ~= NIL do
@@ -361,10 +352,10 @@ local function lower_bound(self, x, k)
   return y
 end
 
-local function upper_bound(self, x, k)
-  local left = self[LEFT]
-  local right = self[RIGHT]
-  local key = self[KEY]
+local function upper_bound(T, x, k)
+  local left = T[LEFT]
+  local right = T[RIGHT]
+  local key = T[KEY]
 
   local y = NIL
   while x ~= NIL do
@@ -414,7 +405,7 @@ end
 
 function class:delete(h)
   local color = self[COLOR]
-  local parent = self[PARENT]
+  local p = self[PARENT]
   local left = self[LEFT]
   local right = self[RIGHT]
   local key = self[KEY]
@@ -424,7 +415,7 @@ function class:delete(h)
   local v = value[h]
   rb_delete(self, h)
   color[h] = nil
-  parent[h] = nil
+  p[h] = nil
   left[h] = nil
   right[h] = nil
   key[h] = nil
