@@ -76,6 +76,21 @@ local function successor(T, x)
   return y
 end
 
+local function predecessor(T, x)
+  local p = T[PARENT]
+  local left = T[LEFT]
+
+  if left[x] ~= NIL then
+    return maximum(T, left[x])
+  end
+  local y = p[x]
+  while y ~= NIL and x == left[y] do
+    x = y
+    y = p[y]
+  end
+  return y
+end
+
 local function left_rotate(T, x)
   local p = T[PARENT]
   local left = T[LEFT]
@@ -337,6 +352,10 @@ end
 
 function class:successor(h)
   return successor(self, h)
+end
+
+function class:predecessor(h)
+  return predecessor(self, h)
 end
 
 function class:insert(k, v)

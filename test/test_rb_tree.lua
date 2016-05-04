@@ -15,7 +15,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local dumper = require "dromozoa.commons.dumper"
+local equal = require "dromozoa.commons.equal"
+local sequence = require "dromozoa.commons.sequence"
 local rb_tree = require "dromozoa.socks.rb_tree"
 
 local function reverse(data)
@@ -47,17 +48,44 @@ for i = 1, 3 do
     local T = rb_tree()
     for i = 1, #data do
       local k = data[i]
-      local v = "v" .. k
-      T:insert(k, v)
+      T:insert(k, "v" .. k)
     end
-    print(dumper.encode(T))
 
-    local a = assert(T:minimum())
-    local b = assert(T:maximum())
-    assert(T:key(a) == 1)
-    assert(T:get(a) == "v1")
-    assert(T:key(b) == 25)
-    assert(T:get(b) == "v25")
+    local min = T:minimum()
+    assert(T:key(min) == 1)
+    assert(T:get(min) == "v1")
+    assert(T:predecessor(T:successor(min)) == min)
+
+    local max = T:maximum()
+    assert(T:key(max) == 25)
+    assert(T:get(max) == "v25")
+    assert(T:successor(T:predecessor(max)) == max)
+
+    local x = min
+    for i = 1, #data do
+      assert(T:key(x) == i)
+      assert(T:get(x) == "v" .. i)
+      if i == #data then
+        x = T:successor(x)
+        assert(x == rb_tree.NIL)
+      else
+        x = T:successor(x)
+        assert(x ~= rb_tree.NIL)
+      end
+    end
+
+    local x = max
+    for i = #data, 1, -1 do
+      assert(T:key(x) == i)
+      assert(T:get(x) == "v" .. i)
+      if i == 1 then
+        x = T:predecessor(x)
+        assert(x == rb_tree.NIL)
+      else
+        x = T:predecessor(x)
+        assert(x ~= rb_tree.NIL)
+      end
+    end
 
     if j % 3 == 1 then
       reverse(data)
@@ -68,15 +96,15 @@ for i = 1, 3 do
     for i = 1, #data do
       local k = data[i]
       local v = "v" .. k
+
       local h = T:search(k)
       assert(T:key(h) == k)
       assert(T:get(h) == v)
+
       local a, b = T:delete(h)
       assert(a == k)
       assert(b == v)
     end
-    -- assert(T:empty())
-    print(dumper.encode(T))
   end
 end
 
@@ -84,57 +112,29 @@ local T = rb_tree()
 T:insert(1, "foo")
 T:insert(2, "foo")
 T:insert(3, "foo")
-T:insert(1, "bar")
-T:insert(2, "bar")
 T:insert(3, "bar")
+T:insert(2, "bar")
+T:insert(1, "bar")
 T:insert(1, "baz")
-T:insert(2, "baz")
 T:insert(3, "baz")
+T:insert(2, "baz")
 
 local x = T:minimum()
-local max = T:maximum()
-while true do
-  print(T:key(x), T:get(x))
-  if x == max then
-    x = T:successor(x)
-    assert(x == rb_tree.NIL)
-    break
-  else
-    x = T:successor(x)
-  end
-end
+local data = sequence()
 
---[[
-local x = T:search(2)
-assert(x:key() == 2)
-assert(x:get() == "foo")
+repeat
+  sequence:push({ T:key(x), T:get(x) })
+  x = T:successor(x)
+until x == rb_tree.NIL
 
-local x = T:search(1.5)
-assert(x.handle == 0)
-
-local x = T:lower_bound(2)
-assert(x:key() == 2)
-assert(x:get() == "foo")
-
-local x = T:lower_bound(1.5)
-assert(x:key() == 2)
-assert(x:get() == "foo")
-
-local x = T:upper_bound(2)
-assert(x:key() == 3)
-assert(x:get() == "foo")
-
-local x = T:upper_bound(2.5)
-assert(x:key() == 3)
-assert(x:get() == "foo")
-
-print("--")
-for k, v in T:each() do
-  print(k, v)
-end
-
-print("--")
-for k, v in T:equal_range(2):each() do
-  print(k, v)
-end
-]]
+assert(equal(data, {
+  { 1, "foo" };
+  { 1, "bar" };
+  { 1, "baz" };
+  { 2, "foo" };
+  { 2, "bar" };
+  { 2, "baz" };
+  { 3, "foo" };
+  { 3, "bar" };
+  { 3, "baz" };
+}))
