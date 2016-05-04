@@ -17,6 +17,7 @@
 
 local equal = require "dromozoa.commons.equal"
 local sequence = require "dromozoa.commons.sequence"
+local xml = require "dromozoa.commons.xml"
 local rb_tree = require "dromozoa.socks.rb_tree"
 
 local function reverse(data)
@@ -30,6 +31,57 @@ local function shuffle(data)
     data[i] = data[j]
     data[j] = k
   end
+end
+
+local RED = 0
+local BLACK = 1
+local NIL = 0
+
+local function write_dot_node(out, T, x)
+  if x ~= NIL then
+    local color = T[1]
+    local left = T[3]
+    local right = T[4]
+
+    local c
+    if color[x] == RED then
+      c = "red"
+    else
+      c = "black"
+    end
+    local label = "[" .. T:key(x) .. "]=" .. ("%q"):format(T:get(x))
+    out:write(x, " [label =  <<font color=\"white\">", xml.escape(label), "</font>>, fillcolor = ", c, "];\n")
+    write_dot_node(out, T, left[x])
+    write_dot_node(out, T, right[x])
+  end
+end
+
+local function write_dot_edge(out, T, x, y, label)
+  if y ~= NIL then
+    local left = T[3]
+    local right = T[4]
+
+    out:write(x, " -> ", y, "[label = <", xml.escape(label), ">];\n")
+    write_dot_edge(out, T, y, left[y], "L")
+    write_dot_edge(out, T, y, right[y], "R")
+  end
+end
+
+local function write_dot(out, T)
+  out:write([[
+digraph g {
+node [color = black, style = filled];
+]])
+
+  local left = T[3]
+  local right = T[4]
+  local root = T[8]
+  write_dot_node(out, T, root)
+  write_dot_edge(out, T, root, left[root], "L")
+  write_dot_edge(out, T, root, right[root], "R")
+
+  out:write("}\n")
+  return out
 end
 
 for i = 1, 3 do
@@ -149,3 +201,18 @@ assert(equal(data, {
   { 3, "bar" };
   { 3, "baz" };
 }))
+
+write_dot(assert(io.open("test.dot", "w")), T):close()
+
+for i = 1, 3 do
+  local x = assert(T:lower_bound(i))
+  assert(T:get(x) == "foo")
+  local x = assert(T:upper_bound(i))
+  assert(T:get(x) == "baz")
+end
+
+assert(T:lower_bound(0) == T:minimum())
+assert(T:upper_bound(4) == T:maximum())
+
+assert(not T:lower_bound(4))
+assert(not T:upper_bound(0))

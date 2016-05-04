@@ -25,22 +25,46 @@ local LEFT = 3
 local RIGHT = 4
 local KEY = 5
 local VALUE = 6
-local ROOT = 7
-local HANDLE = 8
+local COMPARE = 7
+local ROOT = 8
+local HANDLE = 9
 
-local function search(T, x, k)
+-- return an handle to the first element that is grater than k or equal to k.
+local function lower_bound(T, x, k)
   local left = T[LEFT]
   local right = T[RIGHT]
   local key = T[KEY]
+  local compare = T[COMPARE]
 
-  if x == NIL or k == key[x] then
-    return x
+  local y = NIL
+  while x ~= NIL do
+    if compare(key[x], k) then
+      x = right[x]
+    else
+      y = x
+      x = left[x]
+    end
   end
-  if k < key[x] then
-    return search(T, left[x], k)
-  else
-    return search(T, right[x], k)
+  return y
+end
+
+-- return an handle to the last element that is less than k or equal to k.
+local function upper_bound(T, x, k)
+  local left = T[LEFT]
+  local right = T[RIGHT]
+  local key = T[KEY]
+  local compare = T[COMPARE]
+
+  local y = NIL
+  while x ~= NIL do
+    if compare(k, key[x]) then
+      x = left[x]
+    else
+      y = x
+      x = right[x]
+    end
   end
+  return y
 end
 
 local function minimum(T, x)
@@ -185,12 +209,13 @@ local function insert(T, z)
   local left = T[LEFT]
   local right = T[RIGHT]
   local key = T[KEY]
+  local compare = T[COMPARE]
 
   local y = NIL
   local x = T[ROOT]
   while x ~= NIL do
     y = x
-    if key[z] < key[x] then
+    if compare(key[z], key[x]) then
       x = left[x]
     else
       x = right[x]
@@ -199,7 +224,7 @@ local function insert(T, z)
   p[z] = y
   if y == NIL then
     T[ROOT] = z
-  elseif key[z] < key[y] then
+  elseif compare(key[z], key[y]) then
     left[y] = z
   else
     right[y] = z
@@ -321,9 +346,16 @@ local function delete(T, z)
   end
 end
 
+local function default_compare(a, b)
+  return a < b
+end
+
 local class = {}
 
-function class.new()
+function class.new(compare)
+  if compare == nil then
+    compare = default_compare
+  end
   return {
     { [NIL] = BLACK }; -- COLOR
     {}; -- PARENT
@@ -331,14 +363,45 @@ function class.new()
     {}; -- RIGHT
     {}; -- KEY
     {}; -- VALUE
+    compare; -- COMPARE
     NIL; -- ROOT
     NIL; -- HANDLE
   }
 end
 
-function class:search(k)
-  local h = search(self, self[ROOT], k)
+function class:lower_bound(k)
+  local h = lower_bound(self, self[ROOT], k)
   if h == NIL then
+    return nil
+  else
+    return h
+  end
+end
+
+function class:upper_bound(k)
+  local h = upper_bound(self, self[ROOT], k)
+  if h == NIL then
+    return nil
+  else
+    return h
+  end
+end
+
+function class:upper_bound(k)
+  local h = upper_bound(self, self[ROOT], k)
+  if h == NIL then
+    return nil
+  else
+    return h
+  end
+end
+
+function class:search(k)
+  local key = self[KEY]
+  local compare = self[COMPARE]
+
+  local h = lower_bound(self, self[ROOT], k)
+  if h == NIL or compare(key[h], k) then
     return nil
   else
     return h
@@ -428,60 +491,12 @@ function class:set(h, v)
   value[h] = v
 end
 
---------------------------------------------------------------------------------
--- k以上の最初の要素を返す
-local function lower_bound(T, x, k)
-  local left = T[LEFT]
-  local right = T[RIGHT]
-  local key = T[KEY]
-
-  local y = NIL
-  while x ~= NIL do
-    if not (key[x] < k) then
-      y = x
-      x = left[x]
-    else
-      x = right[x]
-    end
-  end
-  return y
-end
-
-local function upper_bound(T, x, k)
-  local left = T[LEFT]
-  local right = T[RIGHT]
-  local key = T[KEY]
-
-  local y = NIL
-  while x ~= NIL do
-    if k < key[x] then
-      y = x
-      x = left[x]
-    else
-      x = right[x]
-    end
-  end
-  return y
-end
-
-function class:lower_bound(k)
-  local h = lower_bound(self, self[ROOT], k)
-  return rb_tree_iterator(self, h)
-end
-
-function class:upper_bound(k)
-  local h = upper_bound(self, self[ROOT], k)
-  return rb_tree_iterator(self, h)
-end
-
---------------------------------------------------------------------------------
-
 local metatable = {
   __index = class;
 }
 
 return setmetatable(class, {
-  __call = function ()
-    return setmetatable(class.new(), metatable)
+  __call = function (_, compare)
+    return setmetatable(class.new(compare), metatable)
   end;
 })
