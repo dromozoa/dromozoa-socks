@@ -97,7 +97,7 @@ while true do
   print(T:key(x), T:get(x))
   if x == max then
     x = T:successor(x)
-    assert(x == 0)
+    assert(x == rb_tree.NIL)
     break
   else
     x = T:successor(x)

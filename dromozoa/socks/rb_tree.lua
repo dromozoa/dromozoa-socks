@@ -15,9 +15,6 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local rb_tree_iterator = require "dromozoa.socks.rb_tree_iterator"
-local rb_tree_range = require "dromozoa.socks.rb_tree_range"
-
 local RED = 0
 local BLACK = 1
 local NIL = 0
@@ -309,10 +306,21 @@ local function delete(T, z)
   end
 end
 
-local class = {}
+local class = {
+  NIL = NIL;
+}
 
 function class.new()
-  return { { [0] = BLACK }, {}, {}, {}, {}, {}, NIL, 0 }
+  return {
+    { [NIL] = BLACK }; -- COLOR
+    {}; -- PARENT
+    {}; -- LEFT
+    {}; -- RIGHT
+    {}; -- KEY
+    {}; -- VALUE
+    NIL; -- ROOT
+    NIL; -- HANDLE
+  }
 end
 
 function class:search(k)
@@ -364,15 +372,18 @@ function class:delete(h)
 end
 
 function class:key(h)
-  return self[KEY][h]
+  local key = self[KEY]
+  return key[h]
 end
 
 function class:get(h)
-  return self[VALUE][h]
+  local value = self[VALUE]
+  return value[h]
 end
 
 function class:set(h, v)
-  self[VALUE][h] = v
+  local value = self[VALUE]
+  value[h] = v
 end
 
 --------------------------------------------------------------------------------
