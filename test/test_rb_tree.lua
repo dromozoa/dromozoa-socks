@@ -67,10 +67,10 @@ for i = 1, 3 do
       assert(T:get(x) == "v" .. i)
       if i == #data then
         x = T:successor(x)
-        assert(x == rb_tree.NIL)
+        assert(not x)
       else
         x = T:successor(x)
-        assert(x ~= rb_tree.NIL)
+        assert(x)
       end
     end
 
@@ -80,10 +80,10 @@ for i = 1, 3 do
       assert(T:get(x) == "v" .. i)
       if i == 1 then
         x = T:predecessor(x)
-        assert(x == rb_tree.NIL)
+        assert(not x)
       else
         x = T:predecessor(x)
-        assert(x ~= rb_tree.NIL)
+        assert(x)
       end
     end
 
@@ -136,7 +136,7 @@ local data = sequence()
 repeat
   sequence:push({ T:key(x), T:get(x) })
   x = T:successor(x)
-until x == rb_tree.NIL
+until not x
 
 assert(equal(data, {
   { 1, "foo" };

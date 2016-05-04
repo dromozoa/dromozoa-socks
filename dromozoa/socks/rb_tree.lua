@@ -321,9 +321,7 @@ local function delete(T, z)
   end
 end
 
-local class = {
-  NIL = NIL;
-}
+local class = {}
 
 function class.new()
   return {
@@ -366,11 +364,21 @@ function class:maximum()
 end
 
 function class:successor(h)
-  return successor(self, h)
+  h = successor(self, h)
+  if h == NIL then
+    return nil
+  else
+    return h
+  end
 end
 
 function class:predecessor(h)
-  return predecessor(self, h)
+  h = predecessor(self, h)
+  if h == NIL then
+    return nil
+  else
+    return h
+  end
 end
 
 function class:insert(k, v)
