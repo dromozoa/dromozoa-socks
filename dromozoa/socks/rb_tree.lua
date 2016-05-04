@@ -31,7 +31,7 @@ local VALUE = 6
 local ROOT = 7
 local HANDLE = 8
 
-local function tree_search(T, x, k)
+local function search(T, x, k)
   local left = T[LEFT]
   local right = T[RIGHT]
   local key = T[KEY]
@@ -40,13 +40,13 @@ local function tree_search(T, x, k)
     return x
   end
   if k < key[x] then
-    return tree_search(T, left[x], k)
+    return search(T, left[x], k)
   else
-    return tree_search(T, right[x], k)
+    return search(T, right[x], k)
   end
 end
 
-local function tree_minimum(T, x)
+local function minimum(T, x)
   local left = T[LEFT]
 
   while left[x] ~= NIL do
@@ -55,7 +55,7 @@ local function tree_minimum(T, x)
   return x
 end
 
-local function tree_maximum(T, x)
+local function maximum(T, x)
   local right = T[RIGHT]
 
   while right[x] ~= NIL do
@@ -64,12 +64,12 @@ local function tree_maximum(T, x)
   return x
 end
 
-local function tree_successor(T, x)
+local function successor(T, x)
   local p = T[PARENT]
   local right = T[RIGHT]
 
   if right[x] ~= NIL then
-    return tree_minimum(T, right[x])
+    return minimum(T, right[x])
   end
   local y = p[x]
   while y ~= NIL and x == right[y] do
@@ -198,7 +198,7 @@ local function insert(T, z)
   insert_fixup(T, z)
 end
 
-local function rb_transplant(T, u, v)
+local function transplant(T, u, v)
   local p = T[PARENT]
   local left = T[LEFT]
   local right = T[RIGHT]
@@ -284,22 +284,22 @@ local function delete(T, z)
   local y_original_color = color[y]
   if left[z] == NIL then
     x = right[z]
-    rb_transplant(T, z, right[z])
+    transplant(T, z, right[z])
   elseif right[z] == NIL then
     x = left[z]
-    rb_transplant(T, z, left[z])
+    transplant(T, z, left[z])
   else
-    y = tree_minimum(T, right[z])
+    y = minimum(T, right[z])
     y_original_color = color[y]
     x = right[y]
     if p[y] == z then
       p[x] = y
     else
-      rb_transplant(T, y, right[y])
+      transplant(T, y, right[y])
       right[y] = right[z]
       p[right[y]] = y
     end
-    rb_transplant(T, z, y)
+    transplant(T, z, y)
     left[y] = left[z]
     p[left[y]] = y
     color[y] = color[z]
@@ -316,22 +316,12 @@ function class.new()
 end
 
 function class:search(k)
-  local h = tree_search(self, self[ROOT], k)
-  return rb_tree_iterator(self, h)
-end
-
-function class:minimum()
-  local h = tree_minimum(self, self[ROOT])
-  return rb_tree_iterator(self, h)
-end
-
-function class:maximum()
-  local h = tree_maximum(self, self[ROOT])
+  local h = search(self, self[ROOT], k)
   return rb_tree_iterator(self, h)
 end
 
 function class:successor(h)
-  return rb_tree_iterator(self, tree_successor(self, h))
+  return rb_tree_iterator(self, successor(self, h))
 end
 
 -- k以上の最初の要素を返す
@@ -384,7 +374,9 @@ function class:equal_range(k)
 end
 
 function class:each()
-  return rb_tree_range(self:minimum(), self:maximum():successor()):each()
+  local a = rb_tree_iterator(self, self:minimum())
+  local b = rb_tree_iterator(self, self:maximum())
+  return rb_tree_range(a, b:successor()):each()
 end
 
 function class:empty()
@@ -421,6 +413,18 @@ function class:delete(h)
   key[h] = nil
   value[h] = nil
   return k, v
+end
+
+function class:minimum()
+  return minimum(self, self[ROOT])
+end
+
+function class:maximum()
+  return maximum(self, self[ROOT])
+end
+
+function class:next(h)
+  return successor(self, h)
 end
 
 function class:key(h)

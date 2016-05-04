@@ -52,10 +52,12 @@ for i = 1, 3 do
     end
     print(dumper.encode(T))
 
-    assert(T:minimum():key() == 1)
-    assert(T:minimum():get() == "v1")
-    assert(T:maximum():key() == 25)
-    assert(T:maximum():get() == "v25")
+    local a = assert(T:minimum())
+    local b = assert(T:maximum())
+    assert(T:key(a) == 1)
+    assert(T:get(a) == "v1")
+    assert(T:key(b) == 25)
+    assert(T:get(b) == "v25")
 
     if j % 3 == 1 then
       reverse(data)
@@ -92,13 +94,13 @@ T:insert(3, "baz")
 local x = T:minimum()
 local max = T:maximum()
 while true do
-  print(x:key(), x:get())
-  if x.handle == max.handle then
-    x = x:successor()
-    assert(x.handle == 0)
+  print(T:key(x), T:get(x))
+  if x == max then
+    x = T:next(x)
+    assert(x == 0)
     break
   else
-    x = x:successor()
+    x = T:next(x)
   end
 end
 
