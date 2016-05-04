@@ -97,7 +97,7 @@ for i = 1, 3 do
       local k = data[i]
       local v = "v" .. k
 
-      local h = T:search(k)
+      local h = assert(T:search(k))
       assert(T:key(h) == k)
       assert(T:get(h) == v)
 
@@ -109,6 +109,12 @@ for i = 1, 3 do
 end
 
 local T = rb_tree()
+
+assert(not T:minimum())
+assert(not T:maximum())
+assert(not T:search(1))
+assert(not T:search(4))
+
 T:insert(1, "foo")
 T:insert(2, "foo")
 T:insert(3, "foo")
@@ -118,6 +124,11 @@ T:insert(1, "bar")
 T:insert(1, "baz")
 T:insert(3, "baz")
 T:insert(2, "baz")
+
+assert(T:minimum())
+assert(T:maximum())
+assert(T:search(1))
+assert(not T:search(4))
 
 local x = T:minimum()
 local data = sequence()

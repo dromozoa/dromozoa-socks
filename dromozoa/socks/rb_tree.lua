@@ -339,15 +339,30 @@ function class.new()
 end
 
 function class:search(k)
-  return search(self, self[ROOT], k)
+  local h = search(self, self[ROOT], k)
+  if h == NIL then
+    return nil
+  else
+    return h
+  end
 end
 
 function class:minimum()
-  return minimum(self, self[ROOT])
+  local h = self[ROOT]
+  if h == NIL then
+    return nil
+  else
+    return minimum(self, h)
+  end
 end
 
 function class:maximum()
-  return maximum(self, self[ROOT])
+  local h = self[ROOT]
+  if h == NIL then
+    return nil
+  else
+    return maximum(self, h)
+  end
 end
 
 function class:successor(h)
