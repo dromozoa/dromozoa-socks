@@ -213,7 +213,7 @@ local function rb_transplant(T, u, v)
   p[v] = p[u]
 end
 
-local function rb_delete_fixup(T, x)
+local function delete_fixup(T, x)
   local color = T[COLOR]
   local p = T[PARENT]
   local left = T[LEFT]
@@ -273,7 +273,7 @@ local function rb_delete_fixup(T, x)
   color[x] = BLACK
 end
 
-local function rb_delete(T, z)
+local function delete(T, z)
   local color = T[COLOR]
   local p = T[PARENT]
   local left = T[LEFT]
@@ -305,7 +305,7 @@ local function rb_delete(T, z)
     color[y] = color[z]
   end
   if y_original_color == BLACK then
-    rb_delete_fixup(T, x)
+    delete_fixup(T, x)
   end
 end
 
@@ -413,7 +413,7 @@ function class:delete(h)
 
   local k = key[h]
   local v = value[h]
-  rb_delete(self, h)
+  delete(self, h)
   color[h] = nil
   p[h] = nil
   left[h] = nil
