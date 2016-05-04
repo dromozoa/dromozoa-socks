@@ -319,10 +319,63 @@ function class:search(k)
   return search(self, self[ROOT], k)
 end
 
-function class:successor(h)
-  return rb_tree_iterator(self, successor(self, h))
+function class:minimum()
+  return minimum(self, self[ROOT])
 end
 
+function class:maximum()
+  return maximum(self, self[ROOT])
+end
+
+function class:successor(h)
+  return successor(self, h)
+end
+
+function class:insert(k, v)
+  local key = self[KEY]
+  local value = self[VALUE]
+
+  local h = self[HANDLE] + 1
+  key[h] = k
+  value[h] = v
+  self[HANDLE] = h
+  insert(self, h)
+  return h
+end
+
+function class:delete(h)
+  local color = self[COLOR]
+  local p = self[PARENT]
+  local left = self[LEFT]
+  local right = self[RIGHT]
+  local key = self[KEY]
+  local value = self[VALUE]
+
+  local k = key[h]
+  local v = value[h]
+  delete(self, h)
+  color[h] = nil
+  p[h] = nil
+  left[h] = nil
+  right[h] = nil
+  key[h] = nil
+  value[h] = nil
+  return k, v
+end
+
+function class:key(h)
+  return self[KEY][h]
+end
+
+function class:get(h)
+  return self[VALUE][h]
+end
+
+function class:set(h, v)
+  self[VALUE][h] = v
+end
+
+--------------------------------------------------------------------------------
 -- k以上の最初の要素を返す
 local function lower_bound(T, x, k)
   local left = T[LEFT]
@@ -368,75 +421,7 @@ function class:upper_bound(k)
   return rb_tree_iterator(self, h)
 end
 
-function class:equal_range(k)
-  return rb_tree_range(self:lower_bound(k), self:upper_bound(k))
-end
-
-function class:each()
-  local a = rb_tree_iterator(self, self:minimum())
-  local b = rb_tree_iterator(self, self:maximum())
-  return rb_tree_range(a, b:successor()):each()
-end
-
-function class:empty()
-  return self[ROOT] == NIL
-end
-
-function class:insert(k, v)
-  local key = self[KEY]
-  local value = self[VALUE]
-
-  local h = self[HANDLE] + 1
-  key[h] = k
-  value[h] = v
-  self[HANDLE] = h
-  insert(self, h)
-  return h
-end
-
-function class:delete(h)
-  local color = self[COLOR]
-  local p = self[PARENT]
-  local left = self[LEFT]
-  local right = self[RIGHT]
-  local key = self[KEY]
-  local value = self[VALUE]
-
-  local k = key[h]
-  local v = value[h]
-  delete(self, h)
-  color[h] = nil
-  p[h] = nil
-  left[h] = nil
-  right[h] = nil
-  key[h] = nil
-  value[h] = nil
-  return k, v
-end
-
-function class:minimum()
-  return minimum(self, self[ROOT])
-end
-
-function class:maximum()
-  return maximum(self, self[ROOT])
-end
-
-function class:next(h)
-  return successor(self, h)
-end
-
-function class:key(h)
-  return self[KEY][h]
-end
-
-function class:get(h)
-  return self[VALUE][h]
-end
-
-function class:set(h, v)
-  self[VALUE][h] = v
-end
+--------------------------------------------------------------------------------
 
 local metatable = {
   __index = class;

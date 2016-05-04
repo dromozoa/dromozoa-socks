@@ -75,7 +75,7 @@ for i = 1, 3 do
       assert(a == k)
       assert(b == v)
     end
-    assert(T:empty())
+    -- assert(T:empty())
     print(dumper.encode(T))
   end
 end
@@ -96,11 +96,11 @@ local max = T:maximum()
 while true do
   print(T:key(x), T:get(x))
   if x == max then
-    x = T:next(x)
+    x = T:successor(x)
     assert(x == 0)
     break
   else
-    x = T:next(x)
+    x = T:successor(x)
   end
 end
 
