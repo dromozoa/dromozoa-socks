@@ -31,18 +31,6 @@ local VALUE = 6
 local ROOT = 7
 local HANDLE = 8
 
-local function inorder_tree_walk(self, x, fn)
-  local left = self[LEFT]
-  local right = self[RIGHT]
-  local key = self[KEY]
-
-  if x ~= NIL then
-    inorder_tree_walk(self, left[x], fn)
-    fn(key[x])
-    inorder_tree_walk(self, right[x], fn)
-  end
-end
-
 local function tree_search(self, x, k)
   local left = self[LEFT]
   local right = self[RIGHT]
