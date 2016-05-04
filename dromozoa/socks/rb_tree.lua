@@ -316,8 +316,7 @@ function class.new()
 end
 
 function class:search(k)
-  local h = search(self, self[ROOT], k)
-  return rb_tree_iterator(self, h)
+  return search(self, self[ROOT], k)
 end
 
 function class:successor(h)

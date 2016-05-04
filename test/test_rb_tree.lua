@@ -68,10 +68,10 @@ for i = 1, 3 do
     for i = 1, #data do
       local k = data[i]
       local v = "v" .. k
-      local node = T:search(k)
-      assert(node:key() == k)
-      assert(node:get() == v)
-      local a, b = node:delete()
+      local h = T:search(k)
+      assert(T:key(h) == k)
+      assert(T:get(h) == v)
+      local a, b = T:delete(h)
       assert(a == k)
       assert(b == v)
     end
@@ -104,6 +104,7 @@ while true do
   end
 end
 
+--[[
 local x = T:search(2)
 assert(x:key() == 2)
 assert(x:get() == "foo")
@@ -136,5 +137,4 @@ print("--")
 for k, v in T:equal_range(2):each() do
   print(k, v)
 end
-
-
+]]
