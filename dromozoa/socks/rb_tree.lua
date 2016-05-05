@@ -502,6 +502,10 @@ function class:set(h, v)
   value[h] = v
 end
 
+function class:empty()
+  return self[ROOT] == NIL
+end
+
 function class:size()
   return self[SIZE]
 end
