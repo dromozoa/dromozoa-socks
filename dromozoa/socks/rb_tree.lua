@@ -28,7 +28,6 @@ local VALUE = 6
 local COMPARE = 7
 local ROOT = 8
 local HANDLE = 9
-local SIZE = 10
 
 -- return an handle to the first element that is grater than k or equal to k.
 local function lower_bound(T, x, k)
@@ -367,7 +366,6 @@ function class.new(compare)
     compare; -- COMPARE
     NIL; -- ROOT
     NIL; -- HANDLE
-    0; -- SIZE
   }
 end
 
@@ -403,7 +401,7 @@ function class:search(k)
   local compare = self[COMPARE]
 
   local h = lower_bound(self, self[ROOT], k)
-  if h == NIL or compare(key[h], k) then
+  if h == NIL or compare(k, key[h]) then
     return nil
   else
     return h
@@ -454,7 +452,6 @@ function class:insert(k, v)
   key[h] = k
   value[h] = v
   self[HANDLE] = h
-  self[SIZE] = self[SIZE] + 1
   insert(self, h)
   return h
 end
@@ -476,13 +473,8 @@ function class:delete(h)
   right[h] = nil
   key[h] = nil
   value[h] = nil
-
-  local size = self[SIZE]
-  if size == 1 then
+  if self[ROOT] == NIL then
     self[HANDLE] = NIL
-    self[SIZE] = 0
-  else
-    self[SIZE] = size - 1
   end
   return k, v
 end
@@ -504,10 +496,6 @@ end
 
 function class:empty()
   return self[ROOT] == NIL
-end
-
-function class:size()
-  return self[SIZE]
 end
 
 local metatable = {

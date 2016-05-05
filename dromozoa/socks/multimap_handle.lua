@@ -31,8 +31,11 @@ function class:reset(a, b)
 end
 
 function class:delete()
-  local tree = self.tree
   local a = self.a
+  if a == nil then
+    return
+  end
+  local tree = self.tree
   local b = self.b
   while true do
     local s = tree:successor(a)
@@ -45,8 +48,11 @@ function class:delete()
 end
 
 function class:each()
-  local tree = self.tree
   local a = self.a
+  if a == nil then
+    return function () end
+  end
+  local tree = self.tree
   local b = self.b
   local that = class(tree)
   return coroutine.wrap(function ()

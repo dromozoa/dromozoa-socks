@@ -17,6 +17,14 @@
 
 local multimap = require "dromozoa.socks.multimap"
 
+local function count(range)
+  local count = 0
+  for _ in range:each() do
+    count = count + 1
+  end
+  return count
+end
+
 local m = multimap()
 m:insert(1, "foo")
 m:insert(2, "foo")
@@ -28,16 +36,28 @@ m:insert(1, "baz")
 m:insert(2, "baz")
 m:insert(3, "baz")
 
-for k, v in m:upper_bound(2):each() do
-  print(k, v)
-end
+assert(not m:empty())
+assert(m:equal_range(0):empty())
+assert(not m:equal_range(1):empty())
+assert(not m:equal_range(2):empty())
+assert(not m:equal_range(3):empty())
+assert(m:equal_range(4):empty())
 
-for k, v, h in m:each() do
-  print(k, v, h.a, h.b)
-end
-assert(m:size() == 9)
+assert(count(m) == 9)
+assert(count(m:equal_range(0)) == 0)
+assert(count(m:equal_range(1)) == 3)
+assert(count(m:equal_range(2)) == 3)
+assert(count(m:equal_range(3)) == 3)
+assert(count(m:equal_range(4)) == 0)
 
-for k, v, h in m:each() do
-  h:delete()
-end
-assert(m:size() == 0)
+assert(count(m:upper_bound(0)) == 0)
+assert(count(m:upper_bound(1)) == 3)
+assert(count(m:upper_bound(2)) == 6)
+assert(count(m:upper_bound(3)) == 9)
+assert(count(m:upper_bound(4)) == 9)
+
+assert(count(m:lower_bound(0)) == 9)
+assert(count(m:lower_bound(1)) == 9)
+assert(count(m:lower_bound(2)) == 6)
+assert(count(m:lower_bound(3)) == 3)
+assert(count(m:lower_bound(4)) == 0)

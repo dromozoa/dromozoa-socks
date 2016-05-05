@@ -41,7 +41,7 @@ function class:lower_bound(k)
   local tree = self.tree
   local h = tree:lower_bound(k)
   if h == nil then
-    return nil
+    return multimap_handle(tree)
   end
   return multimap_handle(tree, h, tree:maximum())
 end
@@ -50,7 +50,7 @@ function class:upper_bound(k)
   local tree = self.tree
   local h = tree:upper_bound(k)
   if h == nil then
-    return nil
+    return multimap_handle(tree)
   end
   return multimap_handle(tree, tree:minimum(), h)
 end
@@ -59,19 +59,15 @@ function class:equal_range(k)
   local tree = self.tree
   local h = tree:search(k)
   if h == nil then
-    return nil
+    return multimap_handle(tree)
+  else
+    return multimap_handle(tree, h, tree:upper_bound(k))
   end
-  return multimap_handle(tree, h, tree:upper_bound(k))
 end
 
 function class:empty()
   local tree = self.tree
   return tree:empty()
-end
-
-function class:size()
-  local tree = self.tree
-  return tree:size()
 end
 
 local metatable = {
