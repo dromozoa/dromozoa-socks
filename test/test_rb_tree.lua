@@ -15,6 +15,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local dumper = require "dromozoa.commons.dumper"
 local equal = require "dromozoa.commons.equal"
 local sequence = require "dromozoa.commons.sequence"
 local xml = require "dromozoa.commons.xml"
@@ -139,6 +140,9 @@ for i = 1, 3 do
       end
     end
 
+    assert(T:size() == #data)
+    -- print(dumper.encode(T))
+
     if j % 3 == 1 then
       reverse(data)
     elseif j % 3 == 2 then
@@ -157,6 +161,9 @@ for i = 1, 3 do
       assert(a == k)
       assert(b == v)
     end
+
+    assert(T:size() == 0)
+    assert(equal(T, rb_tree()))
   end
 end
 
@@ -216,3 +223,5 @@ assert(T:upper_bound(4) == T:maximum())
 
 assert(not T:lower_bound(4))
 assert(not T:upper_bound(0))
+
+assert(T:size() == 9)
