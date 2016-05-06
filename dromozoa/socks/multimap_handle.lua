@@ -33,15 +33,17 @@ end
 function class:delete()
   local a = self.a
   if a == nil then
-    return
+    return 0
   end
   local tree = self.tree
   local b = self.b
+  local count = 0
   while true do
     local s = tree:successor(a)
     tree:delete(a)
+    count = count + 1
     if a == b then
-      break
+      return count
     end
     a = s
   end
@@ -73,6 +75,24 @@ end
 
 function class:single()
   return self.a ~= nil and self.a == self.b
+end
+
+function class:head()
+  local tree = self.tree
+  local a = self.a
+  if a == nil then
+    return
+  end
+  return tree:key(a), tree:get(a)
+end
+
+function class:tail()
+  local tree = self.tree
+  local b = self.b
+  if b == nil then
+    return
+  end
+  return tree:key(b), tree:get(b)
 end
 
 local metatable = {

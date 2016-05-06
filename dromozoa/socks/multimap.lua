@@ -62,7 +62,22 @@ end
 
 function class:each()
   local tree = self.tree
-  return multimap_handle(tree, tree:minimum(), tree:maximum()):each()
+  local a = tree:minimum()
+  if a == nil then
+    return function () end
+  end
+  local b = tree:maximum()
+  local that = multimap_handle(tree)
+  return coroutine.wrap(function ()
+    while true do
+      local s = tree:successor(a)
+      coroutine.yield(tree:key(a), tree:get(a), that:reset(a))
+      if a == b then
+        break
+      end
+      a = s
+    end
+  end)
 end
 
 function class:empty()
@@ -77,6 +92,24 @@ function class:single()
     return false
   end
   return h == tree:maximum()
+end
+
+function class:head()
+  local tree = self.tree
+  local h = tree:minimum()
+  if h == nil then
+    return
+  end
+  return tree:key(h), tree:get(h)
+end
+
+function class:tail()
+  local tree = self.tree
+  local h = tree:maximum()
+  if h == nil then
+    return
+  end
+  return tree:key(h), tree:get(h)
 end
 
 local metatable = {
