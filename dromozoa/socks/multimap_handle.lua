@@ -71,6 +71,10 @@ function class:empty()
   return self.a == nil
 end
 
+function class:single()
+  return self.a ~= nil and self.a == self.b
+end
+
 local metatable = {
   __index = class;
 }

@@ -32,11 +32,6 @@ function class:insert(k, v)
   return multimap_handle(tree, h)
 end
 
-function class:each()
-  local tree = self.tree
-  return multimap_handle(tree, tree:minimum(), tree:maximum()):each()
-end
-
 function class:lower_bound(k)
   local tree = self.tree
   local h = tree:lower_bound(k)
@@ -65,9 +60,23 @@ function class:equal_range(k)
   end
 end
 
+function class:each()
+  local tree = self.tree
+  return multimap_handle(tree, tree:minimum(), tree:maximum()):each()
+end
+
 function class:empty()
   local tree = self.tree
   return tree:empty()
+end
+
+function class:single()
+  local tree = self.tree
+  local h = tree:minimum()
+  if h == nil then
+    return false
+  end
+  return h == tree:maximum()
 end
 
 local metatable = {
