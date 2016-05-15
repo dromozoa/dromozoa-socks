@@ -43,7 +43,6 @@ end
 function class:read(count)
   local strings = self.strings
   local indices = self.indices
-
   local buffer = sequence()
   local min = self.min
   for min = min, self.max do
