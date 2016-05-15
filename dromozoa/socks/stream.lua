@@ -92,6 +92,22 @@ function class:read(count)
   end
 end
 
+function class:find(char)
+  local strings = self.strings
+  local indices = self.indices
+  local pos = 0
+  for min = self.min, self.max do
+    local s = strings[min]
+    local i = indices[min]
+    local j = s:find(char, i, true)
+    if j == nil then
+      pos = pos + #s - i + 1
+    else
+      return pos + j - i + 1
+    end
+  end
+end
+
 function class:close()
   self.eof = true
   return self
