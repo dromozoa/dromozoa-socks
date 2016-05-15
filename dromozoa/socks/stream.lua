@@ -25,31 +25,30 @@ function class.new()
 end
 
 function class:reset()
-  self.s = {}
-  self.i = {}
+  self.strings = {}
+  self.indices = {}
   self.min = 1
   self.max = 0
   return self
 end
 
 function class:write(s)
-  local s = tostring(s)
   local max = self.max + 1
-  self.s[max] = s
-  self.i[max] = 1
+  self.strings[max] = tostring(s)
+  self.indices[max] = 1
   self.max = max
   return self
 end
 
 function class:read(count)
-  local S = self.s
-  local I = self.i
+  local strings = self.strings
+  local indices = self.indices
 
   local buffer = sequence()
   local min = self.min
   for min = min, self.max do
-    local s = S[min]
-    local i = I[min]
+    local s = strings[min]
+    local i = indices[min]
     local j = #s
     local n = j - i + 1
     if n < count then
@@ -58,8 +57,8 @@ function class:read(count)
       else
         local s = s:sub(i)
         buffer:push(s)
-        S[min] = s
-        I[min] = 1
+        strings[min] = s
+        indices[min] = 1
       end
       count = count - n
     else
@@ -73,7 +72,7 @@ function class:read(count)
       else
         local k = i + count
         buffer:push(s:sub(i, k - 1))
-        I[min] = k
+        indices[min] = k
         self.min = min
       end
       count = 0
@@ -82,8 +81,8 @@ function class:read(count)
   end
   if count == 0 then
     for min = min, self.min - 1 do
-      S[min] = nil
-      I[min] = nil
+      strings[min] = nil
+      indices[min] = nil
     end
     return buffer:concat()
   elseif self.eof then
