@@ -40,18 +40,18 @@ local function read(self, count, some)
       self.min = min + 1
       self.size = self.size - count
       self[min] = nil
-      if index == 1 then
-        return s
-      else
+      if index > 1 then
         return s:sub(index)
+      else
+        return s
       end
     end
     if some then
       self:clear()
-      if index == 1 then
-        return s
-      else
+      if index > 1 then
         return s:sub(index)
+      else
+        return s
       end
     end
   else
@@ -145,10 +145,10 @@ function class:read_until(pattern)
     end
     if self.closed then
       self:clear()
-      if index == 1 then
-        return s
-      else
+      if index > 1 then
         return s:sub(index)
+      else
+        return s
       end
     end
   else
