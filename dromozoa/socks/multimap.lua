@@ -71,7 +71,8 @@ function class:each()
   return coroutine.wrap(function ()
     while true do
       local s = tree:successor(a)
-      coroutine.yield(tree:key(a), tree:get(a), that:reset(a))
+      local k, v = tree:get(a)
+      coroutine.yield(k, v, that:reset(a))
       if a == b then
         break
       end
@@ -100,7 +101,7 @@ function class:head()
   if h == nil then
     return
   end
-  return tree:key(h), tree:get(h)
+  return tree:get(h)
 end
 
 function class:tail()
@@ -109,7 +110,7 @@ function class:tail()
   if h == nil then
     return
   end
-  return tree:key(h), tree:get(h)
+  return tree:get(h)
 end
 
 local metatable = {

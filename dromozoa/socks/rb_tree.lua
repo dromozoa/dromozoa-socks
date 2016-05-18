@@ -25,7 +25,6 @@ local LEFT = 3
 local RIGHT = 4
 local KEY = 5
 local VALUE = 6
-local HANDLE = 9
 
 -- return an handle to the first element that is grater than k or equal to k.
 local function lower_bound(T, x, k)
@@ -363,7 +362,7 @@ function class.new(compare)
     [VALUE] = {};
     compare = compare;
     root = NIL;
-    [HANDLE] = NIL;
+    handle = NIL;
   }
 end
 
@@ -446,10 +445,10 @@ function class:insert(k, v)
   local key = self[KEY]
   local value = self[VALUE]
 
-  local h = self[HANDLE] + 1
+  local h = self.handle + 1
   key[h] = k
   value[h] = v
-  self[HANDLE] = h
+  self.handle = h
   insert(self, h)
   return h
 end
@@ -472,7 +471,7 @@ function class:delete(h)
   key[h] = nil
   value[h] = nil
   if self.root == NIL then
-    self[HANDLE] = NIL
+    self.handle = NIL
   end
   return k, v
 end
@@ -483,8 +482,9 @@ function class:key(h)
 end
 
 function class:get(h)
+  local key = self[KEY]
   local value = self[VALUE]
-  return value[h]
+  return key[h], value[h]
 end
 
 function class:set(h, v)
