@@ -23,14 +23,12 @@ local COLOR = 1
 local PARENT = 2
 local LEFT = 3
 local RIGHT = 4
-local KEY = 5
-local VALUE = 6
 
 -- return an handle to the first element that is grater than k or equal to k.
 local function lower_bound(T, x, k)
   local left = T[LEFT]
   local right = T[RIGHT]
-  local key = T[KEY]
+  local key = T.key
   local compare = T.compare
 
   local y = NIL
@@ -49,7 +47,7 @@ end
 local function upper_bound(T, x, k)
   local left = T[LEFT]
   local right = T[RIGHT]
-  local key = T[KEY]
+  local key = T.key
   local compare = T.compare
 
   local y = NIL
@@ -205,7 +203,7 @@ local function insert(T, z)
   local p = T[PARENT]
   local left = T[LEFT]
   local right = T[RIGHT]
-  local key = T[KEY]
+  local key = T.key
   local compare = T.compare
 
   local y = NIL
@@ -312,7 +310,7 @@ local function delete(T, z)
   local p = T[PARENT]
   local left = T[LEFT]
   local right = T[RIGHT]
-  local key = T[KEY]
+  local key = T.key
 
   local y = z
   local y_original_color = color[y]
@@ -358,8 +356,8 @@ function class.new(compare)
     [PARENT] = { [NIL] = NIL };
     [LEFT] = {};
     [RIGHT] = {};
-    [KEY] = {};
-    [VALUE] = {};
+    key = {};
+    value = {};
     compare = compare;
     root = NIL;
     handle = NIL;
@@ -394,7 +392,7 @@ function class:upper_bound(k)
 end
 
 function class:search(k)
-  local key = self[KEY]
+  local key = self.key
   local compare = self.compare
 
   local h = lower_bound(self, self.root, k)
@@ -442,8 +440,8 @@ function class:predecessor(h)
 end
 
 function class:insert(k, v)
-  local key = self[KEY]
-  local value = self[VALUE]
+  local key = self.key
+  local value = self.value
 
   local h = self.handle + 1
   key[h] = k
@@ -458,8 +456,8 @@ function class:delete(h)
   local p = self[PARENT]
   local left = self[LEFT]
   local right = self[RIGHT]
-  local key = self[KEY]
-  local value = self[VALUE]
+  local key = self.key
+  local value = self.value
 
   local k = key[h]
   local v = value[h]
@@ -477,18 +475,18 @@ function class:delete(h)
 end
 
 function class:key(h)
-  local key = self[KEY]
+  local key = self.key
   return key[h]
 end
 
 function class:get(h)
-  local key = self[KEY]
-  local value = self[VALUE]
+  local key = self.key
+  local value = self.value
   return key[h], value[h]
 end
 
 function class:set(h, v)
-  local value = self[VALUE]
+  local value = self.value
   value[h] = v
 end
 

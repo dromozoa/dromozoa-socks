@@ -190,7 +190,7 @@ local x = T:minimum()
 local data = sequence()
 
 repeat
-  sequence:push({ T:key(x) })
+  data:push({ T:get(x) })
   x = T:successor(x)
 until not x
 
