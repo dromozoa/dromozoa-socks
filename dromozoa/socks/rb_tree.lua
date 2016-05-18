@@ -359,8 +359,8 @@ function class.new(compare)
   }
 end
 
-function class:lower_bound(k)
-  local h = lower_bound(self, self.root, k)
+function class:lower_bound(key)
+  local h = lower_bound(self, self.root, key)
   if h == NIL then
     return nil
   else
@@ -368,8 +368,8 @@ function class:lower_bound(k)
   end
 end
 
-function class:upper_bound(k)
-  local h = upper_bound(self, self.root, k)
+function class:upper_bound(key)
+  local h = upper_bound(self, self.root, key)
   if h == NIL then
     return nil
   else
@@ -377,8 +377,8 @@ function class:upper_bound(k)
   end
 end
 
-function class:upper_bound(k)
-  local h = upper_bound(self, self.root, k)
+function class:upper_bound(key)
+  local h = upper_bound(self, self.root, key)
   if h == NIL then
     return nil
   else
@@ -386,12 +386,12 @@ function class:upper_bound(k)
   end
 end
 
-function class:search(k)
+function class:search(key)
   local keys = self.keys
   local compare = self.compare
 
-  local h = lower_bound(self, self.root, k)
-  if h == NIL or compare(k, keys[h]) then
+  local h = lower_bound(self, self.root, key)
+  if h == NIL or compare(key, keys[h]) then
     return nil
   else
     return h
@@ -434,12 +434,12 @@ function class:predecessor(h)
   end
 end
 
-function class:insert(k, v)
+function class:insert(key, v)
   local keys = self.keys
   local values = self.values
 
   local h = self.handle + 1
-  keys[h] = k
+  keys[h] = key
   values[h] = v
   self.handle = h
   insert(self, h)
@@ -454,7 +454,7 @@ function class:delete(h)
   local keys = self.keys
   local values = self.values
 
-  local k = keys[h]
+  local key = keys[h]
   local v = values[h]
   delete(self, h)
   color[h] = nil
@@ -466,7 +466,7 @@ function class:delete(h)
   if self.root == NIL then
     self.handle = NIL
   end
-  return k, v
+  return key, v
 end
 
 function class:get(h)
