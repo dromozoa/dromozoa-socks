@@ -331,12 +331,14 @@ local function delete(T, z)
       parent[x] = y
     else
       transplant(T, y, x)
-      right[y] = right[z]
-      parent[right[y]] = y
+      rz = right[z]
+      right[y] = rz
+      parent[rz] = y
     end
     transplant(T, z, y)
-    left[y] = left[z]
-    parent[left[y]] = y
+    lz = left[z]
+    left[y] = lz
+    parent[lz] = y
     color[y] = color[z]
   end
   if y_original_color == BLACK then
