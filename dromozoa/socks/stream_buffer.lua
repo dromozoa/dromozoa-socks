@@ -15,6 +15,34 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local COMPACTION_LIMIT = 256
+
+local function reset(self)
+  self.index = 1
+  self.min = 1
+  self.max = 0
+  self.size = 0
+  return self
+end
+
+local function clear(self)
+  for min = self.min, self.max do
+    self[min] = nil
+  end
+  reset(self)
+end
+
+local function concat(self)
+  local min = self.min
+  local max = self.max
+  self.max = min
+  self[min] = table.concat(self, "", min, max)
+  for min = min + 1, max do
+    self[min] = nil
+  end
+  return self
+end
+
 local function read(self, count, some)
   local min = self.min
   local s = self[min]
@@ -23,7 +51,7 @@ local function read(self, count, some)
     local max = self.max
     local n = #s - index + 1
     if count > n and min < max then
-      self:concat()
+      concat(self)
       index = self.index
       min = self.min
       max = self.max
@@ -31,10 +59,15 @@ local function read(self, count, some)
       n = #s - index + 1
     end
     if count < n then
-      local j = index + count
-      self.index = j
+      local k = index + count
+      if k < COMPACTION_LIMIT then
+        self.index = k
+      else
+        self.index = 1
+        self[min] = s:sub(k)
+      end
       self.size = self.size - count
-      return s:sub(index, j - 1)
+      return s:sub(index, k - 1)
     elseif count == n then
       self.index = 1
       self.min = min + 1
@@ -47,7 +80,7 @@ local function read(self, count, some)
       end
     end
     if some then
-      self:clear()
+      clear(self)
       if index > 1 then
         return s:sub(index)
       else
@@ -64,22 +97,7 @@ end
 local class = {}
 
 function class.new()
-  return class.reset({})
-end
-
-function class:reset()
-  self.index = 1
-  self.min = 1
-  self.max = 0
-  self.size = 0
-  return self
-end
-
-function class:clear()
-  for min = self.min, self.max do
-    self[min] = nil
-  end
-  return self:reset()
+  return reset({})
 end
 
 function class:write(s)
@@ -93,17 +111,6 @@ end
 
 function class:close()
   self.closed = true
-  return self
-end
-
-function class:concat()
-  local min = self.min
-  local max = self.max
-  self.max = min
-  self[min] = table.concat(self, "", min, max)
-  for min = min + 1, max do
-    self[min] = nil
-  end
   return self
 end
 
@@ -123,7 +130,7 @@ function class:read_until(pattern)
     local max = self.max
     local i, j, capture = s:find(pattern, index)
     if i == nil and min < max then
-      self:concat()
+      concat(self)
       index = self.index
       min = self.min
       max = self.max
@@ -131,18 +138,24 @@ function class:read_until(pattern)
       i, j, capture = s:find(pattern, index)
     end
     if i ~= nil then
-      if j == #s then
+      local k = j + 1
+      if j < #s then
+        if k < COMPACTION_LIMIT then
+          self.index = k
+        else
+          self.index = 1
+          self[min] = s:sub(k)
+        end
+      else
         self.index = 1
         self.min = min + 1
         self[min] = nil
-      else
-        self.index = j + 1
       end
-      self.size = self.size - (j - index + 1)
+      self.size = self.size - (k - index)
       return s:sub(index, i - 1), capture
     end
     if self.closed then
-      self:clear()
+      clear(self)
       if index > 1 then
         return s:sub(index)
       else
