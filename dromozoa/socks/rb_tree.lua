@@ -201,11 +201,13 @@ local function insert(T, z)
   local keys = T.keys
   local compare = T.compare
 
+  local kz = keys[z]
+
   local y = NIL
   local x = T.root
   while x ~= NIL do
     y = x
-    if compare(keys[z], keys[x]) then
+    if compare(kz, keys[x]) then
       x = left[x]
     else
       x = right[x]
@@ -214,7 +216,7 @@ local function insert(T, z)
   parent[z] = y
   if y == NIL then
     T.root = z
-  elseif compare(keys[z], keys[y]) then
+  elseif compare(kz, keys[y]) then
     left[y] = z
   else
     right[y] = z
@@ -230,14 +232,16 @@ local function transplant(T, u, v)
   local left = T.left
   local right = T.right
 
-  if parent[u] == NIL then
+  local pu = parent[u]
+
+  if pu == NIL then
     T.root = v
-  elseif u == left[parent[u]] then
-    left[parent[u]] = v
+  elseif u == left[pu] then
+    left[pu] = v
   else
-    right[parent[u]] = v
+    right[pu] = v
   end
-  parent[v] = parent[u]
+  parent[v] = pu
 end
 
 local function delete_fixup(T, x)
@@ -307,22 +311,26 @@ local function delete(T, z)
   local right = T.right
   local keys = T.keys
 
+  local lz = left[z]
+  local rz = right[z]
+
+  local x
   local y = z
   local y_original_color = color[y]
-  if left[z] == NIL then
-    x = right[z]
-    transplant(T, z, right[z])
-  elseif right[z] == NIL then
-    x = left[z]
-    transplant(T, z, left[z])
+  if lz == NIL then
+    x = rz
+    transplant(T, z, rz)
+  elseif rz == NIL then
+    x = lz
+    transplant(T, z, lz)
   else
-    y = minimum(T, right[z])
+    y = minimum(T, rz)
     y_original_color = color[y]
     x = right[y]
     if parent[y] == z then
       parent[x] = y
     else
-      transplant(T, y, right[y])
+      transplant(T, y, x)
       right[y] = right[z]
       parent[right[y]] = y
     end
