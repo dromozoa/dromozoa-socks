@@ -19,8 +19,8 @@ local RED = 0
 local BLACK = 1
 local NIL = 0
 
--- return an handle to the first element that is grater than k or equal to k.
-local function lower_bound(T, x, k)
+-- return an handle to the first element that is grater than key or equal to key.
+local function lower_bound(T, x, key)
   local left = T.left
   local right = T.right
   local keys = T.keys
@@ -28,7 +28,7 @@ local function lower_bound(T, x, k)
 
   local y = NIL
   while x ~= NIL do
-    if compare(keys[x], k) then
+    if compare(keys[x], key) then
       x = right[x]
     else
       y = x
@@ -38,8 +38,8 @@ local function lower_bound(T, x, k)
   return y
 end
 
--- return an handle to the last element that is less than k or equal to k.
-local function upper_bound(T, x, k)
+-- return an handle to the last element that is less than key or equal to key.
+local function upper_bound(T, x, key)
   local left = T.left
   local right = T.right
   local keys = T.keys
@@ -47,7 +47,7 @@ local function upper_bound(T, x, k)
 
   local y = NIL
   while x ~= NIL do
-    if compare(k, keys[x]) then
+    if compare(key, keys[x]) then
       x = left[x]
     else
       y = x
