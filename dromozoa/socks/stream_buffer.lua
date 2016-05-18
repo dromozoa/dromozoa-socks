@@ -97,15 +97,13 @@ function class:close()
 end
 
 function class:concat()
-  local index = self.index
   local min = self.min
   local max = self.max
-  if index > 1 then
-    self[min] = self[min]:sub(index)
+  self.max = min
+  self[min] = table.concat(self, "", min, max)
+  for min = min + 1, max do
+    self[min] = nil
   end
-  local s = table.concat(self, "", min, max)
-  self:clear()
-  self:write(s)
   return self
 end
 
