@@ -41,7 +41,7 @@ local function write_dot_node(out, T, x)
   if x ~= NIL then
     local color = T.color
     local left = T.left
-    local right = T[4]
+    local right = T.right
 
     local c
     if color[x] == RED then
@@ -60,7 +60,7 @@ end
 local function write_dot_edge(out, T, x, y, label)
   if y ~= NIL then
     local left = T.left
-    local right = T[4]
+    local right = T.right
 
     out:write(x, " -> ", y, "[label = <", xml.escape(label), ">];\n")
     write_dot_edge(out, T, y, left[y], "L")
@@ -75,7 +75,7 @@ node [color = black, style = filled];
 ]])
 
   local left = T.left
-  local right = T[4]
+  local right = T.right
   local root = T.root
   write_dot_node(out, T, root)
   write_dot_edge(out, T, root, left[root], "L")

@@ -19,12 +19,10 @@ local RED = 0
 local BLACK = 1
 local NIL = 0
 
-local RIGHT = 4
-
 -- return an handle to the first element that is grater than k or equal to k.
 local function lower_bound(T, x, k)
   local left = T.left
-  local right = T[RIGHT]
+  local right = T.right
   local key = T.key
   local compare = T.compare
 
@@ -43,7 +41,7 @@ end
 -- return an handle to the last element that is less than k or equal to k.
 local function upper_bound(T, x, k)
   local left = T.left
-  local right = T[RIGHT]
+  local right = T.right
   local key = T.key
   local compare = T.compare
 
@@ -69,7 +67,7 @@ local function minimum(T, x)
 end
 
 local function maximum(T, x)
-  local right = T[RIGHT]
+  local right = T.right
 
   while right[x] ~= NIL do
     x = right[x]
@@ -79,7 +77,7 @@ end
 
 local function successor(T, x)
   local p = T.parent
-  local right = T[RIGHT]
+  local right = T.right
 
   if right[x] ~= NIL then
     return minimum(T, right[x])
@@ -110,7 +108,7 @@ end
 local function left_rotate(T, x)
   local p = T.parent
   local left = T.left
-  local right = T[RIGHT]
+  local right = T.right
 
   local y = right[x]
   right[x] = left[y]
@@ -132,7 +130,7 @@ end
 local function right_rotate(T, x)
   local p = T.parent
   local left = T.left
-  local right = T[RIGHT]
+  local right = T.right
 
   local y = left[x]
   left[x] = right[y]
@@ -155,7 +153,7 @@ local function insert_fixup(T, z)
   local color = T.color
   local p = T.parent
   local left = T.left
-  local right = T[RIGHT]
+  local right = T.right
 
   while color[p[z]] == RED do
     if p[z] == left[p[p[z]]] then
@@ -199,7 +197,7 @@ local function insert(T, z)
   local color = T.color
   local p = T.parent
   local left = T.left
-  local right = T[RIGHT]
+  local right = T.right
   local key = T.key
   local compare = T.compare
 
@@ -230,7 +228,7 @@ end
 local function transplant(T, u, v)
   local p = T.parent
   local left = T.left
-  local right = T[RIGHT]
+  local right = T.right
 
   if p[u] == NIL then
     T.root = v
@@ -246,7 +244,7 @@ local function delete_fixup(T, x)
   local color = T.color
   local p = T.parent
   local left = T.left
-  local right = T[RIGHT]
+  local right = T.right
 
   while x ~= T.root and color[x] == BLACK do
     if x == left[p[x]] then
@@ -306,7 +304,7 @@ local function delete(T, z)
   local color = T.color
   local p = T.parent
   local left = T.left
-  local right = T[RIGHT]
+  local right = T.right
   local key = T.key
 
   local y = z
@@ -352,7 +350,7 @@ function class.new(compare)
     color = { [NIL] = BLACK };
     parent = { [NIL] = NIL };
     left = {};
-    [RIGHT] = {};
+    right = {};
     key = {};
     value = {};
     compare = compare;
@@ -452,7 +450,7 @@ function class:delete(h)
   local color = self.color
   local p = self.parent
   local left = self.left
-  local right = self[RIGHT]
+  local right = self.right
   local key = self.key
   local value = self.value
 
