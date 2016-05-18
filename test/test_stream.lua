@@ -33,6 +33,7 @@ s:close()
 assert(s:read(3) == "89")
 assert(s:read(3) == "")
 
+--[[
 local s = stream()
 s:write("01234")
 assert(s:read(3) == "012")
@@ -40,7 +41,6 @@ assert(not s:read(3))
 assert(s:read_some(3) == "34")
 assert(s:read_some(3) == "")
 
---[[
 
 local s = stream()
 assert(not s:next_char(1, 1, 0))
