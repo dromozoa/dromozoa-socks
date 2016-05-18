@@ -15,10 +15,56 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local function read(self, count, some)
+  local min = self.min
+  local s = self[min]
+  if s ~= nil then
+    local index = self.index
+    local max = self.max
+    local n = #s - index + 1
+    if count > n and min < max then
+      self:concat()
+      index = self.index
+      min = self.min
+      max = self.max
+      s = self[min]
+      n = #s - index + 1
+    end
+    if count < n then
+      local j = index + count
+      self.index = j
+      self.size = self.size - count
+      return s:sub(index, j - 1)
+    elseif count == n then
+      self.index = 1
+      self.min = min + 1
+      self.size = self.size - count
+      self[min] = nil
+      if index == 1 then
+        return s
+      else
+        return s:sub(index)
+      end
+    end
+    if some then
+      self:clear()
+      if index == 1 then
+        return s
+      else
+        return s:sub(index)
+      end
+    end
+  else
+    if some then
+      return ""
+    end
+  end
+end
+
 local class = {}
 
 function class.new()
-  return class.reset({ closed = false })
+  return class.reset({})
 end
 
 function class:reset()
@@ -30,8 +76,8 @@ function class:reset()
 end
 
 function class:clear()
-  for m = self.min, self.max do
-    self[m] = nil
+  for min = self.min, self.max do
+    self[min] = nil
   end
   return self:reset()
 end
@@ -51,76 +97,40 @@ function class:close()
 end
 
 function class:concat()
+  local index = self.index
   local min = self.min
   local max = self.max
-  if min < max then
-    local index = self.index
-    if index > 1 then
-      self[min] = self[min]:sub(index)
-    end
-    local s = table.concat(self, "", min, max)
-    self:clear()
-    self:write(s)
+  if index > 1 then
+    self[min] = self[min]:sub(index)
   end
+  local s = table.concat(self, "", min, max)
+  self:clear()
+  self:write(s)
   return self
 end
 
 function class:read(count)
-  local index = self.index
-  local min = self.min
-  local max = self.max
-  local s = self[min]
-  if s ~= nil then
-    local n = #s - index + 1
-    if count > n then
-      if min < max then
-        self:concat()
-        index = self.index
-        min = self.min
-        max = self.max
-        s = self[min]
-        n = #s - index + 1
-      end
-    end
-    if count <= n then
-      local j = index + count
-      if count == n then
-        self.index = 1
-        self.min = min + 1
-        self[min] = nil
-      else
-        self.index = j
-      end
-      self.size = self.size - count
-      return s:sub(index, j - 1)
-    end
-    if self.closed then
-      self:clear()
-      return s:sub(index)
-    end
-  else
-    if self.closed then
-      return ""
-    end
-  end
+  return read(self, count, self.closed)
+end
+
+function class:read_some(count)
+  return read(self, count, true)
 end
 
 function class:read_until(pattern)
-  local index = self.index
   local min = self.min
-  local max = self.max
   local s = self[min]
   if s ~= nil then
+    local index = self.index
+    local max = self.max
     local i, j, capture = s:find(pattern, index)
-    if i == nil then
-      if min < max then
-        self:concat()
-        index = self.index
-        min = self.min
-        max = self.max
-        s = self[min]
-        i, j, capture = s:find(pattern, index)
-      end
+    if i == nil and min < max then
+      self:concat()
+      index = self.index
+      min = self.min
+      max = self.max
+      s = self[min]
+      i, j, capture = s:find(pattern, index)
     end
     if i ~= nil then
       if j == #s then
@@ -135,7 +145,11 @@ function class:read_until(pattern)
     end
     if self.closed then
       self:clear()
-      return s:sub(index)
+      if index == 1 then
+        return s
+      else
+        return s:sub(index)
+      end
     end
   else
     if self.closed then
