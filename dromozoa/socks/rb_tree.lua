@@ -434,13 +434,13 @@ function class:predecessor(h)
   end
 end
 
-function class:insert(key, v)
+function class:insert(key, value)
   local keys = self.keys
   local values = self.values
 
   local h = self.handle + 1
   keys[h] = key
-  values[h] = v
+  values[h] = value
   self.handle = h
   insert(self, h)
   return h
@@ -455,7 +455,7 @@ function class:delete(h)
   local values = self.values
 
   local key = keys[h]
-  local v = values[h]
+  local value = values[h]
   delete(self, h)
   color[h] = nil
   p[h] = nil
@@ -466,7 +466,7 @@ function class:delete(h)
   if self.root == NIL then
     self.handle = NIL
   end
-  return key, v
+  return key, value
 end
 
 function class:get(h)
@@ -475,9 +475,9 @@ function class:get(h)
   return keys[h], values[h]
 end
 
-function class:set(h, v)
+function class:set(h, value)
   local values = self.values
-  values[h] = v
+  values[h] = value
 end
 
 function class:empty()
