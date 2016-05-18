@@ -76,117 +76,117 @@ local function maximum(T, x)
 end
 
 local function successor(T, x)
-  local p = T.parent
+  local parent = T.parent
   local right = T.right
 
   if right[x] ~= NIL then
     return minimum(T, right[x])
   end
-  local y = p[x]
+  local y = parent[x]
   while y ~= NIL and x == right[y] do
     x = y
-    y = p[y]
+    y = parent[y]
   end
   return y
 end
 
 local function predecessor(T, x)
-  local p = T.parent
+  local parent = T.parent
   local left = T.left
 
   if left[x] ~= NIL then
     return maximum(T, left[x])
   end
-  local y = p[x]
+  local y = parent[x]
   while y ~= NIL and x == left[y] do
     x = y
-    y = p[y]
+    y = parent[y]
   end
   return y
 end
 
 local function left_rotate(T, x)
-  local p = T.parent
+  local parent = T.parent
   local left = T.left
   local right = T.right
 
   local y = right[x]
   right[x] = left[y]
   if left[y] ~= NIL then
-    p[left[y]] = x
+    parent[left[y]] = x
   end
-  p[y] = p[x]
-  if p[x] == NIL then
+  parent[y] = parent[x]
+  if parent[x] == NIL then
     T.root = y
-  elseif x == left[p[x]] then
-    left[p[x]] = y
+  elseif x == left[parent[x]] then
+    left[parent[x]] = y
   else
-    right[p[x]] = y
+    right[parent[x]] = y
   end
   left[y] = x
-  p[x] = y
+  parent[x] = y
 end
 
 local function right_rotate(T, x)
-  local p = T.parent
+  local parent = T.parent
   local left = T.left
   local right = T.right
 
   local y = left[x]
   left[x] = right[y]
   if right[y] ~= NIL then
-    p[right[y]] = x
+    parent[right[y]] = x
   end
-  p[y] = p[x]
-  if p[x] == NIL then
+  parent[y] = parent[x]
+  if parent[x] == NIL then
     T.root = y
-  elseif x == right[p[x]] then
-    right[p[x]] = y
+  elseif x == right[parent[x]] then
+    right[parent[x]] = y
   else
-    left[p[x]] = y
+    left[parent[x]] = y
   end
   right[y] = x
-  p[x] = y
+  parent[x] = y
 end
 
 local function insert_fixup(T, z)
   local color = T.color
-  local p = T.parent
+  local parent = T.parent
   local left = T.left
   local right = T.right
 
-  while color[p[z]] == RED do
-    if p[z] == left[p[p[z]]] then
-      local y = right[p[p[z]]]
+  while color[parent[z]] == RED do
+    if parent[z] == left[parent[parent[z]]] then
+      local y = right[parent[parent[z]]]
       if color[y] == RED then
-        color[p[z]] = BLACK
+        color[parent[z]] = BLACK
         color[y] = BLACK
-        color[p[p[z]]] = RED
-        z = p[p[z]]
+        color[parent[parent[z]]] = RED
+        z = parent[parent[z]]
       else
-        if z == right[p[z]] then
-          z = p[z]
+        if z == right[parent[z]] then
+          z = parent[z]
           left_rotate(T, z)
         end
-        color[p[z]] = BLACK
-        color[p[p[z]]] = RED
-        right_rotate(T, p[p[z]])
+        color[parent[z]] = BLACK
+        color[parent[parent[z]]] = RED
+        right_rotate(T, parent[parent[z]])
       end
     else
-      local y = left[p[p[z]]]
+      local y = left[parent[parent[z]]]
       if color[y] == RED then
-        color[p[z]] = BLACK
+        color[parent[z]] = BLACK
         color[y] = BLACK
-        color[p[p[z]]] = RED
-        z = p[p[z]]
+        color[parent[parent[z]]] = RED
+        z = parent[parent[z]]
       else
-        if z == left[p[z]] then
-          z = p[z]
+        if z == left[parent[z]] then
+          z = parent[z]
           right_rotate(T, z)
         end
-        color[p[z]] = BLACK
-        color[p[p[z]]] = RED
-        left_rotate(T, p[p[z]])
+        color[parent[z]] = BLACK
+        color[parent[parent[z]]] = RED
+        left_rotate(T, parent[parent[z]])
       end
     end
   end
@@ -195,7 +195,7 @@ end
 
 local function insert(T, z)
   local color = T.color
-  local p = T.parent
+  local parent = T.parent
   local left = T.left
   local right = T.right
   local keys = T.keys
@@ -211,7 +211,7 @@ local function insert(T, z)
       x = right[x]
     end
   end
-  p[z] = y
+  parent[z] = y
   if y == NIL then
     T.root = z
   elseif compare(keys[z], keys[y]) then
@@ -226,73 +226,73 @@ local function insert(T, z)
 end
 
 local function transplant(T, u, v)
-  local p = T.parent
+  local parent = T.parent
   local left = T.left
   local right = T.right
 
-  if p[u] == NIL then
+  if parent[u] == NIL then
     T.root = v
-  elseif u == left[p[u]] then
-    left[p[u]] = v
+  elseif u == left[parent[u]] then
+    left[parent[u]] = v
   else
-    right[p[u]] = v
+    right[parent[u]] = v
   end
-  p[v] = p[u]
+  parent[v] = parent[u]
 end
 
 local function delete_fixup(T, x)
   local color = T.color
-  local p = T.parent
+  local parent = T.parent
   local left = T.left
   local right = T.right
 
   while x ~= T.root and color[x] == BLACK do
-    if x == left[p[x]] then
-      local w = right[p[x]]
+    if x == left[parent[x]] then
+      local w = right[parent[x]]
       if color[w] == RED then
         color[w] = BLACK
-        color[p[x]] = RED
-        left_rotate(T, p[x])
-        w = right[p[x]]
+        color[parent[x]] = RED
+        left_rotate(T, parent[x])
+        w = right[parent[x]]
       end
       if color[left[w]] == BLACK and color[right[w]] == BLACK then
         color[w] = RED
-        x = p[x]
+        x = parent[x]
       else
         if color[right[w]] == BLACK then
           color[left[w]] = BLACK
           color[w] = RED
           right_rotate(T, w)
-          w = right[p[x]]
+          w = right[parent[x]]
         end
-        color[w] = color[p[x]]
-        color[p[x]] = BLACK
+        color[w] = color[parent[x]]
+        color[parent[x]] = BLACK
         color[right[w]] = BLACK
-        left_rotate(T, p[x])
+        left_rotate(T, parent[x])
         x = T.root
       end
     else
-      local w = left[p[x]]
+      local w = left[parent[x]]
       if color[w] == RED then
         color[w] = BLACK
-        color[p[x]] = RED
-        right_rotate(T, p[x])
-        w = left[p[x]]
+        color[parent[x]] = RED
+        right_rotate(T, parent[x])
+        w = left[parent[x]]
       end
       if color[right[w]] == BLACK and color[left[w]] == BLACK then
         color[w] = RED
-        x = p[x]
+        x = parent[x]
       else
         if color[left[w]] == BLACK then
           color[right[w]] = BLACK
           color[w] = RED
           left_rotate(T, w)
-          w = left[p[x]]
+          w = left[parent[x]]
         end
-        color[w] = color[p[x]]
-        color[p[x]] = BLACK
+        color[w] = color[parent[x]]
+        color[parent[x]] = BLACK
         color[left[w]] = BLACK
-        right_rotate(T, p[x])
+        right_rotate(T, parent[x])
         x = T.root
       end
     end
@@ -302,7 +302,7 @@ end
 
 local function delete(T, z)
   local color = T.color
-  local p = T.parent
+  local parent = T.parent
   local left = T.left
   local right = T.right
   local keys = T.keys
@@ -319,16 +319,16 @@ local function delete(T, z)
     y = minimum(T, right[z])
     y_original_color = color[y]
     x = right[y]
-    if p[y] == z then
-      p[x] = y
+    if parent[y] == z then
+      parent[x] = y
     else
       transplant(T, y, right[y])
       right[y] = right[z]
-      p[right[y]] = y
+      parent[right[y]] = y
     end
     transplant(T, z, y)
     left[y] = left[z]
-    p[left[y]] = y
+    parent[left[y]] = y
     color[y] = color[z]
   end
   if y_original_color == BLACK then
@@ -448,7 +448,7 @@ end
 
 function class:delete(h)
   local color = self.color
-  local p = self.parent
+  local parent = self.parent
   local left = self.left
   local right = self.right
   local keys = self.keys
@@ -458,7 +458,7 @@ function class:delete(h)
   local value = values[h]
   delete(self, h)
   color[h] = nil
-  p[h] = nil
+  parent[h] = nil
   left[h] = nil
   right[h] = nil
   keys[h] = nil
