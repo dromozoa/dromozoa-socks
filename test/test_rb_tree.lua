@@ -75,7 +75,7 @@ node [color = black, style = filled];
 
   local left = T[3]
   local right = T[4]
-  local root = T[8]
+  local root = T.root
   write_dot_node(out, T, root)
   write_dot_edge(out, T, root, left[root], "L")
   write_dot_edge(out, T, root, right[root], "R")

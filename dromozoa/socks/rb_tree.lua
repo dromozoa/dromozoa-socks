@@ -25,8 +25,6 @@ local LEFT = 3
 local RIGHT = 4
 local KEY = 5
 local VALUE = 6
-local COMPARE = 7
-local ROOT = 8
 local HANDLE = 9
 
 -- return an handle to the first element that is grater than k or equal to k.
@@ -34,7 +32,7 @@ local function lower_bound(T, x, k)
   local left = T[LEFT]
   local right = T[RIGHT]
   local key = T[KEY]
-  local compare = T[COMPARE]
+  local compare = T.compare
 
   local y = NIL
   while x ~= NIL do
@@ -53,7 +51,7 @@ local function upper_bound(T, x, k)
   local left = T[LEFT]
   local right = T[RIGHT]
   local key = T[KEY]
-  local compare = T[COMPARE]
+  local compare = T.compare
 
   local y = NIL
   while x ~= NIL do
@@ -127,7 +125,7 @@ local function left_rotate(T, x)
   end
   p[y] = p[x]
   if p[x] == NIL then
-    T[ROOT] = y
+    T.root = y
   elseif x == left[p[x]] then
     left[p[x]] = y
   else
@@ -149,7 +147,7 @@ local function right_rotate(T, x)
   end
   p[y] = p[x]
   if p[x] == NIL then
-    T[ROOT] = y
+    T.root = y
   elseif x == right[p[x]] then
     right[p[x]] = y
   else
@@ -200,7 +198,7 @@ local function insert_fixup(T, z)
       end
     end
   end
-  color[T[ROOT]] = BLACK
+  color[T.root] = BLACK
 end
 
 local function insert(T, z)
@@ -209,10 +207,10 @@ local function insert(T, z)
   local left = T[LEFT]
   local right = T[RIGHT]
   local key = T[KEY]
-  local compare = T[COMPARE]
+  local compare = T.compare
 
   local y = NIL
-  local x = T[ROOT]
+  local x = T.root
   while x ~= NIL do
     y = x
     if compare(key[z], key[x]) then
@@ -223,7 +221,7 @@ local function insert(T, z)
   end
   p[z] = y
   if y == NIL then
-    T[ROOT] = z
+    T.root = z
   elseif compare(key[z], key[y]) then
     left[y] = z
   else
@@ -241,7 +239,7 @@ local function transplant(T, u, v)
   local right = T[RIGHT]
 
   if p[u] == NIL then
-    T[ROOT] = v
+    T.root = v
   elseif u == left[p[u]] then
     left[p[u]] = v
   else
@@ -256,7 +254,7 @@ local function delete_fixup(T, x)
   local left = T[LEFT]
   local right = T[RIGHT]
 
-  while x ~= T[ROOT] and color[x] == BLACK do
+  while x ~= T.root and color[x] == BLACK do
     if x == left[p[x]] then
       local w = right[p[x]]
       if color[w] == RED then
@@ -279,7 +277,7 @@ local function delete_fixup(T, x)
         color[p[x]] = BLACK
         color[right[w]] = BLACK
         left_rotate(T, p[x])
-        x = T[ROOT]
+        x = T.root
       end
     else
       local w = left[p[x]]
@@ -303,7 +301,7 @@ local function delete_fixup(T, x)
         color[p[x]] = BLACK
         color[left[w]] = BLACK
         right_rotate(T, p[x])
-        x = T[ROOT]
+        x = T.root
       end
     end
   end
@@ -363,14 +361,14 @@ function class.new(compare)
     [RIGHT] = {};
     [KEY] = {};
     [VALUE] = {};
-    [COMPARE] = compare;
-    [ROOT] = NIL;
+    compare = compare;
+    root = NIL;
     [HANDLE] = NIL;
   }
 end
 
 function class:lower_bound(k)
-  local h = lower_bound(self, self[ROOT], k)
+  local h = lower_bound(self, self.root, k)
   if h == NIL then
     return nil
   else
@@ -379,7 +377,7 @@ function class:lower_bound(k)
 end
 
 function class:upper_bound(k)
-  local h = upper_bound(self, self[ROOT], k)
+  local h = upper_bound(self, self.root, k)
   if h == NIL then
     return nil
   else
@@ -388,7 +386,7 @@ function class:upper_bound(k)
 end
 
 function class:upper_bound(k)
-  local h = upper_bound(self, self[ROOT], k)
+  local h = upper_bound(self, self.root, k)
   if h == NIL then
     return nil
   else
@@ -398,9 +396,9 @@ end
 
 function class:search(k)
   local key = self[KEY]
-  local compare = self[COMPARE]
+  local compare = self.compare
 
-  local h = lower_bound(self, self[ROOT], k)
+  local h = lower_bound(self, self.root, k)
   if h == NIL or compare(k, key[h]) then
     return nil
   else
@@ -409,7 +407,7 @@ function class:search(k)
 end
 
 function class:minimum()
-  local h = self[ROOT]
+  local h = self.root
   if h == NIL then
     return nil
   else
@@ -418,7 +416,7 @@ function class:minimum()
 end
 
 function class:maximum()
-  local h = self[ROOT]
+  local h = self.root
   if h == NIL then
     return nil
   else
@@ -473,7 +471,7 @@ function class:delete(h)
   right[h] = nil
   key[h] = nil
   value[h] = nil
-  if self[ROOT] == NIL then
+  if self.root == NIL then
     self[HANDLE] = NIL
   end
   return k, v
@@ -495,7 +493,7 @@ function class:set(h, v)
 end
 
 function class:empty()
-  return self[ROOT] == NIL
+  return self.root == NIL
 end
 
 local metatable = {
