@@ -19,7 +19,6 @@ local RED = 0
 local BLACK = 1
 local NIL = 0
 
-local PARENT = 2
 local LEFT = 3
 local RIGHT = 4
 
@@ -80,7 +79,7 @@ local function maximum(T, x)
 end
 
 local function successor(T, x)
-  local p = T[PARENT]
+  local p = T.parent
   local right = T[RIGHT]
 
   if right[x] ~= NIL then
@@ -95,7 +94,7 @@ local function successor(T, x)
 end
 
 local function predecessor(T, x)
-  local p = T[PARENT]
+  local p = T.parent
   local left = T[LEFT]
 
   if left[x] ~= NIL then
@@ -110,7 +109,7 @@ local function predecessor(T, x)
 end
 
 local function left_rotate(T, x)
-  local p = T[PARENT]
+  local p = T.parent
   local left = T[LEFT]
   local right = T[RIGHT]
 
@@ -132,7 +131,7 @@ local function left_rotate(T, x)
 end
 
 local function right_rotate(T, x)
-  local p = T[PARENT]
+  local p = T.parent
   local left = T[LEFT]
   local right = T[RIGHT]
 
@@ -155,7 +154,7 @@ end
 
 local function insert_fixup(T, z)
   local color = T.color
-  local p = T[PARENT]
+  local p = T.parent
   local left = T[LEFT]
   local right = T[RIGHT]
 
@@ -199,7 +198,7 @@ end
 
 local function insert(T, z)
   local color = T.color
-  local p = T[PARENT]
+  local p = T.parent
   local left = T[LEFT]
   local right = T[RIGHT]
   local key = T.key
@@ -230,7 +229,7 @@ local function insert(T, z)
 end
 
 local function transplant(T, u, v)
-  local p = T[PARENT]
+  local p = T.parent
   local left = T[LEFT]
   local right = T[RIGHT]
 
@@ -246,7 +245,7 @@ end
 
 local function delete_fixup(T, x)
   local color = T.color
-  local p = T[PARENT]
+  local p = T.parent
   local left = T[LEFT]
   local right = T[RIGHT]
 
@@ -306,7 +305,7 @@ end
 
 local function delete(T, z)
   local color = T.color
-  local p = T[PARENT]
+  local p = T.parent
   local left = T[LEFT]
   local right = T[RIGHT]
   local key = T.key
@@ -352,7 +351,7 @@ function class.new(compare)
   end
   return {
     color = { [NIL] = BLACK };
-    [PARENT] = { [NIL] = NIL };
+    parent = { [NIL] = NIL };
     [LEFT] = {};
     [RIGHT] = {};
     key = {};
@@ -452,7 +451,7 @@ end
 
 function class:delete(h)
   local color = self.color
-  local p = self[PARENT]
+  local p = self.parent
   local left = self[LEFT]
   local right = self[RIGHT]
   local key = self.key
