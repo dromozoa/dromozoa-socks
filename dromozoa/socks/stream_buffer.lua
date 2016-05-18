@@ -15,7 +15,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local COMPACTION_LIMIT = 256
+local COMPACTION_LIMIT = 257
 
 local function reset(self)
   self.index = 1
@@ -60,7 +60,7 @@ local function read(self, count, some)
     end
     if count < n then
       local k = index + count
-      if k < COMPACTION_LIMIT then
+      if k <= COMPACTION_LIMIT then
         self.index = k
       else
         self.index = 1
@@ -101,7 +101,6 @@ function class.new()
 end
 
 function class:write(s)
-  local s = tostring(s)
   local max = self.max + 1
   self.max = max
   self.size = self.size + #s
@@ -140,7 +139,7 @@ function class:read_until(pattern)
     if i ~= nil then
       local k = j + 1
       if j < #s then
-        if k < COMPACTION_LIMIT then
+        if k <= COMPACTION_LIMIT then
           self.index = k
         else
           self.index = 1
