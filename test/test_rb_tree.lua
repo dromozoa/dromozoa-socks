@@ -39,7 +39,7 @@ local NIL = 0
 
 local function write_dot_node(out, T, x)
   if x ~= NIL then
-    local color = T[1]
+    local color = T.color
     local left = T[3]
     local right = T[4]
 

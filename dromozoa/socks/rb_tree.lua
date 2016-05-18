@@ -19,7 +19,6 @@ local RED = 0
 local BLACK = 1
 local NIL = 0
 
-local COLOR = 1
 local PARENT = 2
 local LEFT = 3
 local RIGHT = 4
@@ -155,7 +154,7 @@ local function right_rotate(T, x)
 end
 
 local function insert_fixup(T, z)
-  local color = T[COLOR]
+  local color = T.color
   local p = T[PARENT]
   local left = T[LEFT]
   local right = T[RIGHT]
@@ -199,7 +198,7 @@ local function insert_fixup(T, z)
 end
 
 local function insert(T, z)
-  local color = T[COLOR]
+  local color = T.color
   local p = T[PARENT]
   local left = T[LEFT]
   local right = T[RIGHT]
@@ -246,7 +245,7 @@ local function transplant(T, u, v)
 end
 
 local function delete_fixup(T, x)
-  local color = T[COLOR]
+  local color = T.color
   local p = T[PARENT]
   local left = T[LEFT]
   local right = T[RIGHT]
@@ -306,7 +305,7 @@ local function delete_fixup(T, x)
 end
 
 local function delete(T, z)
-  local color = T[COLOR]
+  local color = T.color
   local p = T[PARENT]
   local left = T[LEFT]
   local right = T[RIGHT]
@@ -352,7 +351,7 @@ function class.new(compare)
     compare = default_compare
   end
   return {
-    [COLOR] = { [NIL] = BLACK };
+    color = { [NIL] = BLACK };
     [PARENT] = { [NIL] = NIL };
     [LEFT] = {};
     [RIGHT] = {};
@@ -452,7 +451,7 @@ function class:insert(k, v)
 end
 
 function class:delete(h)
-  local color = self[COLOR]
+  local color = self.color
   local p = self[PARENT]
   local left = self[LEFT]
   local right = self[RIGHT]
