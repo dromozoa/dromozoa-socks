@@ -357,15 +357,15 @@ function class.new(compare)
     compare = default_compare
   end
   return {
-    { [NIL] = BLACK }; -- COLOR
-    { [NIL] = NIL }; -- PARENT
-    {}; -- LEFT
-    {}; -- RIGHT
-    {}; -- KEY
-    {}; -- VALUE
-    compare; -- COMPARE
-    NIL; -- ROOT
-    NIL; -- HANDLE
+    [COLOR] = { [NIL] = BLACK };
+    [PARENT] = { [NIL] = NIL };
+    [LEFT] = {};
+    [RIGHT] = {};
+    [KEY] = {};
+    [VALUE] = {};
+    [COMPARE] = compare;
+    [ROOT] = NIL;
+    [HANDLE] = NIL;
   }
 end
 
