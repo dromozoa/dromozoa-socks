@@ -23,12 +23,12 @@ local NIL = 0
 local function lower_bound(T, x, k)
   local left = T.left
   local right = T.right
-  local key = T.key
+  local keys = T.keys
   local compare = T.compare
 
   local y = NIL
   while x ~= NIL do
-    if compare(key[x], k) then
+    if compare(keys[x], k) then
       x = right[x]
     else
       y = x
@@ -42,12 +42,12 @@ end
 local function upper_bound(T, x, k)
   local left = T.left
   local right = T.right
-  local key = T.key
+  local keys = T.keys
   local compare = T.compare
 
   local y = NIL
   while x ~= NIL do
-    if compare(k, key[x]) then
+    if compare(k, keys[x]) then
       x = left[x]
     else
       y = x
@@ -198,14 +198,14 @@ local function insert(T, z)
   local p = T.parent
   local left = T.left
   local right = T.right
-  local key = T.key
+  local keys = T.keys
   local compare = T.compare
 
   local y = NIL
   local x = T.root
   while x ~= NIL do
     y = x
-    if compare(key[z], key[x]) then
+    if compare(keys[z], keys[x]) then
       x = left[x]
     else
       x = right[x]
@@ -214,7 +214,7 @@ local function insert(T, z)
   p[z] = y
   if y == NIL then
     T.root = z
-  elseif compare(key[z], key[y]) then
+  elseif compare(keys[z], keys[y]) then
     left[y] = z
   else
     right[y] = z
@@ -305,7 +305,7 @@ local function delete(T, z)
   local p = T.parent
   local left = T.left
   local right = T.right
-  local key = T.key
+  local keys = T.keys
 
   local y = z
   local y_original_color = color[y]
@@ -351,8 +351,8 @@ function class.new(compare)
     parent = { [NIL] = NIL };
     left = {};
     right = {};
-    key = {};
-    value = {};
+    keys = {};
+    values = {};
     compare = compare;
     root = NIL;
     handle = NIL;
@@ -387,11 +387,11 @@ function class:upper_bound(k)
 end
 
 function class:search(k)
-  local key = self.key
+  local keys = self.keys
   local compare = self.compare
 
   local h = lower_bound(self, self.root, k)
-  if h == NIL or compare(k, key[h]) then
+  if h == NIL or compare(k, keys[h]) then
     return nil
   else
     return h
@@ -435,12 +435,12 @@ function class:predecessor(h)
 end
 
 function class:insert(k, v)
-  local key = self.key
-  local value = self.value
+  local keys = self.keys
+  local values = self.values
 
   local h = self.handle + 1
-  key[h] = k
-  value[h] = v
+  keys[h] = k
+  values[h] = v
   self.handle = h
   insert(self, h)
   return h
@@ -451,38 +451,33 @@ function class:delete(h)
   local p = self.parent
   local left = self.left
   local right = self.right
-  local key = self.key
-  local value = self.value
+  local keys = self.keys
+  local values = self.values
 
-  local k = key[h]
-  local v = value[h]
+  local k = keys[h]
+  local v = values[h]
   delete(self, h)
   color[h] = nil
   p[h] = nil
   left[h] = nil
   right[h] = nil
-  key[h] = nil
-  value[h] = nil
+  keys[h] = nil
+  values[h] = nil
   if self.root == NIL then
     self.handle = NIL
   end
   return k, v
 end
 
-function class:key(h)
-  local key = self.key
-  return key[h]
-end
-
 function class:get(h)
-  local key = self.key
-  local value = self.value
-  return key[h], value[h]
+  local keys = self.keys
+  local values = self.values
+  return keys[h], values[h]
 end
 
 function class:set(h, v)
-  local value = self.value
-  value[h] = v
+  local values = self.values
+  values[h] = v
 end
 
 function class:empty()
