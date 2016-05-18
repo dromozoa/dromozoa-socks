@@ -15,88 +15,147 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local sequence = require "dromozoa.commons.sequence"
-local translate_range = require "dromozoa.commons.translate_range"
+local function read(self, count, some)
+  local min = self.min
+  local s = self[min]
+  if s ~= nil then
+    local index = self.index
+    local max = self.max
+    local n = #s - index + 1
+    if count > n and min < max then
+      self:concat()
+      index = self.index
+      min = self.min
+      max = self.max
+      s = self[min]
+      n = #s - index + 1
+    end
+    if count < n then
+      local j = index + count
+      self.index = j
+      self.size = self.size - count
+      return s:sub(index, j - 1)
+    elseif count == n then
+      self.index = 1
+      self.min = min + 1
+      self.size = self.size - count
+      self[min] = nil
+      if index == 1 then
+        return s
+      else
+        return s:sub(index)
+      end
+    end
+    if some then
+      self:clear()
+      if index == 1 then
+        return s
+      else
+        return s:sub(index)
+      end
+    end
+  else
+    if some then
+      return ""
+    end
+  end
+end
 
 local class = {}
 
 function class.new()
-  return class.reset({ eof = false })
+  return class.reset({})
 end
 
 function class:reset()
-  self.s = {}
-  self.i = {}
+  self.index = 1
   self.min = 1
   self.max = 0
+  self.size = 0
   return self
+end
+
+function class:clear()
+  for min = self.min, self.max do
+    self[min] = nil
+  end
+  return self:reset()
 end
 
 function class:write(s)
   local s = tostring(s)
   local max = self.max + 1
-  self.s[max] = s
-  self.i[max] = 1
   self.max = max
+  self.size = self.size + #s
+  self[max] = s
+  return self
+end
+
+function class:close()
+  self.closed = true
+  return self
+end
+
+function class:concat()
+  local index = self.index
+  local min = self.min
+  local max = self.max
+  if index > 1 then
+    self[min] = self[min]:sub(index)
+  end
+  local s = table.concat(self, "", min, max)
+  self:clear()
+  self:write(s)
   return self
 end
 
 function class:read(count)
-  local S = self.s
-  local I = self.i
-
-  local buffer = sequence()
-  local min = self.min
-  for min = min, self.max do
-    local s = S[min]
-    local i = I[min]
-    local j = #s
-    local n = j - i + 1
-    if n < count then
-      if i == 1 then
-        buffer:push(s)
-      else
-        local s = s:sub(i)
-        buffer:push(s)
-        S[min] = s
-        I[min] = 1
-      end
-      count = count - n
-    else
-      if n == count then
-        if i == 1 then
-          buffer:push(s)
-        else
-          buffer:push(s:sub(i))
-        end
-        self.min = min + 1
-      else
-        local k = i + count
-        buffer:push(s:sub(i, k - 1))
-        I[min] = k
-        self.min = min
-      end
-      count = 0
-      break
-    end
-  end
-  if count == 0 then
-    for min = min, self.min - 1 do
-      S[min] = nil
-      I[min] = nil
-    end
-    return buffer:concat()
-  elseif self.eof then
-    self:reset()
-    return buffer:concat()
-  else
-    return nil
-  end
+  return read(self, count, self.closed)
 end
 
-function class:close()
-  self.eof = true
-  return self
+function class:read_some(count)
+  return read(self, count, true)
+end
+
+function class:read_until(pattern)
+  local min = self.min
+  local s = self[min]
+  if s ~= nil then
+    local index = self.index
+    local max = self.max
+    local i, j, capture = s:find(pattern, index)
+    if i == nil and min < max then
+      self:concat()
+      index = self.index
+      min = self.min
+      max = self.max
+      s = self[min]
+      i, j, capture = s:find(pattern, index)
+    end
+    if i ~= nil then
+      if j == #s then
+        self.index = 1
+        self.min = min + 1
+        self[min] = nil
+      else
+        self.index = j + 1
+      end
+      self.size = self.size - (j - index + 1)
+      return s:sub(index, i - 1), capture
+    end
+    if self.closed then
+      self:clear()
+      if index == 1 then
+        return s
+      else
+        return s:sub(index)
+      end
+    end
+  else
+    if self.closed then
+      return ""
+    end
+  end
 end
 
 local metatable = {

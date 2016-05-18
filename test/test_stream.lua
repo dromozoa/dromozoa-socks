@@ -15,6 +15,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local equal = require "dromozoa.commons.equal"
 local dumper = require "dromozoa.commons.dumper"
 local stream = require "dromozoa.socks.stream"
 
@@ -31,3 +32,37 @@ assert(not s:read(3))
 s:close()
 assert(s:read(3) == "89")
 assert(s:read(3) == "")
+
+local s = stream()
+s:write("01234")
+assert(s:read(3) == "012")
+assert(not s:read(3))
+assert(s:read_some(3) == "34")
+assert(s:read_some(3) == "")
+
+local s = stream()
+s:write("foo")
+s:write("bar")
+s:write("baz")
+s:close()
+assert(equal({ s:read_until("(oo)") }, { "f", "oo" }))
+assert(equal({ s:read_until("rb") }, { "ba" }))
+assert(equal({ s:read_until("(a)") }, { "", "a" }))
+assert(equal({ s:read_until("(a)") }, { "z" }))
+assert(equal({ s:read_until("(a)") }, { "" }))
+
+local s = stream()
+s:write("foo\nbar\nbaz")
+s:close()
+assert(equal({ s:read_until("(\n)") }, { "foo", "\n" }))
+assert(equal({ s:read_until("(\n)") }, { "bar", "\n" }))
+assert(equal({ s:read_until("(\n)") }, { "baz" }))
+assert(equal({ s:read_until("(\n)") }, { "" }))
+
+local s = stream()
+s:write("foo\n\nbar\n")
+s:close()
+assert(equal({ s:read_until("(\n)") }, { "foo", "\n" }))
+assert(equal({ s:read_until("(\n)") }, { "", "\n" }))
+assert(equal({ s:read_until("(\n)") }, { "bar", "\n" }))
+assert(equal({ s:read_until("(\n)") }, { "" }))
