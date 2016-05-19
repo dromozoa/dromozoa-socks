@@ -60,8 +60,10 @@ end
 local function minimum(T, x)
   local left = T.left
 
-  while left[x] ~= NIL do
-    x = left[x]
+  local lx = left[x]
+  while lx ~= NIL do
+    x = lx
+    lx = left[x]
   end
   return x
 end
@@ -69,8 +71,10 @@ end
 local function maximum(T, x)
   local right = T.right
 
-  while right[x] ~= NIL do
-    x = right[x]
+  local rx = right[x]
+  while rx ~= NIL do
+    x = rx
+    rx = right[x]
   end
   return x
 end
