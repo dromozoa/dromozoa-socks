@@ -111,17 +111,19 @@ local function left_rotate(T, x)
   local right = T.right
 
   local y = right[x]
-  right[x] = left[y]
-  if left[y] ~= NIL then
-    parent[left[y]] = x
+  local ly = left[y]
+  right[x] = ly
+  if ly ~= NIL then
+    parent[ly] = x
   end
-  parent[y] = parent[x]
-  if parent[x] == NIL then
+  local px = parent[x]
+  parent[y] = px
+  if px == NIL then
     T.root = y
-  elseif x == left[parent[x]] then
-    left[parent[x]] = y
+  elseif x == left[px] then
+    left[px] = y
   else
-    right[parent[x]] = y
+    right[px] = y
   end
   left[y] = x
   parent[x] = y
@@ -133,17 +135,19 @@ local function right_rotate(T, x)
   local right = T.right
 
   local y = left[x]
-  left[x] = right[y]
-  if right[y] ~= NIL then
-    parent[right[y]] = x
+  local ry = right[y]
+  left[x] = ry
+  if ry ~= NIL then
+    parent[ry] = x
   end
-  parent[y] = parent[x]
-  if parent[x] == NIL then
+  local px = parent[x]
+  parent[y] = px
+  if px == NIL then
     T.root = y
-  elseif x == right[parent[x]] then
-    right[parent[x]] = y
+  elseif x == right[px] then
+    right[px] = y
   else
-    left[parent[x]] = y
+    left[px] = y
   end
   right[y] = x
   parent[x] = y
