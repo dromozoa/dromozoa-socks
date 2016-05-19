@@ -79,8 +79,9 @@ local function successor(T, x)
   local parent = T.parent
   local right = T.right
 
-  if right[x] ~= NIL then
-    return minimum(T, right[x])
+  local rx = right[x]
+  if rx ~= NIL then
+    return minimum(T, rx)
   end
   local y = parent[x]
   while y ~= NIL and x == right[y] do
@@ -94,8 +95,9 @@ local function predecessor(T, x)
   local parent = T.parent
   local left = T.left
 
-  if left[x] ~= NIL then
-    return maximum(T, left[x])
+  local lx = left[x]
+  if lx ~= NIL then
+    return maximum(T, lx)
   end
   local y = parent[x]
   while y ~= NIL and x == left[y] do
