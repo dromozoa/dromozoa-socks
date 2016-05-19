@@ -155,40 +155,47 @@ local function insert_fixup(T, z)
   local left = T.left
   local right = T.right
 
-  while color[parent[z]] == RED do
-    if parent[z] == left[parent[parent[z]]] then
-      local y = right[parent[parent[z]]]
+  local pz = parent[z]
+  while color[pz] == RED do
+    local ppz = parent[pz]
+    if pz == left[ppz] then
+      local y = right[ppz]
       if color[y] == RED then
-        color[parent[z]] = BLACK
+        color[pz] = BLACK
         color[y] = BLACK
-        color[parent[parent[z]]] = RED
-        z = parent[parent[z]]
+        color[ppz] = RED
+        z = ppz
       else
-        if z == right[parent[z]] then
-          z = parent[z]
+        if z == right[pz] then
+          z = pz
           left_rotate(T, z)
+          pz = parent[z]
+          ppz = parent[pz]
         end
-        color[parent[z]] = BLACK
-        color[parent[parent[z]]] = RED
-        right_rotate(T, parent[parent[z]])
+        color[pz] = BLACK
+        color[ppz] = RED
+        right_rotate(T, ppz)
       end
     else
-      local y = left[parent[parent[z]]]
+      local y = left[ppz]
       if color[y] == RED then
-        color[parent[z]] = BLACK
+        color[pz] = BLACK
         color[y] = BLACK
-        color[parent[parent[z]]] = RED
-        z = parent[parent[z]]
+        color[ppz] = RED
+        z = ppz
       else
-        if z == left[parent[z]] then
-          z = parent[z]
+        if z == left[pz] then
+          z = pz
           right_rotate(T, z)
+          pz = parent[z]
+          ppz = parent[pz]
         end
-        color[parent[z]] = BLACK
-        color[parent[parent[z]]] = RED
-        left_rotate(T, parent[parent[z]])
+        color[pz] = BLACK
+        color[ppz] = RED
+        left_rotate(T, ppz)
       end
     end
+    pz = parent[z]
   end
   color[T.root] = BLACK
 end
