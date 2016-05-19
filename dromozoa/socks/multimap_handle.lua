@@ -53,47 +53,46 @@ function class:each()
   local a = self.a
   if a == nil then
     return function () end
-  end
-  local tree = self.tree
-  local b = self.b
-  local that = class(tree)
-  return coroutine.wrap(function ()
-    while true do
-      local s = tree:successor(a)
-      local k, v = tree:get(a)
-      coroutine.yield(k, v, that:reset(a))
-      if a == b then
-        break
+  else
+    local tree = self.tree
+    local b = self.b
+    local that = class(tree)
+    return coroutine.wrap(function ()
+      while true do
+        local s = tree:successor(a)
+        local k, v = tree:get(a)
+        coroutine.yield(k, v, that:reset(a))
+        if a == b then
+          break
+        end
+        a = s
       end
-      a = s
-    end
-  end)
+    end)
+  end
 end
 
 function class:empty()
-  return self.a == nil
+  local a = self.a
+  return a == nil
 end
 
 function class:single()
-  return self.a ~= nil and self.a == self.b
+  local a = self.a
+  return a ~= nil and a == self.b
 end
 
 function class:head()
-  local tree = self.tree
   local a = self.a
-  if a == nil then
-    return
+  if a ~= nil then
+    return self.tree:get(a)
   end
-  return tree:get(a)
 end
 
 function class:tail()
-  local tree = self.tree
   local b = self.b
-  if b == nil then
-    return
+  if b ~= nil then
+    return self.tree:get(b)
   end
-  return tree:get(b)
 end
 
 local metatable = {
