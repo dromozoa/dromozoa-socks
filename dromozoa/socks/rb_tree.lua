@@ -398,27 +398,21 @@ end
 
 function class:lower_bound(key)
   local h = lower_bound(self, self.root, key)
-  if h == NIL then
-    return nil
-  else
+  if h ~= NIL then
     return h
   end
 end
 
 function class:upper_bound(key)
   local h = upper_bound(self, self.root, key)
-  if h == NIL then
-    return nil
-  else
+  if h ~= NIL then
     return h
   end
 end
 
 function class:upper_bound(key)
   local h = upper_bound(self, self.root, key)
-  if h == NIL then
-    return nil
-  else
+  if h ~= NIL then
     return h
   end
 end
@@ -428,45 +422,35 @@ function class:search(key)
   local compare = self.compare
 
   local h = lower_bound(self, self.root, key)
-  if h == NIL or compare(key, keys[h]) then
-    return nil
-  else
+  if h ~= NIL and not compare(key, keys[h]) then
     return h
   end
 end
 
 function class:minimum()
   local h = self.root
-  if h == NIL then
-    return nil
-  else
+  if h ~= NIL then
     return minimum(self, h)
   end
 end
 
 function class:maximum()
   local h = self.root
-  if h == NIL then
-    return nil
-  else
+  if h ~= NIL then
     return maximum(self, h)
   end
 end
 
 function class:successor(h)
   h = successor(self, h)
-  if h == NIL then
-    return nil
-  else
+  if h ~= NIL then
     return h
   end
 end
 
 function class:predecessor(h)
   h = predecessor(self, h)
-  if h == NIL then
-    return nil
-  else
+  if h ~= NIL then
     return h
   end
 end
@@ -519,6 +503,13 @@ end
 
 function class:empty()
   return self.root == NIL
+end
+
+function class:single()
+  local left = self.left
+  local right = self.right
+  local h = self.root
+  return h ~= NIL and left[h] == NIL and right[h] == NIL
 end
 
 local metatable = {

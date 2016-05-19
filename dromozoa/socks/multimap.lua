@@ -88,29 +88,23 @@ end
 
 function class:single()
   local tree = self.tree
-  local h = tree:minimum()
-  if h == nil then
-    return false
-  end
-  return h == tree:maximum()
+  return tree:single()
 end
 
 function class:head()
   local tree = self.tree
   local h = tree:minimum()
-  if h == nil then
-    return
+  if h ~= nil then
+    return tree:get(h)
   end
-  return tree:get(h)
 end
 
 function class:tail()
   local tree = self.tree
   local h = tree:maximum()
-  if h == nil then
-    return
+  if h ~= nil then
+    return tree:get(h)
   end
-  return tree:get(h)
 end
 
 local metatable = {
