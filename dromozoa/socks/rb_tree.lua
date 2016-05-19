@@ -258,52 +258,62 @@ local function delete_fixup(T, x)
   local right = T.right
 
   while x ~= T.root and color[x] == BLACK do
-    if x == left[parent[x]] then
-      local w = right[parent[x]]
+    local px = parent[x]
+    if x == left[px] then
+      local w = right[px]
       if color[w] == RED then
         color[w] = BLACK
-        color[parent[x]] = RED
-        left_rotate(T, parent[x])
-        w = right[parent[x]]
+        color[px] = RED
+        left_rotate(T, px)
+        px = parent[x]
+        w = right[px]
       end
-      if color[left[w]] == BLACK and color[right[w]] == BLACK then
+      local lw = left[w]
+      local rw = right[w]
+      if color[lw] == BLACK and color[rw] == BLACK then
         color[w] = RED
-        x = parent[x]
+        x = px
       else
-        if color[right[w]] == BLACK then
-          color[left[w]] = BLACK
+        if color[rw] == BLACK then
+          color[lw] = BLACK
           color[w] = RED
           right_rotate(T, w)
-          w = right[parent[x]]
+          px = parent[x]
+          w = right[px]
+          rw = right[w]
         end
-        color[w] = color[parent[x]]
-        color[parent[x]] = BLACK
-        color[right[w]] = BLACK
-        left_rotate(T, parent[x])
+        color[w] = color[px]
+        color[px] = BLACK
+        color[rw] = BLACK
+        left_rotate(T, px)
         x = T.root
       end
     else
-      local w = left[parent[x]]
+      local w = left[px]
       if color[w] == RED then
         color[w] = BLACK
-        color[parent[x]] = RED
-        right_rotate(T, parent[x])
-        w = left[parent[x]]
+        color[px] = RED
+        right_rotate(T, px)
+        w = left[px]
       end
-      if color[right[w]] == BLACK and color[left[w]] == BLACK then
+      local lw = left[w]
+      local rw = right[w]
+      if color[rw] == BLACK and color[lw] == BLACK then
         color[w] = RED
-        x = parent[x]
+        x = px
       else
-        if color[left[w]] == BLACK then
-          color[right[w]] = BLACK
+        if color[lw] == BLACK then
+          color[rw] = BLACK
           color[w] = RED
           left_rotate(T, w)
-          w = left[parent[x]]
+          px = parent[x]
+          w = left[px]
+          lw = left[w]
         end
-        color[w] = color[parent[x]]
-        color[parent[x]] = BLACK
-        color[left[w]] = BLACK
-        right_rotate(T, parent[x])
+        color[w] = color[px]
+        color[px] = BLACK
+        color[lw] = BLACK
+        right_rotate(T, px)
         x = T.root
       end
     end
