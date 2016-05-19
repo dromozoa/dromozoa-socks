@@ -19,26 +19,16 @@ local RED = 0
 local BLACK = 1
 local NIL = 0
 
-local COLOR = 1
-local PARENT = 2
-local LEFT = 3
-local RIGHT = 4
-local KEY = 5
-local VALUE = 6
-local COMPARE = 7
-local ROOT = 8
-local HANDLE = 9
-
--- return an handle to the first element that is grater than k or equal to k.
-local function lower_bound(T, x, k)
-  local left = T[LEFT]
-  local right = T[RIGHT]
-  local key = T[KEY]
-  local compare = T[COMPARE]
+-- return an handle to the first element that is grater than key or equal to key.
+local function lower_bound(T, x, key)
+  local left = T.left
+  local right = T.right
+  local keys = T.keys
+  local compare = T.compare
 
   local y = NIL
   while x ~= NIL do
-    if compare(key[x], k) then
+    if compare(keys[x], key) then
       x = right[x]
     else
       y = x
@@ -48,16 +38,16 @@ local function lower_bound(T, x, k)
   return y
 end
 
--- return an handle to the last element that is less than k or equal to k.
-local function upper_bound(T, x, k)
-  local left = T[LEFT]
-  local right = T[RIGHT]
-  local key = T[KEY]
-  local compare = T[COMPARE]
+-- return an handle to the last element that is less than key or equal to key.
+local function upper_bound(T, x, key)
+  local left = T.left
+  local right = T.right
+  local keys = T.keys
+  local compare = T.compare
 
   local y = NIL
   while x ~= NIL do
-    if compare(k, key[x]) then
+    if compare(key, keys[x]) then
       x = left[x]
     else
       y = x
@@ -68,163 +58,182 @@ local function upper_bound(T, x, k)
 end
 
 local function minimum(T, x)
-  local left = T[LEFT]
+  local left = T.left
 
-  while left[x] ~= NIL do
-    x = left[x]
+  local lx = left[x]
+  while lx ~= NIL do
+    x = lx
+    lx = left[x]
   end
   return x
 end
 
 local function maximum(T, x)
-  local right = T[RIGHT]
+  local right = T.right
 
-  while right[x] ~= NIL do
-    x = right[x]
+  local rx = right[x]
+  while rx ~= NIL do
+    x = rx
+    rx = right[x]
   end
   return x
 end
 
 local function successor(T, x)
-  local p = T[PARENT]
-  local right = T[RIGHT]
+  local parent = T.parent
+  local right = T.right
 
-  if right[x] ~= NIL then
-    return minimum(T, right[x])
+  local rx = right[x]
+  if rx ~= NIL then
+    return minimum(T, rx)
   end
-  local y = p[x]
+  local y = parent[x]
   while y ~= NIL and x == right[y] do
     x = y
-    y = p[y]
+    y = parent[y]
   end
   return y
 end
 
 local function predecessor(T, x)
-  local p = T[PARENT]
-  local left = T[LEFT]
+  local parent = T.parent
+  local left = T.left
 
-  if left[x] ~= NIL then
-    return maximum(T, left[x])
+  local lx = left[x]
+  if lx ~= NIL then
+    return maximum(T, lx)
   end
-  local y = p[x]
+  local y = parent[x]
   while y ~= NIL and x == left[y] do
     x = y
-    y = p[y]
+    y = parent[y]
   end
   return y
 end
 
 local function left_rotate(T, x)
-  local p = T[PARENT]
-  local left = T[LEFT]
-  local right = T[RIGHT]
+  local parent = T.parent
+  local left = T.left
+  local right = T.right
 
   local y = right[x]
-  right[x] = left[y]
-  if left[y] ~= NIL then
-    p[left[y]] = x
+  local ly = left[y]
+  right[x] = ly
+  if ly ~= NIL then
+    parent[ly] = x
   end
-  p[y] = p[x]
-  if p[x] == NIL then
-    T[ROOT] = y
-  elseif x == left[p[x]] then
-    left[p[x]] = y
+  local px = parent[x]
+  parent[y] = px
+  if px == NIL then
+    T.root = y
+  elseif x == left[px] then
+    left[px] = y
   else
-    right[p[x]] = y
+    right[px] = y
   end
   left[y] = x
-  p[x] = y
+  parent[x] = y
 end
 
 local function right_rotate(T, x)
-  local p = T[PARENT]
-  local left = T[LEFT]
-  local right = T[RIGHT]
+  local parent = T.parent
+  local left = T.left
+  local right = T.right
 
   local y = left[x]
-  left[x] = right[y]
-  if right[y] ~= NIL then
-    p[right[y]] = x
+  local ry = right[y]
+  left[x] = ry
+  if ry ~= NIL then
+    parent[ry] = x
   end
-  p[y] = p[x]
-  if p[x] == NIL then
-    T[ROOT] = y
-  elseif x == right[p[x]] then
-    right[p[x]] = y
+  local px = parent[x]
+  parent[y] = px
+  if px == NIL then
+    T.root = y
+  elseif x == right[px] then
+    right[px] = y
   else
-    left[p[x]] = y
+    left[px] = y
   end
   right[y] = x
-  p[x] = y
+  parent[x] = y
 end
 
 local function insert_fixup(T, z)
-  local color = T[COLOR]
-  local p = T[PARENT]
-  local left = T[LEFT]
-  local right = T[RIGHT]
+  local color = T.color
+  local parent = T.parent
+  local left = T.left
+  local right = T.right
 
-  while color[p[z]] == RED do
-    if p[z] == left[p[p[z]]] then
-      local y = right[p[p[z]]]
+  local pz = parent[z]
+  while color[pz] == RED do
+    local ppz = parent[pz]
+    if pz == left[ppz] then
+      local y = right[ppz]
       if color[y] == RED then
-        color[p[z]] = BLACK
+        color[pz] = BLACK
         color[y] = BLACK
-        color[p[p[z]]] = RED
-        z = p[p[z]]
+        color[ppz] = RED
+        z = ppz
       else
-        if z == right[p[z]] then
-          z = p[z]
+        if z == right[pz] then
+          z = pz
           left_rotate(T, z)
+          pz = parent[z]
+          ppz = parent[pz]
         end
-        color[p[z]] = BLACK
-        color[p[p[z]]] = RED
-        right_rotate(T, p[p[z]])
+        color[pz] = BLACK
+        color[ppz] = RED
+        right_rotate(T, ppz)
       end
     else
-      local y = left[p[p[z]]]
+      local y = left[ppz]
       if color[y] == RED then
-        color[p[z]] = BLACK
+        color[pz] = BLACK
         color[y] = BLACK
-        color[p[p[z]]] = RED
-        z = p[p[z]]
+        color[ppz] = RED
+        z = ppz
       else
-        if z == left[p[z]] then
-          z = p[z]
+        if z == left[pz] then
+          z = pz
           right_rotate(T, z)
+          pz = parent[z]
+          ppz = parent[pz]
         end
-        color[p[z]] = BLACK
-        color[p[p[z]]] = RED
-        left_rotate(T, p[p[z]])
+        color[pz] = BLACK
+        color[ppz] = RED
+        left_rotate(T, ppz)
       end
     end
+    pz = parent[z]
   end
-  color[T[ROOT]] = BLACK
+  color[T.root] = BLACK
 end
 
 local function insert(T, z)
-  local color = T[COLOR]
-  local p = T[PARENT]
-  local left = T[LEFT]
-  local right = T[RIGHT]
-  local key = T[KEY]
-  local compare = T[COMPARE]
+  local color = T.color
+  local parent = T.parent
+  local left = T.left
+  local right = T.right
+  local keys = T.keys
+  local compare = T.compare
+
+  local kz = keys[z]
 
   local y = NIL
-  local x = T[ROOT]
+  local x = T.root
   while x ~= NIL do
     y = x
-    if compare(key[z], key[x]) then
+    if compare(kz, keys[x]) then
       x = left[x]
     else
       x = right[x]
     end
   end
-  p[z] = y
+  parent[z] = y
   if y == NIL then
-    T[ROOT] = z
-  elseif compare(key[z], key[y]) then
+    T.root = z
+  elseif compare(kz, keys[y]) then
     left[y] = z
   else
     right[y] = z
@@ -236,74 +245,86 @@ local function insert(T, z)
 end
 
 local function transplant(T, u, v)
-  local p = T[PARENT]
-  local left = T[LEFT]
-  local right = T[RIGHT]
+  local parent = T.parent
+  local left = T.left
+  local right = T.right
 
-  if p[u] == NIL then
-    T[ROOT] = v
-  elseif u == left[p[u]] then
-    left[p[u]] = v
+  local pu = parent[u]
+
+  if pu == NIL then
+    T.root = v
+  elseif u == left[pu] then
+    left[pu] = v
   else
-    right[p[u]] = v
+    right[pu] = v
   end
-  p[v] = p[u]
+  parent[v] = pu
 end
 
 local function delete_fixup(T, x)
-  local color = T[COLOR]
-  local p = T[PARENT]
-  local left = T[LEFT]
-  local right = T[RIGHT]
+  local color = T.color
+  local parent = T.parent
+  local left = T.left
+  local right = T.right
 
-  while x ~= T[ROOT] and color[x] == BLACK do
-    if x == left[p[x]] then
-      local w = right[p[x]]
+  while x ~= T.root and color[x] == BLACK do
+    local px = parent[x]
+    if x == left[px] then
+      local w = right[px]
       if color[w] == RED then
         color[w] = BLACK
-        color[p[x]] = RED
-        left_rotate(T, p[x])
-        w = right[p[x]]
+        color[px] = RED
+        left_rotate(T, px)
+        px = parent[x]
+        w = right[px]
       end
-      if color[left[w]] == BLACK and color[right[w]] == BLACK then
+      local lw = left[w]
+      local rw = right[w]
+      if color[lw] == BLACK and color[rw] == BLACK then
         color[w] = RED
-        x = p[x]
+        x = px
       else
-        if color[right[w]] == BLACK then
-          color[left[w]] = BLACK
+        if color[rw] == BLACK then
+          color[lw] = BLACK
           color[w] = RED
           right_rotate(T, w)
-          w = right[p[x]]
+          px = parent[x]
+          w = right[px]
+          rw = right[w]
         end
-        color[w] = color[p[x]]
-        color[p[x]] = BLACK
-        color[right[w]] = BLACK
-        left_rotate(T, p[x])
-        x = T[ROOT]
+        color[w] = color[px]
+        color[px] = BLACK
+        color[rw] = BLACK
+        left_rotate(T, px)
+        x = T.root
       end
     else
-      local w = left[p[x]]
+      local w = left[px]
       if color[w] == RED then
         color[w] = BLACK
-        color[p[x]] = RED
-        right_rotate(T, p[x])
-        w = left[p[x]]
+        color[px] = RED
+        right_rotate(T, px)
+        w = left[px]
       end
-      if color[right[w]] == BLACK and color[left[w]] == BLACK then
+      local lw = left[w]
+      local rw = right[w]
+      if color[rw] == BLACK and color[lw] == BLACK then
         color[w] = RED
-        x = p[x]
+        x = px
       else
-        if color[left[w]] == BLACK then
-          color[right[w]] = BLACK
+        if color[lw] == BLACK then
+          color[rw] = BLACK
           color[w] = RED
           left_rotate(T, w)
-          w = left[p[x]]
+          px = parent[x]
+          w = left[px]
+          lw = left[w]
         end
-        color[w] = color[p[x]]
-        color[p[x]] = BLACK
-        color[left[w]] = BLACK
-        right_rotate(T, p[x])
-        x = T[ROOT]
+        color[w] = color[px]
+        color[px] = BLACK
+        color[lw] = BLACK
+        right_rotate(T, px)
+        x = T.root
       end
     end
   end
@@ -311,34 +332,40 @@ local function delete_fixup(T, x)
 end
 
 local function delete(T, z)
-  local color = T[COLOR]
-  local p = T[PARENT]
-  local left = T[LEFT]
-  local right = T[RIGHT]
-  local key = T[KEY]
+  local color = T.color
+  local parent = T.parent
+  local left = T.left
+  local right = T.right
+  local keys = T.keys
 
+  local lz = left[z]
+  local rz = right[z]
+
+  local x
   local y = z
   local y_original_color = color[y]
-  if left[z] == NIL then
-    x = right[z]
-    transplant(T, z, right[z])
-  elseif right[z] == NIL then
-    x = left[z]
-    transplant(T, z, left[z])
+  if lz == NIL then
+    x = rz
+    transplant(T, z, rz)
+  elseif rz == NIL then
+    x = lz
+    transplant(T, z, lz)
   else
-    y = minimum(T, right[z])
+    y = minimum(T, rz)
     y_original_color = color[y]
     x = right[y]
-    if p[y] == z then
-      p[x] = y
+    if parent[y] == z then
+      parent[x] = y
     else
-      transplant(T, y, right[y])
-      right[y] = right[z]
-      p[right[y]] = y
+      transplant(T, y, x)
+      rz = right[z]
+      right[y] = rz
+      parent[rz] = y
     end
     transplant(T, z, y)
-    left[y] = left[z]
-    p[left[y]] = y
+    lz = left[z]
+    left[y] = lz
+    parent[lz] = y
     color[y] = color[z]
   end
   if y_original_color == BLACK then
@@ -357,145 +384,132 @@ function class.new(compare)
     compare = default_compare
   end
   return {
-    { [NIL] = BLACK }; -- COLOR
-    { [NIL] = NIL }; -- PARENT
-    {}; -- LEFT
-    {}; -- RIGHT
-    {}; -- KEY
-    {}; -- VALUE
-    compare; -- COMPARE
-    NIL; -- ROOT
-    NIL; -- HANDLE
+    color = { [NIL] = BLACK };
+    parent = { [NIL] = NIL };
+    left = {};
+    right = {};
+    keys = {};
+    values = {};
+    compare = compare;
+    root = NIL;
+    handle = NIL;
   }
 end
 
-function class:lower_bound(k)
-  local h = lower_bound(self, self[ROOT], k)
-  if h == NIL then
-    return nil
-  else
+function class:lower_bound(key)
+  local h = lower_bound(self, self.root, key)
+  if h ~= NIL then
     return h
   end
 end
 
-function class:upper_bound(k)
-  local h = upper_bound(self, self[ROOT], k)
-  if h == NIL then
-    return nil
-  else
+function class:upper_bound(key)
+  local h = upper_bound(self, self.root, key)
+  if h ~= NIL then
     return h
   end
 end
 
-function class:upper_bound(k)
-  local h = upper_bound(self, self[ROOT], k)
-  if h == NIL then
-    return nil
-  else
+function class:upper_bound(key)
+  local h = upper_bound(self, self.root, key)
+  if h ~= NIL then
     return h
   end
 end
 
-function class:search(k)
-  local key = self[KEY]
-  local compare = self[COMPARE]
+function class:search(key)
+  local keys = self.keys
+  local compare = self.compare
 
-  local h = lower_bound(self, self[ROOT], k)
-  if h == NIL or compare(k, key[h]) then
-    return nil
-  else
+  local h = lower_bound(self, self.root, key)
+  if h ~= NIL and not compare(key, keys[h]) then
     return h
   end
 end
 
 function class:minimum()
-  local h = self[ROOT]
-  if h == NIL then
-    return nil
-  else
+  local h = self.root
+  if h ~= NIL then
     return minimum(self, h)
   end
 end
 
 function class:maximum()
-  local h = self[ROOT]
-  if h == NIL then
-    return nil
-  else
+  local h = self.root
+  if h ~= NIL then
     return maximum(self, h)
   end
 end
 
 function class:successor(h)
   h = successor(self, h)
-  if h == NIL then
-    return nil
-  else
+  if h ~= NIL then
     return h
   end
 end
 
 function class:predecessor(h)
   h = predecessor(self, h)
-  if h == NIL then
-    return nil
-  else
+  if h ~= NIL then
     return h
   end
 end
 
-function class:insert(k, v)
-  local key = self[KEY]
-  local value = self[VALUE]
+function class:insert(key, value)
+  local keys = self.keys
+  local values = self.values
 
-  local h = self[HANDLE] + 1
-  key[h] = k
-  value[h] = v
-  self[HANDLE] = h
+  local h = self.handle + 1
+  keys[h] = key
+  values[h] = value
+  self.handle = h
   insert(self, h)
   return h
 end
 
 function class:delete(h)
-  local color = self[COLOR]
-  local p = self[PARENT]
-  local left = self[LEFT]
-  local right = self[RIGHT]
-  local key = self[KEY]
-  local value = self[VALUE]
+  local color = self.color
+  local parent = self.parent
+  local left = self.left
+  local right = self.right
+  local keys = self.keys
+  local values = self.values
 
-  local k = key[h]
-  local v = value[h]
+  local key = keys[h]
+  local value = values[h]
   delete(self, h)
   color[h] = nil
-  p[h] = nil
+  parent[h] = nil
   left[h] = nil
   right[h] = nil
-  key[h] = nil
-  value[h] = nil
-  if self[ROOT] == NIL then
-    self[HANDLE] = NIL
+  keys[h] = nil
+  values[h] = nil
+  if self.root == NIL then
+    self.handle = NIL
   end
-  return k, v
-end
-
-function class:key(h)
-  local key = self[KEY]
-  return key[h]
+  return key, value
 end
 
 function class:get(h)
-  local value = self[VALUE]
-  return value[h]
+  local keys = self.keys
+  local values = self.values
+  return keys[h], values[h]
 end
 
-function class:set(h, v)
-  local value = self[VALUE]
-  value[h] = v
+function class:set(h, value)
+  local values = self.values
+  values[h] = value
 end
 
 function class:empty()
-  return self[ROOT] == NIL
+  return self.root == NIL
+end
+
+function class:single()
+  local left = self.left
+  local right = self.right
+  local h = self.root
+  return h ~= NIL and left[h] == NIL and right[h] == NIL
 end
 
 local metatable = {

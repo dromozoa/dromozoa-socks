@@ -39,9 +39,9 @@ local NIL = 0
 
 local function write_dot_node(out, T, x)
   if x ~= NIL then
-    local color = T[1]
-    local left = T[3]
-    local right = T[4]
+    local color = T.color
+    local left = T.left
+    local right = T.right
 
     local c
     if color[x] == RED then
@@ -49,7 +49,8 @@ local function write_dot_node(out, T, x)
     else
       c = "black"
     end
-    local label = "[" .. T:key(x) .. "]=" .. ("%q"):format(T:get(x))
+    local k, v = T:get(x)
+    local label = "[" .. k .. "]=" .. ("%q"):format(v)
     out:write(x, " [label =  <<font color=\"white\">", xml.escape(label), "</font>>, fillcolor = ", c, "];\n")
     write_dot_node(out, T, left[x])
     write_dot_node(out, T, right[x])
@@ -58,8 +59,8 @@ end
 
 local function write_dot_edge(out, T, x, y, label)
   if y ~= NIL then
-    local left = T[3]
-    local right = T[4]
+    local left = T.left
+    local right = T.right
 
     out:write(x, " -> ", y, "[label = <", xml.escape(label), ">];\n")
     write_dot_edge(out, T, y, left[y], "L")
@@ -73,9 +74,9 @@ digraph g {
 node [color = black, style = filled];
 ]])
 
-  local left = T[3]
-  local right = T[4]
-  local root = T[8]
+  local left = T.left
+  local right = T.right
+  local root = T.root
   write_dot_node(out, T, root)
   write_dot_edge(out, T, root, left[root], "L")
   write_dot_edge(out, T, root, right[root], "R")
@@ -104,19 +105,16 @@ for i = 1, 3 do
     end
 
     local min = T:minimum()
-    assert(T:key(min) == 1)
-    assert(T:get(min) == "v1")
+    assert(equal({ T:get(min) }, { 1, "v1" }))
     assert(T:predecessor(T:successor(min)) == min)
 
     local max = T:maximum()
-    assert(T:key(max) == 25)
-    assert(T:get(max) == "v25")
+    assert(equal({ T:get(max) }, { 25, "v25" }))
     assert(T:successor(T:predecessor(max)) == max)
 
     local x = min
     for i = 1, #data do
-      assert(T:key(x) == i)
-      assert(T:get(x) == "v" .. i)
+      assert(equal({ T:get(x) }, { i, "v" .. i }))
       if i == #data then
         x = T:successor(x)
         assert(not x)
@@ -128,8 +126,7 @@ for i = 1, 3 do
 
     local x = max
     for i = #data, 1, -1 do
-      assert(T:key(x) == i)
-      assert(T:get(x) == "v" .. i)
+      assert(equal({ T:get(x) }, { i, "v" .. i }))
       if i == 1 then
         x = T:predecessor(x)
         assert(not x)
@@ -152,8 +149,7 @@ for i = 1, 3 do
       local v = "v" .. k
 
       local h = assert(T:search(k))
-      assert(T:key(h) == k)
-      assert(T:get(h) == v)
+      assert(equal({ T:get(h) }, { k, v }))
 
       local a, b = T:delete(h)
       assert(a == k)
@@ -194,7 +190,7 @@ local x = T:minimum()
 local data = sequence()
 
 repeat
-  sequence:push({ T:key(x), T:get(x) })
+  data:push({ T:get(x) })
   x = T:successor(x)
 until not x
 
@@ -214,9 +210,9 @@ write_dot(assert(io.open("test.dot", "w")), T):close()
 
 for i = 1, 3 do
   local x = assert(T:lower_bound(i))
-  assert(T:get(x) == "foo")
+  assert(equal({ T:get(x) }, { i, "foo" }))
   local x = assert(T:upper_bound(i))
-  assert(T:get(x) == "baz")
+  assert(equal({ T:get(x) }, { i, "baz" }))
 end
 
 assert(T:lower_bound(0) == T:minimum())
