@@ -94,10 +94,13 @@ end
 
 function class:dispatch()
   self.stopped = false
-  while not self.stopped do
+  while true do
     self.current_time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
     for _, event in self.timeout_events:upper_bound(self.current_time):each() do
       event:dispatch(self, "timeout")
+    end
+    if self.stopped then
+      break
     end
     local result = self.selector:select(self.selector_timeout)
     if result == nil then
@@ -116,6 +119,9 @@ function class:dispatch()
           local event = self.write_events[fd]
           event:dispatch(self, "write")
         end
+      end
+      if self.stopped then
+        break
       end
     end
   end
