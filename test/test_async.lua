@@ -24,22 +24,22 @@ local fd1, fd2 = unix.socketpair(unix.AF_UNIX, uint32.bor(unix.SOCK_STREAM, unix
 
 local service = async_service()
 
-service:add(async_event(fd1, "read", function (service, event, ev)
+service:add(async_event(nil, "deferred", coroutine.create(function (service, event, ev)
   print(service, event, ev)
   service:del(event)
-  service:add(async_event(fd2, "write", function (service, event, ev)
+  service:add(async_event(fd2, "write", coroutine.create(function (service, event, ev)
     print(service, event, ev)
     service:del(event)
     fd2:write("x")
-    service:add(async_event(fd1, "read", function (service, event, ev)
+    service:add(async_event(fd1, "read", coroutine.create(function (service, event, ev)
       print(service, event, ev)
       service:del(event)
       local x = fd1:read(1)
       assert(x == "x")
       service:stop()
-    end))
-  end))
-end), service.current_time:add(1))
+    end)))
+  end)))
+end)), service.current_time)
 
 service:dispatch()
 

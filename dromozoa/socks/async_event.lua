@@ -17,16 +17,16 @@
 
 local class = {}
 
-function class.new(fd, event, callback)
+function class.new(fd, type, thread)
   return {
     fd = fd;
-    event = event;
-    callback = callback;
+    type = type;
+    thread = thread;
   }
 end
 
-function class:dispatch(service, event)
-  return self.callback(service, self, event)
+function class:dispatch(service, type)
+  coroutine.resume(self.thread, service, self, type)
 end
 
 local metatable = {
@@ -34,7 +34,7 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __call = function (_, fd, event, callback)
-    return setmetatable(class.new(fd, event, callback), metatable)
+  __call = function (_, fd, type, thread)
+    return setmetatable(class.new(fd, type, thread), metatable)
   end;
 })

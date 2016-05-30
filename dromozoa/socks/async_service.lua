@@ -47,9 +47,9 @@ function class:add(event, timeout)
   if event.fd ~= nil then
     local fd = event.fd:get()
     local old_selector_event = get_selector_event(self, fd)
-    if event.event == "read" then
+    if event.type == "read" then
       self.read_events[fd] = event
-    elseif event.event == "write" then
+    elseif event.type == "write" then
       self.write_events[fd] = event
     end
     local new_selector_event = get_selector_event(self, fd)
@@ -68,9 +68,9 @@ end
 function class:del(event)
   if event.fd ~= nil then
     local fd = event.fd:get()
-    if event.event == "read" then
+    if event.type == "read" then
       self.read_events[fd] = nil
-    elseif event.event == "write" then
+    elseif event.type == "write" then
       self.write_events[fd] = nil
     end
     local new_selector_event = get_selector_event(self, fd)
