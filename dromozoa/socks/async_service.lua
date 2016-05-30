@@ -36,7 +36,7 @@ function class.new()
   return {
     current_time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW);
     selector = unix.selector();
-    selector_timeout = unix.timespec(0.020, unix.TIMESPEC_TYPE_DURATION);
+    selector_timeout = unix.timespec(0.02, unix.TIMESPEC_TYPE_DURATION);
     read_events = {};
     write_events = {};
     timeout_events = multimap();
