@@ -127,7 +127,7 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __call = function (_, selector)
-    return setmetatable(class.new(selector), metatable)
+  __call = function ()
+    return setmetatable(class.new(), metatable)
   end;
 })
