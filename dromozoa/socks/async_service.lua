@@ -94,10 +94,7 @@ end
 
 function class:dispatch()
   self.stopped = false
-  while true do
-    if self.stopped then
-      break
-    end
+  while not self.stopped do
     self.current_time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
     for _, event in self.timeout_events:upper_bound(self.current_time):each() do
       event.callback(self, event, "timeout")
