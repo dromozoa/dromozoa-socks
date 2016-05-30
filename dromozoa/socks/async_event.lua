@@ -26,7 +26,7 @@ function class.new(fd, type, thread)
 end
 
 function class:dispatch(service, type)
-  coroutine.resume(self.thread, service, self, type)
+  return coroutine.resume(self.thread, service, self, type)
 end
 
 local metatable = {
