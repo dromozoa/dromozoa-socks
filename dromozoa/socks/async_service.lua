@@ -97,7 +97,7 @@ function class:dispatch()
   while not self.stopped do
     self.current_time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
     for _, event in self.timeout_events:upper_bound(self.current_time):each() do
-      event.callback(self, event, "timeout")
+      event:dispatch(self, "timeout")
     end
     local result = self.selector:select(self.selector_timeout)
     if result == nil then
@@ -110,11 +110,11 @@ function class:dispatch()
         local fd, selector_event = self.selector:event(i)
         if uint32.band(selector_event, unix.SELECTOR_READ) ~= 0 then
           local event = self.read_events[fd]
-          event.callback(self, event, "read")
+          event:dispatch(self, "read")
         end
         if uint32.band(selector_event, unix.SELECTOR_WRITE) ~= 0 then
           local event = self.write_events[fd]
-          event.callback(self, event, "write")
+          event:dispatch(self, "write")
         end
       end
     end

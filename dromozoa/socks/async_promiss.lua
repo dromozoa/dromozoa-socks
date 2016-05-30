@@ -15,26 +15,20 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local class = {}
-
-function class.new(fd, event, callback)
+function class.new(service, thread)
   return {
-    fd = fd;
-    event = event;
-    callback = callback;
+    service = service;
+    thread = thread;
   }
 end
 
-function class:dispatch(service, event)
-  return self.callback(service, self, event)
+function class:wait(timeout)
+  local event
+  self.service:add(event, timeout)
 end
 
-local metatable = {
-  __index = class;
-}
-
 return setmetatable(class, {
-  __call = function (_, fd, event, callback)
-    return setmetatable(class.new(fd, event, callback), metatable)
+  __call = function ()
+    return setmetatable(class.new(), metatable)
   end;
 })
