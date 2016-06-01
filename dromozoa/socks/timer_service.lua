@@ -43,11 +43,11 @@ function class:dispatch()
   local count = 0
   while true do
     self:update()
-    local handle = self.threads:upper_bound(self.current_time)
-    if handle:empty() then
+    local range = self.threads:upper_bound(self.current_time)
+    if range:empty() then
       break
     end
-    for _, thread, handle in handle:each() do
+    for _, thread, handle in range:each() do
       handle:delete()
       local result, message = coroutine.resume(thread, "timeout")
       if result then
