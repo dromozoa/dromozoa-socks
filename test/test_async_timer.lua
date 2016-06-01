@@ -16,21 +16,21 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local unix = require "dromozoa.unix"
-local timer_service = require "dromozoa.socks.timer_service"
+local async_timer = require "dromozoa.socks.async_timer"
 
-local service = timer_service(unix.CLOCK_MONOTONIC_RAW)
+local timer = async_timer(unix.CLOCK_MONOTONIC_RAW)
 
 local thread = coroutine.create(function ()
-  print(service.current_time)
-  service:insert(service.current_time, coroutine.running())
+  print(timer.current_time)
+  timer:insert(timer.current_time, coroutine.running())
   assert(coroutine.yield() == "timeout")
-  print(service.current_time)
-  service:insert(service.current_time, coroutine.running())
+  print(timer.current_time)
+  timer:insert(timer.current_time, coroutine.running())
   assert(coroutine.yield() == "timeout")
 end)
 
 assert(coroutine.resume(thread))
-local count = assert(service:dispatch())
+local count = assert(timer:dispatch())
 assert(count == 2)
-local count = assert(service:dispatch())
+local count = assert(timer:dispatch())
 assert(count == 0)
