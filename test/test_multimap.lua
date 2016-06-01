@@ -94,3 +94,18 @@ assert(equal({ m:head() }, { 2, "foo" }))
 assert(equal({ m:tail() }, { 42, "qux" }))
 assert(equal({ m:equal_range(42):head() }, { 42, "qux" }))
 assert(equal({ m:equal_range(42):tail() }, { 42, "qux" }))
+
+local m = multimap()
+m:insert(1, "a")
+m:insert(2, "b")
+m:insert(3, "c")
+m:insert(4, "d")
+local count = 0
+for k, v in m:each() do
+  count = count + 1
+  if v == "b" then
+    -- m:insert(3, "x")
+    m:insert(4, "x")
+  end
+end
+assert(count == 4)
