@@ -17,74 +17,100 @@
 
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
-local multimap = require "dromozoa.socks.multimap"
+local async_timer = require "dromozoa.socks.async_timer"
 
-local function get_selector_event(self, fd)
-  local selector_event = 0
-  if self.read_events[fd] ~= nil then
-    selector_event = uint32.bor(selector_event, unix.SELECTOR_READ)
+local function add_reader(self, reader)
+  local fd = unix.fd.get(reader.fd)
+  if self.writers[fd] == nil then
+    if not self.selector:add(fd, unix.SELECTOR_READ) then
+      return unix.get_last_error()
+    end
+  else
+    if not self.selector:mod(fd, unix.SELECTOR_READ_WRITE) then
+      return unix.get_last_error()
+    end
   end
-  if self.write_events[fd] ~= nil then
-    selector_event = uint32.bor(selector_event, unix.SELECTOR_WRITE)
+  self.readers[fd] = reader
+  return self
+end
+
+local function add_writer(self, writer)
+  local fd = unix.fd.get(writer.fd)
+  if self.readers[fd] == nil then
+    if not self.selector:add(fd, unix.SELECTOR_WRITE) then
+      return unix.get_last_error()
+    end
+  else
+    if not self.selector:mod(fd, unix.SELECTOR_READ_WRITE) then
+      return unix.get_last_error()
+    end
   end
-  return selector_event
+  self.writers[fd] = writer
+  return self
+end
+
+local function del_reader(self, reader)
+  local fd = unix.fd.get(reader.fd)
+  if self.writers[fd] == nil then
+    if not self.selector:del(fd) then
+      return unix.get_last_error()
+    end
+  else
+    if not self.selector:mod(fd, unix.SELECTOR_WRITE) then
+      return unix.get_last_error()
+    end
+  end
+  self.readers[fd] = nil
+  return self
+end
+
+local function del_writer(self, writer)
+  local fd = unix.fd.get(writer.fd)
+  if self.readers[fd] == nil then
+    if not self.selector:del(fd) then
+      return unix.get_last_error()
+    end
+  else
+    if not self.selector:mod(fd, unix.SELECTOR_READ) then
+      return unix.get_last_error()
+    end
+  end
+  self.writers[fd] = nil
+  return self
 end
 
 local class = {}
 
 function class.new()
   return {
-    current_time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW);
     selector = unix.selector();
     selector_timeout = unix.timespec(0.02, unix.TIMESPEC_TYPE_DURATION);
-    read_events = {};
-    write_events = {};
-    timeout_events = multimap();
+    readers = {};
+    writers = {};
+    timer = async_timer();
   }
 end
 
-function class:add(event, timeout)
-  if event.fd ~= nil then
-    local fd = event.fd:get()
-    local old_selector_event = get_selector_event(self, fd)
-    if event.type == "read" then
-      self.read_events[fd] = event
-    elseif event.type == "write" then
-      self.write_events[fd] = event
-    end
-    local new_selector_event = get_selector_event(self, fd)
-    if old_selector_event == 0 then
-      self.selector:add(fd, new_selector_event)
-    else
-      self.selector:mod(fd, new_selector_event)
-    end
+function class:add(handler)
+  local event = handler.event
+  if event == "read" then
+    return add_reader(self, handler)
+  elseif event == "write" then
+    return add_writer(self, handler)
+  else
+    return nil, "invaild event"
   end
-  if timeout ~= nil then
-    event.timeout_handle = self.timeout_events:insert(timeout, event)
-  end
-  return self
 end
 
-function class:del(event)
-  if event.fd ~= nil then
-    local fd = event.fd:get()
-    if event.type == "read" then
-      self.read_events[fd] = nil
-    elseif event.type == "write" then
-      self.write_events[fd] = nil
-    end
-    local new_selector_event = get_selector_event(self, fd)
-    if new_selector_event == 0 then
-      self.selector:del(fd)
-    else
-      self.selector:mod(fd, new_selector_event)
-    end
+function class:del(handler)
+  local event = handler.event
+  if event == "read" then
+    return del_reader(self, handler)
+  elseif event == "write" then
+    return del_writer(self, handler)
+  else
+    return nil, "invaild event"
   end
-  if event.timeout_handle ~= nil then
-    event.timeout_handle:delete()
-    event.timeout_handle = nil
-  end
-  return self
 end
 
 function class:stop()
@@ -93,11 +119,10 @@ function class:stop()
 end
 
 function class:dispatch()
-  self.stopped = false
   while true do
-    self.current_time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
-    for _, event in self.timeout_events:upper_bound(self.current_time):each() do
-      event:dispatch(self, "timeout")
+    local result, message = self.timer:dispatch()
+    if not result then
+      return nil, message
     end
     if self.stopped then
       break
@@ -108,16 +133,20 @@ function class:dispatch()
         return unix.get_last_error()
       end
     else
-      self.current_time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+      self.timer:update()
       for i = 1, result do
-        local fd, selector_event = self.selector:event(i)
-        if uint32.band(selector_event, unix.SELECTOR_READ) ~= 0 then
-          local event = self.read_events[fd]
-          event:dispatch(self, "read")
+        local fd, event = self.selector:event(i)
+        if uint32.band(event, unix.SELECTOR_READ) ~= 0 then
+          local result, message = self.readers[fd]:dispatch(self, "read")
+          if not result then
+            return nil, message
+          end
         end
-        if uint32.band(selector_event, unix.SELECTOR_WRITE) ~= 0 then
-          local event = self.write_events[fd]
-          event:dispatch(self, "write")
+        if uint32.band(event, unix.SELECTOR_WRITE) ~= 0 then
+          local result, message = self.writers[fd]:dispatch(self, "write")
+          if not result then
+            return nil, message
+          end
         end
       end
       if self.stopped then

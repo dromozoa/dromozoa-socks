@@ -17,31 +17,31 @@
 
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
-local async_event = require "dromozoa.socks.async_event"
+local async_handler = require "dromozoa.socks.async_handler"
 local async_service = require "dromozoa.socks.async_service"
 
 local fd1, fd2 = unix.socketpair(unix.AF_UNIX, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC))
+assert(fd1:ndelay_on())
+assert(fd2:ndelay_on())
 
 local service = async_service()
 
-service:add(async_event(nil, "deferred", coroutine.create(function (service, event, ev)
-  print(service, event, ev)
-  service:del(event)
-  service:add(async_event(fd2, "write", coroutine.create(function (service, event, ev)
-    print(service, event, ev)
-    service:del(event)
+service.timer:insert(service.timer.current_time, coroutine.create(function (event)
+  print(event)
+  service:add(async_handler(fd2, "write", coroutine.create(function (service, handler, event)
+    print(event)
+    service:del(handler)
     fd2:write("x")
-    service:add(async_event(fd1, "read", coroutine.create(function (service, event, ev)
-      print(service, event, ev)
-      service:del(event)
-      local x = fd1:read(1)
-      assert(x == "x")
+    service:add(async_handler(fd1, "read", coroutine.create(function (service, handler, event)
+      print(event)
+      service:del(handler)
+      assert(fd1:read(1) == "x")
       service:stop()
     end)))
   end)))
-end)), service.current_time)
+end))
 
-service:dispatch()
+assert(service:dispatch())
 
 assert(fd1:close())
 assert(fd2:close())
