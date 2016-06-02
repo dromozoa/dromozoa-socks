@@ -34,7 +34,7 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __call = function (_, service, fd, thread)
-    return setmetatable(class.new(service, fd, thread), metatable)
+  __call = function (_, fd, event, thread)
+    return setmetatable(class.new(fd, event, thread), metatable)
   end;
 })
