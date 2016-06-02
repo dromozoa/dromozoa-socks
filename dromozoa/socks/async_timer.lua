@@ -40,7 +40,6 @@ function class:insert(timeout, thread)
 end
 
 function class:dispatch()
-  local count = 0
   while true do
     self:update()
     local range = self.threads:upper_bound(self.current_time)
@@ -50,14 +49,12 @@ function class:dispatch()
     for _, thread, handle in range:each() do
       handle:delete()
       local result, message = coroutine.resume(thread, "timeout")
-      if result then
-        count = count + 1
-      else
+      if not result then
         return nil, message
       end
     end
   end
-  return count
+  return self
 end
 
 local metatable = {
