@@ -34,6 +34,7 @@ local state = async_state(fd1, "read", coroutine.create(function (promise)
     if char then
       if char == "\n" then
         promise:set_value(buffer)
+        break
       else
         buffer = buffer .. char
       end
@@ -62,6 +63,7 @@ assert(service:dispatch(coroutine.create(function ()
   assert(future:wait(service.timer.current_time:add(0.2)) == "ready")
   assert(future:is_ready())
   assert(future:get() == "foo")
+  fd2:write("bar\n")
   service:stop()
 end)))
 

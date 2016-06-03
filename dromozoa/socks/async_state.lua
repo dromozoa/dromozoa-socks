@@ -20,12 +20,23 @@ local pack = require "dromozoa.socks.pack"
 local async_handler = require "dromozoa.socks.async_handler"
 local async_promise = require "dromozoa.socks.async_promise"
 
+local function set_ready(self)
+  self.status = "ready"
+  assert(self.service:del(self.handler))
+  if self.timer_handle then
+    self.timer_handle:delete()
+    self.timer_handle = nil
+  end
+  assert(coroutine.resume(self.thread, "ready"))
+end
+
 local class = {}
 
 function class.new(fd, event, thread)
   local self = {}
   self.handler = async_handler(fd, event, coroutine.create(function (service, handler, event)
     while true do
+      self.service = service
       local result, message = coroutine.resume(thread, async_promise(service, self))
       if not result then
         self:set_error(message)
@@ -47,23 +58,13 @@ function class:each_handler()
 end
 
 function class:set_value(...)
-  self.status = "ready"
   self.value = pack(...)
-  if self.timer_handle then
-    self.timer_handle:delete()
-    self.timer_handle = nil
-  end
-  assert(coroutine.resume(self.thread, "ready"))
+  return set_ready(self)
 end
 
 function class:set_error(message)
-  self.status = "ready"
   self.message = message
-  if self.timer_handle then
-    self.timer_handle:delete()
-    self.timer_handle = nil
-  end
-  assert(coroutine.resume(self.thread, "ready"))
+  return set_ready(self)
 end
 
 function class:get()
