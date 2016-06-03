@@ -31,6 +31,7 @@ local function add_reader(self, reader)
     end
   end
   self.readers[fd] = reader
+  reader.status = true
   return self
 end
 
@@ -46,6 +47,7 @@ local function add_writer(self, writer)
     end
   end
   self.writers[fd] = writer
+  writer.status = true
   return self
 end
 
@@ -61,6 +63,7 @@ local function del_reader(self, reader)
     end
   end
   self.readers[fd] = nil
+  reader.status = nil
   return self
 end
 
@@ -76,6 +79,7 @@ local function del_writer(self, writer)
     end
   end
   self.writers[fd] = nil
+  writer.status = nil
   return self
 end
 
@@ -97,8 +101,6 @@ function class:add(handler)
     return add_reader(self, handler)
   elseif event == "write" then
     return add_writer(self, handler)
-  else
-    return nil, "invaild event"
   end
 end
 
@@ -108,8 +110,6 @@ function class:del(handler)
     return del_reader(self, handler)
   elseif event == "write" then
     return del_writer(self, handler)
-  else
-    return nil, "invaild event"
   end
 end
 
