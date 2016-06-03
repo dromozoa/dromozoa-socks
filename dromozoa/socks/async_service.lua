@@ -118,7 +118,13 @@ function class:stop()
   return self
 end
 
-function class:dispatch()
+function class:dispatch(thread)
+  if thread then
+    local result, message = coroutine.resume(thread)
+    if not result then
+      return nil, message
+    end
+  end
   while true do
     local result, message = self.timer:dispatch()
     if not result then

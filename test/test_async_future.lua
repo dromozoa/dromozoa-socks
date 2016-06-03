@@ -49,7 +49,7 @@ end))
 
 local future = async_future(service, state)
 
-service.timer:insert(service.timer.current_time, coroutine.create(function (event)
+assert(service:dispatch(coroutine.create(function ()
   assert(not future:is_ready())
   assert(future:wait(service.timer.current_time:add(0.2)) == "timeout")
   fd2:write("f")
@@ -63,9 +63,7 @@ service.timer:insert(service.timer.current_time, coroutine.create(function (even
   assert(future:is_ready())
   assert(future:get() == "foo")
   service:stop()
-end))
-
-assert(service:dispatch())
+end)))
 
 assert(fd1:close())
 assert(fd2:close())

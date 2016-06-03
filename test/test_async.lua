@@ -26,8 +26,7 @@ assert(fd2:ndelay_on())
 
 local service = async_service()
 
-service.timer:insert(service.timer.current_time, coroutine.create(function (event)
-  print(event)
+service:dispatch(coroutine.create(function ()
   service:add(async_handler(fd2, "write", coroutine.create(function (service, handler, event)
     print(event)
     service:del(handler)
@@ -40,8 +39,6 @@ service.timer:insert(service.timer.current_time, coroutine.create(function (even
     end)))
   end)))
 end))
-
-assert(service:dispatch())
 
 assert(fd1:close())
 assert(fd2:close())
