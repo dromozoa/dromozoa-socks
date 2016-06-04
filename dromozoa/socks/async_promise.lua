@@ -17,9 +17,8 @@
 
 local class = {}
 
-function class.new(service, state)
+function class.new(state)
   return {
-    service = service;
     state = state;
   }
 end

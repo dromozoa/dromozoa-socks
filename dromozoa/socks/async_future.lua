@@ -17,9 +17,8 @@
 
 local class = {}
 
-function class.new(service, state)
+function class.new(state)
   return {
-    service = service;
     state = state;
   }
 end
@@ -35,17 +34,17 @@ function class:wait(timeout)
   else
     self.state.thread = coroutine.running()
     if timeout then
-      self.state.timer_handle = self.service.timer:insert(timeout, coroutine.create(function ()
+      self.state.timer_handle = self.state.service.timer:insert(timeout, coroutine.create(function ()
         for handler in self.state:each_handler() do
           if handler.status then
-            assert(self.service:del(handler))
+            assert(self.state.service:del(handler))
           end
         end
         assert(coroutine.resume(self.state.thread, "timeout"))
       end))
     end
     for handler in self.state:each_handler() do
-      assert(self.service:add(handler))
+      assert(self.state.service:add(handler))
     end
     return coroutine.yield()
   end
@@ -60,7 +59,7 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __call = function (_, service, state)
-    return setmetatable(class.new(service, state), metatable)
+  __call = function (_, state)
+    return setmetatable(class.new(state), metatable)
   end;
 })

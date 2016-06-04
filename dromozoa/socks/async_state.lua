@@ -32,12 +32,15 @@ end
 
 local class = {}
 
-function class.new(fd, event, thread)
-  local self = {}
+function class.new(service, fd, event, thread)
+  local self = {
+    service = service;
+  }
+  self.promise = async_promise(self)
   self.handler = async_handler(fd, event, coroutine.create(function (service, handler, event)
+    self.service = service
     while true do
-      self.service = service
-      local result, message = coroutine.resume(thread, async_promise(service, self))
+      local result, message = coroutine.resume(thread, self.promise)
       if not result then
         self:set_error(message)
         break
@@ -45,7 +48,7 @@ function class.new(fd, event, thread)
       if self.status == "ready" then
         break
       end
-      service, handler, event = coroutine.yield()
+      self.service, handler, event = coroutine.yield()
     end
   end))
   return self
@@ -80,7 +83,7 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __call = function (_, fd, event, thread)
-    return setmetatable(class.new(fd, event, thread), metatable)
+  __call = function (_, service, fd, event, thread)
+    return setmetatable(class.new(service, fd, event, thread), metatable)
   end;
 })

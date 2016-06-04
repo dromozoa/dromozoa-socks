@@ -27,7 +27,7 @@ assert(fd2:ndelay_off())
 
 local service = async_service()
 
-local state = async_state(fd1, "read", coroutine.create(function (promise)
+local state = async_state(service, fd1, "read", coroutine.create(function (promise)
   local buffer = ""
   while true do
     local char = fd1:read(1)
@@ -48,7 +48,7 @@ local state = async_state(fd1, "read", coroutine.create(function (promise)
   end
 end))
 
-local future = async_future(service, state)
+local future = async_future(state)
 
 assert(service:dispatch(coroutine.create(function ()
   assert(not future:is_ready())
