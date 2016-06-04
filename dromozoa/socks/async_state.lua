@@ -65,6 +65,14 @@ function class:del_handler()
   end
 end
 
+function class:add_timer(timeout)
+  self.timer_handle = self.service.timer:insert(timeout, coroutine.create(function ()
+    self.timer_handle = nil
+    self:del_handler()
+    assert(coroutine.resume(self.thread, "timeout"))
+  end))
+end
+
 function class:set_value(...)
   self.value = pack(...)
   return set_ready(self)
@@ -76,11 +84,41 @@ function class:set_error(message)
 end
 
 function class:get()
+  self:wait()
   if self.message ~= nil then
     error(self.message)
   else
     return unpack(self.value)
   end
+end
+
+function class:get_current_time()
+  return self.service.timer.current_time
+end
+
+function class:dispatch()
+  self.thread = coroutine.running()
+  return coroutine.yield()
+end
+
+function class:is_ready()
+  return self.status == "ready"
+end
+
+function class:wait(timeout)
+  if self:is_ready() then
+    return "ready"
+  else
+    if timeout then
+      self:add_timer(timeout)
+    end
+    self:add_handler()
+    return self:dispatch()
+  end
+end
+
+function class:wait_for(timeout)
+  return self:wait(self.service.timer.current_time:add(timeout))
 end
 
 local metatable = {

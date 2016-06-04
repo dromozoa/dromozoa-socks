@@ -15,23 +15,6 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local function wait_until(self, timeout)
-  if self.state.status == "ready" then
-    return "ready"
-  else
-    self.state.thread = coroutine.running()
-    if timeout then
-      self.state.timer_handle = self.state.service.timer:insert(timeout, coroutine.create(function ()
-        self.state.timer_handle = nil
-        self.state:del_handler()
-        assert(coroutine.resume(self.state.thread, "timeout"))
-      end))
-    end
-    self.state:add_handler()
-    return coroutine.yield()
-  end
-end
-
 local class = {}
 
 function class.new(state)
@@ -40,25 +23,24 @@ function class.new(state)
   }
 end
 
+function class:is_ready()
+  return self.state:is_ready()
+end
+
 function class:get()
-  self:wait()
   return self.state:get()
 end
 
 function class:wait()
-  return wait_until(self)
-end
-
-function class:wait_for(timeout)
-  return wait_until(self, self.state.service.timer.current_time:add(timeout))
+  return self.state:wait()
 end
 
 function class:wait_until(timeout)
-  return wait_until(self, timeout)
+  return self.state:wait(timeout)
 end
 
-function class:is_ready()
-  return self.state.status == "ready"
+function class:wait_for(timeout)
+  return self.state:wait_for(timeout)
 end
 
 local metatable = {
