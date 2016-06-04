@@ -22,7 +22,7 @@ local async_promise = require "dromozoa.socks.async_promise"
 
 local function set_ready(self)
   self.status = "ready"
-  self:del_handler()
+  assert(self.service:del(self.handler))
   if self.timer_handle then
     self.timer_handle:delete()
     self.timer_handle = nil
@@ -54,25 +54,6 @@ function class.new(service, fd, event, thread)
   return self
 end
 
-function class:add_handler()
-  assert(self.service:add(self.handler))
-end
-
-function class:del_handler()
-  local handler = self.handler
-  if handler.status then
-    assert(self.service:del(handler))
-  end
-end
-
-function class:add_timer(timeout)
-  self.timer_handle = self.service.timer:insert(timeout, coroutine.create(function ()
-    self.timer_handle = nil
-    self:del_handler()
-    assert(coroutine.resume(self.thread, "timeout"))
-  end))
-end
-
 function class:set_value(...)
   self.value = pack(...)
   return set_ready(self)
@@ -81,6 +62,10 @@ end
 function class:set_error(message)
   self.message = message
   return set_ready(self)
+end
+
+function class:is_ready()
+  return self.status == "ready"
 end
 
 function class:get()
@@ -92,28 +77,20 @@ function class:get()
   end
 end
 
-function class:get_current_time()
-  return self.service.timer.current_time
-end
-
-function class:dispatch()
-  self.thread = coroutine.running()
-  return coroutine.yield()
-end
-
-function class:is_ready()
-  return self.status == "ready"
-end
-
 function class:wait(timeout)
-  if self:is_ready() then
+  if self.status == "ready" then
     return "ready"
   else
+    assert(self.service:add(self.handler))
     if timeout then
-      self:add_timer(timeout)
+      self.timer_handle = self.service.timer:insert(timeout, coroutine.create(function ()
+        self.timer_handle = nil
+        assert(self.service:del(self.handler))
+        assert(coroutine.resume(self.thread, "timeout"))
+      end))
     end
-    self:add_handler()
-    return self:dispatch()
+    self.thread = coroutine.running()
+    return coroutine.yield()
   end
 end
 
