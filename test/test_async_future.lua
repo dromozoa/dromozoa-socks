@@ -70,8 +70,7 @@ assert(service:dispatch(coroutine.create(function ()
   print(unix.clock_gettime(unix.CLOCK_REALTIME))
   fd2:write("\n")
 
-  assert(future:wait_for(0.1) == "ready")
-  -- future:wait()
+  assert(future:wait() == "ready")
   print(unix.clock_gettime(unix.CLOCK_REALTIME))
 
   assert(future:is_ready())

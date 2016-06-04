@@ -21,16 +21,12 @@ local async_handler = require "dromozoa.socks.async_handler"
 local async_promise = require "dromozoa.socks.async_promise"
 
 local function set_ready(self)
-  print("ready1", self.thread)
   self.status = "ready"
-  print("ready2", self.thread)
   self:del_handler()
-  print("ready3", self.thread, self.timer_handle)
   if self.timer_handle then
     self.timer_handle:delete()
     self.timer_handle = nil
   end
-  print("ready4", self.thread)
   assert(coroutine.resume(self.thread, "ready"))
 end
 
