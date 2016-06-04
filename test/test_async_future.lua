@@ -32,6 +32,7 @@ local state = async_state(service, fd1, "read", coroutine.create(function (promi
   while true do
     local char = fd1:read(1)
     if char then
+      print(("char=%q"):format(char))
       if char == "\n" then
         promise:set_value(buffer)
         break
@@ -52,15 +53,27 @@ local future = async_future(state)
 
 assert(service:dispatch(coroutine.create(function ()
   assert(not future:is_ready())
-  assert(future:wait(service.timer.current_time:add(0.2)) == "timeout")
+
+  assert(future:wait_for(0.2) == "timeout")
+  print(unix.clock_gettime(unix.CLOCK_REALTIME))
   fd2:write("f")
-  assert(future:wait(service.timer.current_time:add(0.2)) == "timeout")
+
+  assert(future:wait_for(0.2) == "timeout")
+  print(unix.clock_gettime(unix.CLOCK_REALTIME))
   fd2:write("o")
-  assert(future:wait(service.timer.current_time:add(0.2)) == "timeout")
+
+  assert(future:wait_for(0.2) == "timeout")
+  print(unix.clock_gettime(unix.CLOCK_REALTIME))
   fd2:write("o")
-  assert(future:wait(service.timer.current_time:add(0.2)) == "timeout")
+
+  assert(future:wait_for(0.2) == "timeout")
+  print(unix.clock_gettime(unix.CLOCK_REALTIME))
   fd2:write("\n")
-  assert(future:wait(service.timer.current_time:add(0.2)) == "ready")
+
+  assert(future:wait_for(0.1) == "ready")
+  -- future:wait()
+  print(unix.clock_gettime(unix.CLOCK_REALTIME))
+
   assert(future:is_ready())
   assert(future:get() == "foo")
   fd2:write("bar\n")
