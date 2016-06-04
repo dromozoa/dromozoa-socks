@@ -27,4 +27,4 @@ do
   "$lua" "$i"
 done
 
-rm -f test.dot
+rm -f test.dot test.sock
