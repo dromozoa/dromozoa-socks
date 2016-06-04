@@ -65,12 +65,6 @@ function class:del_handler()
   end
 end
 
-function class:each_handler()
-  return coroutine.wrap(function ()
-    coroutine.yield(self.handler)
-  end)
-end
-
 function class:set_value(...)
   self.value = pack(...)
   return set_ready(self)
