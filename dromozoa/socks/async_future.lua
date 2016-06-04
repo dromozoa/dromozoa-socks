@@ -35,17 +35,11 @@ function class:wait(timeout)
     self.state.thread = coroutine.running()
     if timeout then
       self.state.timer_handle = self.state.service.timer:insert(timeout, coroutine.create(function ()
-        for handler in self.state:each_handler() do
-          if handler.status then
-            assert(self.state.service:del(handler))
-          end
-        end
+        self.state:del_handler()
         assert(coroutine.resume(self.state.thread, "timeout"))
       end))
     end
-    for handler in self.state:each_handler() do
-      assert(self.state.service:add(handler))
-    end
+    self.state:add_handler()
     return coroutine.yield()
   end
 end
