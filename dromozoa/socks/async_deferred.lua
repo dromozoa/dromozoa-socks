@@ -64,25 +64,32 @@ function class:get()
   end
 end
 
-function class:wait()
+function class:wait(timeout)
   if self.status == "ready" then
     return "ready"
   else
-    local result, message = coroutine.resume(self.deferred)
-    if not result then
-      self:set_error(message)
+    if self.thread == nil then
+      local result, message = coroutine.resume(self.deferred)
+      if not result then
+        self:set_error(message)
+      end
+      if self.status == "ready" then
+        return ready
+      end
     end
-    if self.status == "ready" then
-      return ready
-    else
-      self.thread = coroutine.running()
-      return coroutine.yield()
+    if timeout then
+      self.timer_handle = self.service.timer:insert(timeout, coroutine.create(function ()
+        self.timer_handle = nil
+        assert(coroutine.resume(self.thread, "timeout"))
+      end))
     end
+    self.thread = coroutine.running()
+    return coroutine.yield()
   end
 end
 
-function class:wait_for()
-  return self:wait()
+function class:wait_for(timeout)
+  return self:wait(self.service.timer.current_time:add(timeout))
 end
 
 local metatable = {

@@ -15,9 +15,12 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local uint32 = require "dromozoa.commons.uint32"
+local unix = require "dromozoa.unix"
 local async_future = require "dromozoa.socks.async_future"
 local async_deferred = require "dromozoa.socks.async_deferred"
 local async_service = require "dromozoa.socks.async_service"
+local async_state = require "dromozoa.socks.async_state"
 
 local service = async_service()
 
@@ -45,3 +48,36 @@ assert(service:dispatch(coroutine.create(function ()
   print("4b")
   service:stop()
 end)))
+
+local fd1, fd2 = unix.socketpair(unix.AF_UNIX, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC))
+assert(fd1:ndelay_on())
+assert(fd2:ndelay_off())
+
+assert(service:dispatch(coroutine.create(function ()
+  service:start()
+  local f1 = async_state(service, fd1, "read", coroutine.create(function (promise)
+    while true do
+      local char = fd1:read(1)
+      if char then
+        return promise:set_value(char)
+      else
+        if unix.get_last_error() == unix.EAGAIN then
+          promise = coroutine.yield()
+        else
+          assert(unix.get_last_error())
+        end
+      end
+    end
+  end))
+  local f2 = async_future(async_deferred(service, coroutine.create(function (promise)
+    assert(f1:wait_for(0.5) == "timeout")
+    return promise:set_value(42)
+  end)))
+  assert(f2:wait_for(0.2) == "timeout")
+  assert(f2:wait_for(0.5) == "ready")
+  assert(f2:get() == 42)
+  service:stop()
+end)))
+
+assert(fd1:close())
+assert(fd2:close())

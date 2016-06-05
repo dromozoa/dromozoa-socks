@@ -113,6 +113,11 @@ function class:del(handler)
   end
 end
 
+function class:start()
+  self.stopped = nil
+  return self
+end
+
 function class:stop()
   self.stopped = true
   return self
