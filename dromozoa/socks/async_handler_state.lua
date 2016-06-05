@@ -39,22 +39,6 @@ function class.new(service, fd, event, thread)
   return self
 end
 
-function class:set_ready()
-  self.status = "ready"
-  if self.handler then
-    assert(self.service:del(self.handler))
-  end
-  if self.timer_handle then
-    self.timer_handle:delete()
-    self.timer_handle = nil
-  end
-  local thread = self.thread
-  if thread then
-    self.thread = nil
-    assert(coroutine.resume(thread, "ready"))
-  end
-end
-
 function class:wait(timeout)
   if self:is_ready() then
     return "ready"

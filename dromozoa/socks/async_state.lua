@@ -26,6 +26,22 @@ function class.new(service)
   }
 end
 
+function class:set_ready()
+  self.status = "ready"
+  if self.handler then
+    assert(self.service:del(self.handler))
+  end
+  if self.timer_handle then
+    self.timer_handle:delete()
+    self.timer_handle = nil
+  end
+  local thread = self.thread
+  if thread then
+    self.thread = nil
+    assert(coroutine.resume(thread, "ready"))
+  end
+end
+
 function class:set_value(...)
   self.value = pack(...)
   self:set_ready()
