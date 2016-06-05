@@ -29,9 +29,8 @@ function class.new(service, fd, event, thread)
       local result, message = coroutine.resume(thread, promise)
       if not result then
         self:set_error(message)
-        return
       end
-      if self.status == "ready" then
+      if self:is_ready() then
         return
       end
       coroutine.yield()
@@ -45,10 +44,9 @@ function class:set_ready()
   if self.handler then
     assert(self.service:del(self.handler))
   end
-  local timer_handle = self.timer_handle
-  if timer_handle then
+  if self.timer_handle then
+    self.timer_handle:delete()
     self.timer_handle = nil
-    timer_handle:delete()
   end
   local thread = self.thread
   if thread then
@@ -58,14 +56,16 @@ function class:set_ready()
 end
 
 function class:wait(timeout)
-  if self.status == "ready" then
+  if self:is_ready() then
     return "ready"
   else
     assert(self.service:add(self.handler))
     if timeout then
       self.timer_handle = self.service.timer:insert(timeout, coroutine.create(function ()
+        if self.handler then
+          assert(self.service:del(self.handler))
+        end
         self.timer_handle = nil
-        assert(self.service:del(self.handler))
         assert(coroutine.resume(self.thread, "timeout"))
       end))
     end

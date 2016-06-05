@@ -35,9 +35,9 @@ end
 function class:set_ready()
   self.status = "ready"
   local timer_handle = self.timer_handle
-  if timer_handle then
+  if self.timer_handle then
+    self.timer_handle:delete()
     self.timer_handle = nil
-    timer_handle:delete()
   end
   local thread = self.thread
   if thread then
@@ -47,7 +47,7 @@ function class:set_ready()
 end
 
 function class:wait(timeout)
-  if self.status == "ready" then
+  if self:is_ready() then
     return "ready"
   else
     local deferred = self.deferred
@@ -57,7 +57,7 @@ function class:wait(timeout)
       if not result then
         self:set_error(message)
       end
-      if self.status == "ready" then
+      if self:is_ready() then
         return "ready"
       end
     end
