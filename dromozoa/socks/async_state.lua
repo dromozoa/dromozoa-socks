@@ -17,71 +17,73 @@
 
 local unpack = require "dromozoa.commons.unpack"
 local pack = require "dromozoa.socks.pack"
-local async_handler = require "dromozoa.socks.async_handler"
-local async_promise = require "dromozoa.socks.async_promise"
 
-local function set_ready(self)
+local class = {}
+
+function class.new(service)
+  return {
+    service = service;
+  }
+end
+
+function class:set_ready()
   self.status = "ready"
-  self:del_handler()
+  if self.handler then
+    assert(self.service:del(self.handler))
+  end
   if self.timer_handle then
     self.timer_handle:delete()
     self.timer_handle = nil
   end
-  assert(coroutine.resume(self.thread, "ready"))
-end
-
-local class = {}
-
-function class.new(service, fd, event, thread)
-  local self = {
-    service = service;
-  }
-  self.promise = async_promise(self)
-  self.handler = async_handler(fd, event, coroutine.create(function (service, handler, event)
-    self.service = service
-    while true do
-      local result, message = coroutine.resume(thread, self.promise)
-      if not result then
-        self:set_error(message)
-        break
-      end
-      if self.status == "ready" then
-        break
-      end
-      self.service, handler, event = coroutine.yield()
-    end
-  end))
-  return self
-end
-
-function class:add_handler()
-  assert(self.service:add(self.handler))
-end
-
-function class:del_handler()
-  local handler = self.handler
-  if handler.status then
-    assert(self.service:del(handler))
+  local thread = self.thread
+  if thread then
+    self.thread = nil
+    assert(coroutine.resume(thread, "ready"))
   end
-end
-
-function class:each_handler()
-  return coroutine.wrap(function ()
-    coroutine.yield(self.handler)
-  end)
 end
 
 function class:set_value(...)
   self.value = pack(...)
-  return set_ready(self)
+  self:set_ready()
 end
 
 function class:set_error(message)
   self.message = message
-  return set_ready(self)
+  self:set_ready()
+end
+
+function class:is_ready()
+  return self.status == "ready"
+end
+
+function class:wait(timeout)
+  if self:is_ready() then
+    return "ready"
+  else
+    self:launch()
+    if self:is_ready() then
+      return "ready"
+    end
+    if timeout then
+      self.timer_handle = self.service.timer:insert(timeout, coroutine.create(function ()
+        if self.handler then
+          assert(self.service:del(self.handler))
+        end
+        self.timer_handle = nil
+        assert(coroutine.resume(self.thread, "timeout"))
+      end))
+    end
+    self.thread = coroutine.running()
+    return coroutine.yield()
+  end
+end
+
+function class:wait_for(timeout)
+  return self:wait(self.service.timer.current_time:add(timeout))
 end
 
 function class:get()
+  self:wait()
   if self.message ~= nil then
     error(self.message)
   else
@@ -94,7 +96,7 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __call = function (_, service, fd, event, thread)
-    return setmetatable(class.new(service, fd, event, thread), metatable)
+  __call = function (_, service)
+    return setmetatable(class.new(service), metatable)
   end;
 })

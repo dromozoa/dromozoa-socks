@@ -15,32 +15,32 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local async_promise = require "dromozoa.socks.async_promise"
+local async_state = require "dromozoa.socks.async_state"
+
 local class = {}
 
-function class.new(state)
-  return {
-    state = state;
-  }
+function class.new(service, thread)
+  local self = async_state.new(service)
+  self.deferred = coroutine.create(function ()
+    local promise = async_promise(self)
+    local result, message = coroutine.resume(thread, promise)
+    if not result then
+      self:set_error(message)
+    end
+  end)
+  return self
 end
 
-function class:is_ready()
-  return self.state:is_ready()
-end
-
-function class:get()
-  return self.state:get()
-end
-
-function class:wait()
-  return self.state:wait()
-end
-
-function class:wait_until(timeout)
-  return self.state:wait(timeout)
-end
-
-function class:wait_for(timeout)
-  return self.state:wait_for(timeout)
+function class:launch()
+  local deferred = self.deferred
+  if deferred then
+    self.deferred = nil
+    local result, message = coroutine.resume(deferred)
+    if not result then
+      self:set_error(message)
+    end
+  end
 end
 
 local metatable = {
@@ -48,7 +48,8 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __call = function (_, state)
-    return setmetatable(class.new(state), metatable)
+  __index = async_state;
+  __call = function (_, service, thread)
+    return setmetatable(class.new(service, thread), metatable)
   end;
 })

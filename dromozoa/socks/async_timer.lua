@@ -48,7 +48,7 @@ function class:dispatch()
     end
     for _, thread, handle in range:each() do
       handle:delete()
-      local result, message = coroutine.resume(thread, "timeout")
+      local result, message = coroutine.resume(thread)
       if not result then
         return nil, message
       end
