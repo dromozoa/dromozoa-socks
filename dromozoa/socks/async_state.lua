@@ -22,7 +22,9 @@ local async_promise = require "dromozoa.socks.async_promise"
 
 local function set_ready(self)
   self.status = "ready"
-  assert(self.service:del(self.handler))
+  if self.handler then
+    assert(self.service:del(self.handler))
+  end
   local timer_handle = self.timer_handle
   if timer_handle then
     self.timer_handle = nil
