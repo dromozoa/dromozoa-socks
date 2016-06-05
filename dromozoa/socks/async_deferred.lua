@@ -21,22 +21,30 @@ local async_promise = require "dromozoa.socks.async_promise"
 
 local function set_ready(self)
   self.status = "ready"
-  if self.thread then
-    assert(coroutine.resume(self.thread, "ready"))
+  local timer_handle = self.timer_handle
+  if timer_handle then
+    self.timer_handle = nil
+    timer_handle:delete()
+  end
+  local thread = self.thread
+  if thread then
+    self.thread = nil
+    assert(coroutine.resume(thread, "ready"))
   end
 end
 
-local class = {
-  policy = "deferred";
-}
+local class = {}
 
 function class.new(service, thread)
   local self = {
     service = service;
   }
-  self.promise = async_promise(self)
   self.deferred = coroutine.create(function ()
-    coroutine.resume(thread, self.promise)
+    local promise = async_promise(self)
+    local result, message = coroutine.resume(thread, promise)
+    if not result then
+      self:set_error(message)
+    end
   end)
   return self
 end
@@ -55,26 +63,19 @@ function class:is_ready()
   return self.status == "ready"
 end
 
-function class:get()
-  self:wait()
-  if self.message ~= nil then
-    error(self.message)
-  else
-    return unpack(self.value)
-  end
-end
-
 function class:wait(timeout)
   if self.status == "ready" then
     return "ready"
   else
-    if self.thread == nil then
-      local result, message = coroutine.resume(self.deferred)
+    local deferred = self.deferred
+    if deferred then
+      self.deferred = nil
+      local result, message = coroutine.resume(deferred)
       if not result then
         self:set_error(message)
       end
       if self.status == "ready" then
-        return ready
+        return "ready"
       end
     end
     if timeout then
@@ -90,6 +91,15 @@ end
 
 function class:wait_for(timeout)
   return self:wait(self.service.timer.current_time:add(timeout))
+end
+
+function class:get()
+  self:wait()
+  if self.message ~= nil then
+    error(self.message)
+  else
+    return unpack(self.value)
+  end
 end
 
 local metatable = {

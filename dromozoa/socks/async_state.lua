@@ -23,34 +23,36 @@ local async_promise = require "dromozoa.socks.async_promise"
 local function set_ready(self)
   self.status = "ready"
   assert(self.service:del(self.handler))
-  if self.timer_handle then
-    self.timer_handle:delete()
+  local timer_handle = self.timer_handle
+  if timer_handle then
     self.timer_handle = nil
+    timer_handle:delete()
   end
-  assert(coroutine.resume(self.thread, "ready"))
+  local thread = self.thread
+  if thread then
+    self.thread = nil
+    assert(coroutine.resume(thread, "ready"))
+  end
 end
 
-local class = {
-  policy = "async";
-}
+local class = {}
 
 function class.new(service, fd, event, thread)
   local self = {
     service = service;
   }
-  self.promise = async_promise(self)
-  self.handler = async_handler(fd, event, coroutine.create(function (service, handler, event)
-    self.service = service
+  self.handler = async_handler(fd, event, coroutine.create(function ()
+    local promise = async_promise(self)
     while true do
-      local result, message = coroutine.resume(thread, self.promise)
+      local result, message = coroutine.resume(thread, promise)
       if not result then
         self:set_error(message)
-        break
+        return
       end
       if self.status == "ready" then
-        break
+        return
       end
-      self.service, handler, event = coroutine.yield()
+      coroutine.yield()
     end
   end))
   return self
@@ -58,25 +60,16 @@ end
 
 function class:set_value(...)
   self.value = pack(...)
-  return set_ready(self)
+  set_ready(self)
 end
 
 function class:set_error(message)
   self.message = message
-  return set_ready(self)
+  set_ready(self)
 end
 
 function class:is_ready()
   return self.status == "ready"
-end
-
-function class:get()
-  self:wait()
-  if self.message ~= nil then
-    error(self.message)
-  else
-    return unpack(self.value)
-  end
 end
 
 function class:wait(timeout)
@@ -98,6 +91,15 @@ end
 
 function class:wait_for(timeout)
   return self:wait(self.service.timer.current_time:add(timeout))
+end
+
+function class:get()
+  self:wait()
+  if self.message ~= nil then
+    error(self.message)
+  else
+    return unpack(self.value)
+  end
 end
 
 local metatable = {

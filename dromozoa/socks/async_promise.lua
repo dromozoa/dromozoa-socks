@@ -25,10 +25,12 @@ end
 
 function class:set_value(...)
   self.state:set_value(...)
+  return self
 end
 
 function class:set_error(message)
   self.state:set_error(message)
+  return self
 end
 
 local metatable = {
