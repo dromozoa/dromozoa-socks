@@ -15,34 +15,14 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local unpack = require "dromozoa.commons.unpack"
-local pack = require "dromozoa.socks.pack"
 local async_handler = require "dromozoa.socks.async_handler"
 local async_promise = require "dromozoa.socks.async_promise"
-
-local function set_ready(self)
-  self.status = "ready"
-  if self.handler then
-    assert(self.service:del(self.handler))
-  end
-  local timer_handle = self.timer_handle
-  if timer_handle then
-    self.timer_handle = nil
-    timer_handle:delete()
-  end
-  local thread = self.thread
-  if thread then
-    self.thread = nil
-    assert(coroutine.resume(thread, "ready"))
-  end
-end
+local async_state = require "dromozoa.socks.async_state"
 
 local class = {}
 
 function class.new(service, fd, event, thread)
-  local self = {
-    service = service;
-  }
+  local self = async_state.new(service)
   self.handler = async_handler(fd, event, coroutine.create(function ()
     local promise = async_promise(self)
     while true do
@@ -60,18 +40,21 @@ function class.new(service, fd, event, thread)
   return self
 end
 
-function class:set_value(...)
-  self.value = pack(...)
-  set_ready(self)
-end
-
-function class:set_error(message)
-  self.message = message
-  set_ready(self)
-end
-
-function class:is_ready()
-  return self.status == "ready"
+function class:set_ready()
+  self.status = "ready"
+  if self.handler then
+    assert(self.service:del(self.handler))
+  end
+  local timer_handle = self.timer_handle
+  if timer_handle then
+    self.timer_handle = nil
+    timer_handle:delete()
+  end
+  local thread = self.thread
+  if thread then
+    self.thread = nil
+    assert(coroutine.resume(thread, "ready"))
+  end
 end
 
 function class:wait(timeout)
@@ -91,24 +74,12 @@ function class:wait(timeout)
   end
 end
 
-function class:wait_for(timeout)
-  return self:wait(self.service.timer.current_time:add(timeout))
-end
-
-function class:get()
-  self:wait()
-  if self.message ~= nil then
-    error(self.message)
-  else
-    return unpack(self.value)
-  end
-end
-
 local metatable = {
   __index = class;
 }
 
 return setmetatable(class, {
+  __index = async_state;
   __call = function (_, service, fd, event, thread)
     return setmetatable(class.new(service, fd, event, thread), metatable)
   end;
