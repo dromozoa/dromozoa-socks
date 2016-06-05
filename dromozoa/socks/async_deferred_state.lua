@@ -32,29 +32,14 @@ function class.new(service, thread)
   return self
 end
 
-function class:wait(timeout)
-  if self:is_ready() then
-    return "ready"
-  else
-    local deferred = self.deferred
-    if deferred then
-      self.deferred = nil
-      local result, message = coroutine.resume(deferred)
-      if not result then
-        self:set_error(message)
-      end
-      if self:is_ready() then
-        return "ready"
-      end
+function class:launch()
+  local deferred = self.deferred
+  if deferred then
+    self.deferred = nil
+    local result, message = coroutine.resume(deferred)
+    if not result then
+      self:set_error(message)
     end
-    if timeout then
-      self.timer_handle = self.service.timer:insert(timeout, coroutine.create(function ()
-        self.timer_handle = nil
-        assert(coroutine.resume(self.thread, "timeout"))
-      end))
-    end
-    self.thread = coroutine.running()
-    return coroutine.yield()
   end
 end
 

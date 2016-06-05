@@ -56,15 +56,27 @@ function class:is_ready()
   return self.status == "ready"
 end
 
--- function class:wait(timeout)
---   if self.status == "ready" then
---     return "ready"
---   else
---     -- launch
---     self.thread = coroutine.running()
---     return coroutine.yield()
---   end
--- end
+function class:wait(timeout)
+  if self:is_ready() then
+    return "ready"
+  else
+    self:launch()
+    if self:is_ready() then
+      return "ready"
+    end
+    if timeout then
+      self.timer_handle = self.service.timer:insert(timeout, coroutine.create(function ()
+        if self.handler then
+          assert(self.service:del(self.handler))
+        end
+        self.timer_handle = nil
+        assert(coroutine.resume(self.thread, "timeout"))
+      end))
+    end
+    self.thread = coroutine.running()
+    return coroutine.yield()
+  end
+end
 
 function class:wait_for(timeout)
   return self:wait(self.service.timer.current_time:add(timeout))

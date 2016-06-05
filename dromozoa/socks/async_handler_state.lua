@@ -39,23 +39,8 @@ function class.new(service, fd, event, thread)
   return self
 end
 
-function class:wait(timeout)
-  if self:is_ready() then
-    return "ready"
-  else
-    assert(self.service:add(self.handler))
-    if timeout then
-      self.timer_handle = self.service.timer:insert(timeout, coroutine.create(function ()
-        if self.handler then
-          assert(self.service:del(self.handler))
-        end
-        self.timer_handle = nil
-        assert(coroutine.resume(self.thread, "timeout"))
-      end))
-    end
-    self.thread = coroutine.running()
-    return coroutine.yield()
-  end
+function class:launch()
+  assert(self.service:add(self.handler))
 end
 
 local metatable = {
