@@ -89,9 +89,9 @@ function class.new()
   return {
     selector = unix.selector();
     selector_timeout = unix.timespec(0.02, unix.TIMESPEC_TYPE_DURATION);
+    timer = async_timer();
     readers = {};
     writers = {};
-    timer = async_timer();
   }
 end
 
@@ -129,6 +129,9 @@ function class:dispatch(thread)
     if not result then
       return nil, message
     end
+    if self.stopped then
+      return self
+    end
   end
   while true do
     local result, message = self.timer:dispatch()
@@ -136,10 +139,10 @@ function class:dispatch(thread)
       return nil, message
     end
     if self.stopped then
-      break
+      return self
     end
     local result = self.selector:select(self.selector_timeout)
-    if result == nil then
+    if not result then
       if unix.get_last_errno() ~= unix.EINTR then
         return unix.get_last_error()
       end
@@ -161,11 +164,10 @@ function class:dispatch(thread)
         end
       end
       if self.stopped then
-        break
+        return self
       end
     end
   end
-  return self
 end
 
 local metatable = {
