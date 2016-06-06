@@ -22,7 +22,7 @@ local pack = require "dromozoa.socks.pack"
 
 local class = {}
 
-function class.new(service, ...)
+function class.new(service, when, ...)
   local self = async_state.new(service)
   self.futures = pack(...)
   self.worker = coroutine.create(function ()
@@ -64,7 +64,7 @@ local metatable = {
 
 return setmetatable(class, {
   __index = async_state;
-  __call = function (_, service, ...)
-    return setmetatable(class.new(service, ...), metatable)
+  __call = function (_, service, when, ...)
+    return setmetatable(class.new(service, when, ...), metatable)
   end;
 })
