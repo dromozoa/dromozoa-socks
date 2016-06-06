@@ -40,9 +40,9 @@ end
 
 local class = {}
 
-function class.new(service, when, ...)
-  local self = async_state.new(service)
-  self.futures = pack(...)
+function class.new(when, future, ...)
+  local self = async_state.new(future.state.service)
+  self.futures = pack(future, ...)
   if when == "any" then
     self.count = 1
   elseif when == "all" then
@@ -88,7 +88,7 @@ local metatable = {
 
 return setmetatable(class, {
   __index = async_state;
-  __call = function (_, service, when, ...)
-    return setmetatable(class.new(service, when, ...), metatable)
+  __call = function (_, when, future, ...)
+    return setmetatable(class.new(when, future, ...), metatable)
   end;
 })
