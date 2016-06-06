@@ -27,9 +27,6 @@ function class.new(service)
 end
 
 function class:release(delete_timer_handle)
-  if self.handler then
-    assert(self.service:del(self.handler))
-  end
   if self.timer_handle then
     if delete_timer_handle then
       self.timer_handle:delete()
