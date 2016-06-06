@@ -15,8 +15,6 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local uint32 = require "dromozoa.commons.uint32"
-local unix = require "dromozoa.unix"
 local io_service = require "dromozoa.socks.io_service"
 local timer_service = require "dromozoa.socks.timer_service"
 
