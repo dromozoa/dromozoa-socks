@@ -88,7 +88,7 @@ local metatable = {
 
 return setmetatable(class, {
   __index = async_state;
-  __call = function (_, when, future, ...)
-    return setmetatable(class.new(when, future, ...), metatable)
+  __call = function (_, when, ...)
+    return setmetatable(class.new(when, ...), metatable)
   end;
 })
