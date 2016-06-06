@@ -31,12 +31,12 @@ function class.new(service, when, ...)
     self.count = self.futures.n
   end
   self.counter = coroutine.create(function ()
-    self:decrement()
+    self:count_down()
   end)
   return self
 end
 
-function class:decrement()
+function class:count_down()
   self.count = self.count - 1
   if self.count == 0 then
     self:set_value(unpack(self.futures))
@@ -57,7 +57,7 @@ end
 function class:launch()
   for state in self:each_state() do
     if state:is_ready() then
-      if self:decrement() then
+      if self:count_down() then
         return
       end
     end
@@ -65,7 +65,7 @@ function class:launch()
   for state in self:each_state() do
     state:launch()
     if state:is_ready() then
-      if self:decrement() then
+      if self:count_down() then
         return
       end
     end
