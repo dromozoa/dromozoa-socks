@@ -46,7 +46,7 @@ end
 function class:dispatch()
   while true do
     self:update_current_time()
-    local range = self.threads:upper_bound(self.current_time)
+    local range = self.threads:upper_bound(self:get_current_time())
     if range:empty() then
       break
     end
