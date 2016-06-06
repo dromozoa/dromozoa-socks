@@ -22,7 +22,7 @@ local pack = require "dromozoa.socks.pack"
 
 local class = {}
 
-function class.new(service, when, ...)
+function class.new(service, ...)
   local self = async_state.new(service)
   local futures = pack(...)
   local states = sequence()
@@ -62,7 +62,7 @@ local metatable = {
 
 return setmetatable(class, {
   __index = async_state;
-  __call = function (_, service, when, ...)
-    return setmetatable(class.new(service, when, ...), metatable)
+  __call = function (_, service, ...)
+    return setmetatable(class.new(service, ...), metatable)
   end;
 })
