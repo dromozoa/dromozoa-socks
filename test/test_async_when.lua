@@ -22,18 +22,18 @@ local async_service = require "dromozoa.socks.async_service"
 
 local service = async_service()
 
-local f1 = async_future(async_deferred_state(service, coroutine.create(function (promise)
-end)))
-
-local f2 = async_future(async_deferred_state(service, coroutine.create(function (promise)
-  promise:set_value(2)
-end)))
-
-local f3 = async_future(async_deferred_state(service, coroutine.create(function (promise)
-  promise:set_value(3)
-end)))
-
 assert(service:dispatch(coroutine.create(function ()
+  local f1 = async_future(async_deferred_state(service, coroutine.create(function (promise)
+  end)))
+
+  local f2 = async_future(async_deferred_state(service, coroutine.create(function (promise)
+    promise:set_value(2)
+  end)))
+
+  local f3 = async_future(async_deferred_state(service, coroutine.create(function (promise)
+    promise:set_value(3)
+  end)))
+
   assert(not f1:is_ready())
   assert(not f2:is_ready())
   assert(not f3:is_ready())
@@ -48,7 +48,25 @@ assert(service:dispatch(coroutine.create(function ()
   assert(f2:is_ready())
   assert(f3:is_ready())
 
-  async_future(async_when_state(service, "any", f1)):wait_for(0.2)
+  assert(async_future(async_when_state(service, "any", f1)):wait_for(0.2) == "timeout")
+  assert(not f1:is_ready())
+  assert(f2:is_ready())
+  assert(f3:is_ready())
+
+  local f2 = async_future(async_deferred_state(service, coroutine.create(function (promise)
+    promise:set_value(2)
+  end)))
+
+  local f3 = async_future(async_deferred_state(service, coroutine.create(function (promise)
+    promise:set_value(3)
+  end)))
+
+  assert(not f1:is_ready())
+  assert(not f2:is_ready())
+  assert(not f3:is_ready())
+
+  assert(async_future(async_when_state(service, "all", f1, f2, f3)):wait_for(0.2) == "timeout")
+
   assert(not f1:is_ready())
   assert(f2:is_ready())
   assert(f3:is_ready())

@@ -25,10 +25,25 @@ local class = {}
 function class.new(service, when, ...)
   local self = async_state.new(service)
   self.futures = pack(...)
-  self.worker = coroutine.create(function ()
-    self:set_value(unpack(self.futures))
+  if when == "any" then
+    self.count = 1
+  elseif when == "all" then
+    self.count = self.futures.n
+  end
+  self.counter = coroutine.create(function ()
+    self:decrement()
   end)
   return self
+end
+
+function class:decrement()
+  self.count = self.count - 1
+  if self.count == 0 then
+    self:set_value(unpack(self.futures))
+    return true
+  else
+    return false
+  end
 end
 
 function class:each_state()
@@ -42,20 +57,29 @@ end
 function class:launch()
   for state in self:each_state() do
     if state:is_ready() then
-      self:set_value(unpack(self.futures))
-      return
+      if self:decrement() then
+        return
+      end
     end
   end
   for state in self:each_state() do
     state:launch()
     if state:is_ready() then
-      self:set_value(unpack(self.futures))
-      return
+      if self:decrement() then
+        return
+      end
     end
   end
   for state in self:each_state() do
-    state.thread = self.worker
+    state.thread = self.counter
   end
+end
+
+function class:release(delete_timer_handle)
+  for state in self:each_state() do
+    state:release()
+  end
+  return async_state.release(self, delete_timer_handle)
 end
 
 local metatable = {
