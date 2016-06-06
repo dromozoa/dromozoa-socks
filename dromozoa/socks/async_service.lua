@@ -17,7 +17,7 @@
 
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
-local async_timer = require "dromozoa.socks.async_timer"
+local timer_service = require "dromozoa.socks.timer_service"
 
 local function add_reader(self, reader)
   local fd = unix.fd.get(reader.fd)
@@ -89,7 +89,7 @@ function class.new()
   return {
     selector = unix.selector();
     selector_timeout = unix.timespec(0.02, unix.TIMESPEC_TYPE_DURATION);
-    timer = async_timer();
+    timer = timer_service();
     readers = {};
     writers = {};
   }

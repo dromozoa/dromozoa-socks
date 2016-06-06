@@ -16,9 +16,9 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local unix = require "dromozoa.unix"
-local async_timer = require "dromozoa.socks.async_timer"
+local timer_service = require "dromozoa.socks.timer_service"
 
-local timer = async_timer(unix.CLOCK_MONOTONIC_RAW)
+local timer = timer_service(unix.CLOCK_MONOTONIC_RAW)
 
 local thread = coroutine.create(function ()
   print(timer.current_time)
