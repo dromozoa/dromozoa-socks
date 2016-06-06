@@ -15,15 +15,15 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local async_handler = require "dromozoa.socks.async_handler"
 local async_promise = require "dromozoa.socks.async_promise"
 local async_state = require "dromozoa.socks.async_state"
+local io_handler = require "dromozoa.socks.io_handler"
 
 local class = {}
 
 function class.new(service, fd, event, thread)
   local self = async_state.new(service)
-  self.handler = async_handler(fd, event, coroutine.create(function ()
+  self.handler = io_handler(fd, event, coroutine.create(function ()
     local promise = async_promise(self)
     while true do
       local result, message = coroutine.resume(thread, promise)

@@ -17,8 +17,8 @@
 
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
-local async_handler = require "dromozoa.socks.async_handler"
 local async_service = require "dromozoa.socks.async_service"
+local io_handler = require "dromozoa.socks.io_handler"
 
 local fd1, fd2 = unix.socketpair(unix.AF_UNIX, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC))
 assert(fd1:ndelay_on())
@@ -27,11 +27,11 @@ assert(fd2:ndelay_on())
 local service = async_service()
 
 service:dispatch(coroutine.create(function ()
-  service:add(async_handler(fd2, "write", coroutine.create(function (service, handler, event)
+  service:add(io_handler(fd2, "write", coroutine.create(function (service, handler, event)
     print(event)
     service:del(handler)
     fd2:write("x")
-    service:add(async_handler(fd1, "read", coroutine.create(function (service, handler, event)
+    service:add(io_handler(fd1, "read", coroutine.create(function (service, handler, event)
       print(event)
       service:del(handler)
       assert(fd1:read(1) == "x")
