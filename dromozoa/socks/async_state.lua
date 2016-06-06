@@ -26,18 +26,22 @@ function class.new(service)
   }
 end
 
-function class:set_ready()
-  self.status = "ready"
-  if self.handler then
-    assert(self.service:del(self.handler))
-  end
+function class:release(delete_timer_handle)
   if self.timer_handle then
-    self.timer_handle:delete()
+    if delete_timer_handle then
+      self.timer_handle:delete()
+    end
     self.timer_handle = nil
   end
   local thread = self.thread
+  self.thread = nil
+  return thread
+end
+
+function class:set_ready()
+  self.status = "ready"
+  local thread = self:release(true)
   if thread then
-    self.thread = nil
     assert(coroutine.resume(thread, "ready"))
   end
 end
@@ -66,11 +70,10 @@ function class:wait(timeout)
     end
     if timeout then
       self.timer_handle = self.service.timer:insert(timeout, coroutine.create(function ()
-        if self.handler then
-          assert(self.service:del(self.handler))
+        local thread = self:release(false)
+        if thread then
+          assert(coroutine.resume(thread, "timeout"))
         end
-        self.timer_handle = nil
-        assert(coroutine.resume(self.thread, "timeout"))
       end))
     end
     self.thread = coroutine.running()

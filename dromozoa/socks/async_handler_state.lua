@@ -43,6 +43,11 @@ function class:launch()
   assert(self.service:add(self.handler))
 end
 
+function class:release(delete_timer_handle)
+  assert(self.service:del(self.handler))
+  return async_state.release(self, delete_timer_handle)
+end
+
 local metatable = {
   __index = class;
 }

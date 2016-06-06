@@ -27,10 +27,6 @@ function class:is_ready()
   return self.state:is_ready()
 end
 
-function class:get()
-  return self.state:get()
-end
-
 function class:wait()
   return self.state:wait()
 end
@@ -41,6 +37,10 @@ end
 
 function class:wait_for(timeout)
   return self.state:wait_for(timeout)
+end
+
+function class:get()
+  return self.state:get()
 end
 
 local metatable = {
