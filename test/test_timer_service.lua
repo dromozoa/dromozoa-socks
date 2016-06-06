@@ -20,13 +20,13 @@ local timer_service = require "dromozoa.socks.timer_service"
 local service = timer_service()
 
 local thread = coroutine.create(function ()
-  print(service.current_time)
-  service:insert(service.current_time, coroutine.running())
+  print(service:get_current_time())
+  service:insert(service:get_current_time(), coroutine.running())
   coroutine.yield()
-  print(service.current_time)
-  service:insert(service.current_time, coroutine.running())
+  print(service:get_current_time())
+  service:insert(service:get_current_time(), coroutine.running())
   coroutine.yield()
-  print(service.current_time)
+  print(service:get_current_time())
 end)
 
 assert(coroutine.resume(thread))

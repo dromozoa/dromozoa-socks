@@ -24,15 +24,19 @@ function class.new(clock)
   if clock == nil then
     clock = unix.CLOCK_MONOTONIC_RAW
   end
-  return class.update({
+  return class.update_current_time({
     clock = clock;
     threads = multimap();
   })
 end
 
-function class:update()
+function class:update_current_time()
   self.current_time = unix.clock_gettime(self.clock)
   return self
+end
+
+function class:get_current_time()
+  return self.current_time
 end
 
 function class:insert(timeout, thread)
@@ -41,7 +45,7 @@ end
 
 function class:dispatch()
   while true do
-    self:update()
+    self:update_current_time()
     local range = self.threads:upper_bound(self.current_time)
     if range:empty() then
       break
