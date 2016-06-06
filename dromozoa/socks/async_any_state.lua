@@ -16,6 +16,7 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local sequence = require "dromozoa.commons.sequence"
+local unpack = require "dromozoa.commons.unpack"
 local async_state = require "dromozoa.socks.async_deferred_state"
 local pack = require "dromozoa.socks.pack"
 
@@ -25,7 +26,7 @@ function class.new(service, ...)
   local self = async_state.new(service)
   self.futures = sequence(pack(...))
   self.worker = coroutine.create(function ()
-    self:set_value(self.futures)
+    self:set_value(unpack(self.futures))
   end)
   return self
 end
@@ -33,14 +34,14 @@ end
 function class:launch()
   for future in self.futures:each() do
     if future.state:is_ready() then
-      self:set_value(self.futures)
+      self:set_value(unpack(self.futures))
       return
     end
   end
   for future in self.futures:each() do
     future.state:launch()
     if future.state:is_ready() then
-      self:set_value(self.futures)
+      self:set_value(unpack(self.futures))
       return
     end
   end
