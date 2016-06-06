@@ -20,6 +20,24 @@ local unpack = require "dromozoa.commons.unpack"
 local async_state = require "dromozoa.socks.async_deferred_state"
 local pack = require "dromozoa.socks.pack"
 
+local function count_down(self)
+  self.count = self.count - 1
+  if self.count == 0 then
+    self:set_value(unpack(self.futures))
+    return true
+  else
+    return false
+  end
+end
+
+local function each_state(self)
+  return coroutine.wrap(function ()
+    for _, future in ipairs(self.futures) do
+      coroutine.yield(future.state)
+    end
+  end)
+end
+
 local class = {}
 
 function class.new(service, when, ...)
@@ -31,53 +49,35 @@ function class.new(service, when, ...)
     self.count = self.futures.n
   end
   self.counter = coroutine.create(function ()
-    self:count_down()
+    count_down(self)
   end)
   return self
 end
 
-function class:count_down()
-  self.count = self.count - 1
-  if self.count == 0 then
-    self:set_value(unpack(self.futures))
-    return true
-  else
-    return false
-  end
-end
-
-function class:each_state()
-  return coroutine.wrap(function ()
-    for _, future in ipairs(self.futures) do
-      coroutine.yield(future.state)
-    end
-  end)
-end
-
 function class:launch()
-  for state in self:each_state() do
+  for state in each_state(self) do
     if state:is_ready() then
-      if self:count_down() then
+      if count_down(self) then
         return
       end
     end
   end
-  for state in self:each_state() do
+  for state in each_state(self) do
     state:launch()
     if state:is_ready() then
-      if self:count_down() then
+      if count_down(self) then
         return
       end
     end
   end
-  for state in self:each_state() do
+  for state in each_state(self) do
     state.thread = self.counter
   end
 end
 
 function class:release(delete_timer_handle)
-  for state in self:each_state() do
-    state:release()
+  for state in each_state(self) do
+    state:release(delete_timer_handle)
   end
   return async_state.release(self, delete_timer_handle)
 end
