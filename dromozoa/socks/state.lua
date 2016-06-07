@@ -17,16 +17,13 @@
 
 local unpack = require "dromozoa.commons.unpack"
 local pack = require "dromozoa.socks.pack"
-local promise = require "dromozoa.socks.promise"
 
 local class = {}
 
 function class.new(service)
-  local self = {
+  return {
     service = service;
   }
-  self.promise = promise(self)
-  return self
 end
 
 function class:finish(delete_timer_handle)

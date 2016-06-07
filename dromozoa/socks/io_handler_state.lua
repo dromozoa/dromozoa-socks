@@ -16,6 +16,7 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local io_handler = require "dromozoa.socks.io_handler"
+local promise = require "dromozoa.socks.promise"
 local state = require "dromozoa.socks.state"
 
 local class = {}
@@ -23,8 +24,9 @@ local class = {}
 function class.new(service, fd, event, thread)
   local self = state.new(service)
   self.handler = io_handler(fd, event, coroutine.create(function ()
+    local promise = promise(self)
     while true do
-      local result, message = coroutine.resume(thread, self.promise)
+      local result, message = coroutine.resume(thread, promise)
       if not result then
         self:set_error(message)
       end

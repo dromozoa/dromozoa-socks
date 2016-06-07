@@ -15,6 +15,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local promise = require "dromozoa.socks.promise"
 local state = require "dromozoa.socks.state"
 
 local class = {}
@@ -22,7 +23,8 @@ local class = {}
 function class.new(service, thread)
   local self = state.new(service)
   self.deferred = coroutine.create(function ()
-    local result, message = coroutine.resume(thread, self.promise)
+    local promise = promise(self)
+    local result, message = coroutine.resume(thread, promise)
     if not result then
       self:set_error(message)
     end
