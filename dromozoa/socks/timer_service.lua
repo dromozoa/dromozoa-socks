@@ -44,19 +44,17 @@ function class:add_timer(timeout, thread)
   return self.threads:insert(timeout, create_thread(thread))
 end
 
+function class:empty()
+  return self.threads:empty()
+end
+
 function class:dispatch()
-  while true do
-    self:update_current_time()
-    local range = self.threads:upper_bound(self:get_current_time())
-    if range:empty() then
-      break
-    end
-    for _, thread, handle in range:each() do
-      handle:delete()
-      local result, message = coroutine.resume(thread)
-      if not result then
-        return nil, message
-      end
+  self:update_current_time()
+  for _, thread, handle in self.threads:upper_bound(self:get_current_time()):each() do
+    handle:delete()
+    local result, message = coroutine.resume(thread)
+    if not result then
+      return nil, message
     end
   end
   return self

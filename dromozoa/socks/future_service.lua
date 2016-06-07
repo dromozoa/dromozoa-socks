@@ -52,6 +52,10 @@ function class:delete_handler(handler)
   return self
 end
 
+function class:empty()
+  return self.timer_service:empty() and self.io_service:empty()
+end
+
 function class:start()
   self.stopped = nil
   return self

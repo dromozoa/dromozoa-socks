@@ -24,8 +24,8 @@ function class.new()
   return {
     selector = unix.selector();
     selector_timeout = unix.timespec(0.02, unix.TIMESPEC_TYPE_DURATION);
-    readers = {};
-    writers = {};
+    read_handlers = {};
+    write_handlers = {};
   }
 end
 
@@ -33,7 +33,7 @@ function class:add_handler(handler)
   local fd = unix.fd.get(handler.fd)
   local event = handler.event
   if event == "read" then
-    if self.writers[fd] == nil then
+    if self.write_handlers[fd] == nil then
       if not self.selector:add(fd, unix.SELECTOR_READ) then
         return unix.get_last_error()
       end
@@ -42,11 +42,11 @@ function class:add_handler(handler)
         return unix.get_last_error()
       end
     end
-    self.readers[fd] = handler
+    self.read_handlers[fd] = handler
     handler.status = true
     return self
   elseif event == "write" then
-    if self.readers[fd] == nil then
+    if self.read_handlers[fd] == nil then
       if not self.selector:add(fd, unix.SELECTOR_WRITE) then
         return unix.get_last_error()
       end
@@ -55,7 +55,7 @@ function class:add_handler(handler)
         return unix.get_last_error()
       end
     end
-    self.writers[fd] = handler
+    self.write_handlers[fd] = handler
     handler.status = true
     return self
   end
@@ -65,7 +65,7 @@ function class:delete_handler(handler)
   local fd = unix.fd.get(handler.fd)
   local event = handler.event
   if event == "read" then
-    if self.writers[fd] == nil then
+    if self.write_handlers[fd] == nil then
       if not self.selector:del(fd) then
         return unix.get_last_error()
       end
@@ -74,11 +74,11 @@ function class:delete_handler(handler)
         return unix.get_last_error()
       end
     end
-    self.readers[fd] = nil
+    self.read_handlers[fd] = nil
     handler.status = nil
     return self
   elseif event == "write" then
-    if self.readers[fd] == nil then
+    if self.read_handlers[fd] == nil then
       if not self.selector:del(fd) then
         return unix.get_last_error()
       end
@@ -87,14 +87,14 @@ function class:delete_handler(handler)
         return unix.get_last_error()
       end
     end
-    self.writers[fd] = nil
+    self.write_handlers[fd] = nil
     handler.status = nil
     return self
   end
 end
 
 function class:empty()
-  return next(self.readers) == nil and next(self.writers) == nil
+  return next(self.read_handlers) == nil and next(self.write_handlers) == nil
 end
 
 function class:dispatch()
@@ -107,13 +107,13 @@ function class:dispatch()
     for i = 1, result do
       local fd, event = self.selector:event(i)
       if uint32.band(event, unix.SELECTOR_READ) ~= 0 then
-        local result, message = self.readers[fd]:dispatch(self, "read")
+        local result, message = self.read_handlers[fd]:dispatch(self, "read")
         if not result then
           return nil, message
         end
       end
       if uint32.band(event, unix.SELECTOR_WRITE) ~= 0 then
-        local result, message = self.writers[fd]:dispatch(self, "write")
+        local result, message = self.write_handlers[fd]:dispatch(self, "write")
         if not result then
           return nil, message
         end

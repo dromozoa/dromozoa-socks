@@ -15,20 +15,32 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local unix = require "dromozoa.unix"
 local timer_service = require "dromozoa.socks.timer_service"
 
 local service = timer_service()
 
+local done
 local thread = coroutine.create(function ()
-  print(service:get_current_time())
+  assert(service:empty())
   service:add_timer(service:get_current_time(), coroutine.running())
+  assert(not service:empty())
   coroutine.yield()
-  print(service:get_current_time())
-  service:add_timer(service:get_current_time(), coroutine.running())
+  assert(service:empty())
+
+  assert(service:empty())
+  service:add_timer(service:get_current_time():add(0.2), coroutine.running())
+  assert(not service:empty())
   coroutine.yield()
-  print(service:get_current_time())
+  assert(service:empty())
+
+  done = true
 end)
 
 assert(coroutine.resume(thread))
 assert(service:dispatch())
+assert(unix.nanosleep(0.5))
+assert(not done)
+assert(service:dispatch())
+assert(done)
 assert(service:dispatch())
