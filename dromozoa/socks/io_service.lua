@@ -18,70 +18,6 @@
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
 
-local function add_reader(self, reader)
-  local fd = unix.fd.get(reader.fd)
-  if self.writers[fd] == nil then
-    if not self.selector:add(fd, unix.SELECTOR_READ) then
-      return unix.get_last_error()
-    end
-  else
-    if not self.selector:mod(fd, unix.SELECTOR_READ_WRITE) then
-      return unix.get_last_error()
-    end
-  end
-  self.readers[fd] = reader
-  reader.status = true
-  return self
-end
-
-local function add_writer(self, writer)
-  local fd = unix.fd.get(writer.fd)
-  if self.readers[fd] == nil then
-    if not self.selector:add(fd, unix.SELECTOR_WRITE) then
-      return unix.get_last_error()
-    end
-  else
-    if not self.selector:mod(fd, unix.SELECTOR_READ_WRITE) then
-      return unix.get_last_error()
-    end
-  end
-  self.writers[fd] = writer
-  writer.status = true
-  return self
-end
-
-local function del_reader(self, reader)
-  local fd = unix.fd.get(reader.fd)
-  if self.writers[fd] == nil then
-    if not self.selector:del(fd) then
-      return unix.get_last_error()
-    end
-  else
-    if not self.selector:mod(fd, unix.SELECTOR_WRITE) then
-      return unix.get_last_error()
-    end
-  end
-  self.readers[fd] = nil
-  reader.status = nil
-  return self
-end
-
-local function del_writer(self, writer)
-  local fd = unix.fd.get(writer.fd)
-  if self.readers[fd] == nil then
-    if not self.selector:del(fd) then
-      return unix.get_last_error()
-    end
-  else
-    if not self.selector:mod(fd, unix.SELECTOR_READ) then
-      return unix.get_last_error()
-    end
-  end
-  self.writers[fd] = nil
-  writer.status = nil
-  return self
-end
-
 local class = {}
 
 function class.new()
@@ -94,20 +30,66 @@ function class.new()
 end
 
 function class:add(handler)
+  local fd = unix.fd.get(handler.fd)
   local event = handler.event
   if event == "read" then
-    return add_reader(self, handler)
+    if self.writers[fd] == nil then
+      if not self.selector:add(fd, unix.SELECTOR_READ) then
+        return unix.get_last_error()
+      end
+    else
+      if not self.selector:mod(fd, unix.SELECTOR_READ_WRITE) then
+        return unix.get_last_error()
+      end
+    end
+    self.readers[fd] = handler
+    handler.status = true
+    return self
   elseif event == "write" then
-    return add_writer(self, handler)
+    if self.readers[fd] == nil then
+      if not self.selector:add(fd, unix.SELECTOR_WRITE) then
+        return unix.get_last_error()
+      end
+    else
+      if not self.selector:mod(fd, unix.SELECTOR_READ_WRITE) then
+        return unix.get_last_error()
+      end
+    end
+    self.writers[fd] = handler
+    handler.status = true
+    return self
   end
 end
 
 function class:del(handler)
+  local fd = unix.fd.get(handler.fd)
   local event = handler.event
   if event == "read" then
-    return del_reader(self, handler)
+    if self.writers[fd] == nil then
+      if not self.selector:del(fd) then
+        return unix.get_last_error()
+      end
+    else
+      if not self.selector:mod(fd, unix.SELECTOR_WRITE) then
+        return unix.get_last_error()
+      end
+    end
+    self.readers[fd] = nil
+    handler.status = nil
+    return self
   elseif event == "write" then
-    return del_writer(self, handler)
+    if self.readers[fd] == nil then
+      if not self.selector:del(fd) then
+        return unix.get_last_error()
+      end
+    else
+      if not self.selector:mod(fd, unix.SELECTOR_READ) then
+        return unix.get_last_error()
+      end
+    end
+    self.writers[fd] = nil
+    handler.status = nil
+    return self
   end
 end
 
