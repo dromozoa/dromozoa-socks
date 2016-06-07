@@ -40,13 +40,13 @@ end
 
 local class = {}
 
-function class.new(when, future, ...)
+function class.new(count, future, ...)
   local self = state.new(future.state.service)
   self.futures = pack(future, ...)
-  if when == "any" then
-    self.count = 1
-  elseif when == "all" then
+  if count == "n" then
     self.count = self.futures.n
+  else
+    self.count = count
   end
   self.counter = coroutine.create(function ()
     count_down(self)

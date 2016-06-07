@@ -15,12 +15,14 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local create_thread = require "dromozoa.socks.create_thread"
 local promise = require "dromozoa.socks.promise"
 local state = require "dromozoa.socks.state"
 
 local class = {}
 
 function class.new(service, thread)
+  local thread = create_thread(thread)
   local self = state.new(service)
   self.deferred = coroutine.create(function ()
     local promise = promise(self)
