@@ -17,27 +17,27 @@
 
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
-local async_future = require "dromozoa.socks.async_future"
 local async_deferred_state = require "dromozoa.socks.async_deferred_state"
-local future_service = require "dromozoa.socks.future_service"
 local async_handler_state = require "dromozoa.socks.async_handler_state"
+local future = require "dromozoa.socks.future"
+local future_service = require "dromozoa.socks.future_service"
 
 local service = future_service()
 
-local f1 = async_future(async_deferred_state(service, coroutine.create(function (p)
+local f1 = future(async_deferred_state(service, coroutine.create(function (p)
   print("1a")
   p:set_value(1)
   print("1b")
 end)))
 
-local f2 = async_future(async_deferred_state(service, coroutine.create(function (p)
+local f2 = future(async_deferred_state(service, coroutine.create(function (p)
   print("2a")
   assert(f1:wait() == "ready")
   p:set_value(f1:get() + 2)
   print("2b")
 end)))
 
-local f3 = async_future(async_deferred_state(service, coroutine.create(function (p)
+local f3 = future(async_deferred_state(service, coroutine.create(function (p)
   print("3a")
   p:set_value(f2:get() + 3)
   print("3b")
@@ -72,7 +72,7 @@ assert(service:dispatch(coroutine.create(function ()
       end
     end
   end))
-  local f2 = async_future(async_deferred_state(service, coroutine.create(function (promise)
+  local f2 = future(async_deferred_state(service, coroutine.create(function (promise)
     print("f2a")
     assert(f1:wait_for(1) == "timeout")
     print("f2b")

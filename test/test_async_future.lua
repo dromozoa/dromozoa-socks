@@ -17,9 +17,9 @@
 
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
-local async_future = require "dromozoa.socks.async_future"
-local future_service = require "dromozoa.socks.future_service"
 local async_handler_state = require "dromozoa.socks.async_handler_state"
+local future = require "dromozoa.socks.future"
+local future_service = require "dromozoa.socks.future_service"
 
 local fd1, fd2 = unix.socketpair(unix.AF_UNIX, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC))
 assert(fd1:ndelay_on())
@@ -49,32 +49,32 @@ local state = async_handler_state(service, fd1, "read", coroutine.create(functio
   end
 end))
 
-local future = async_future(state)
+local f = future(state)
 
 assert(service:dispatch(coroutine.create(function ()
-  assert(not future:is_ready())
+  assert(not f:is_ready())
 
-  assert(future:wait_for(0.2) == "timeout")
+  assert(f:wait_for(0.2) == "timeout")
   print(unix.clock_gettime(unix.CLOCK_REALTIME))
   fd2:write("f")
 
-  assert(future:wait_for(0.2) == "timeout")
+  assert(f:wait_for(0.2) == "timeout")
   print(unix.clock_gettime(unix.CLOCK_REALTIME))
   fd2:write("o")
 
-  assert(future:wait_for(0.2) == "timeout")
+  assert(f:wait_for(0.2) == "timeout")
   print(unix.clock_gettime(unix.CLOCK_REALTIME))
   fd2:write("o")
 
-  assert(future:wait_for(0.2) == "timeout")
+  assert(f:wait_for(0.2) == "timeout")
   print(unix.clock_gettime(unix.CLOCK_REALTIME))
   fd2:write("\n")
 
-  assert(future:wait() == "ready")
+  assert(f:wait() == "ready")
   print(unix.clock_gettime(unix.CLOCK_REALTIME))
 
-  assert(future:is_ready())
-  assert(future:get() == "foo")
+  assert(f:is_ready())
+  assert(f:get() == "foo")
   fd2:write("bar\n")
   service:stop()
 end)))
