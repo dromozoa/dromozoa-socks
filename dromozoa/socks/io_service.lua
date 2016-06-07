@@ -29,7 +29,7 @@ function class.new()
   }
 end
 
-function class:add(handler)
+function class:add_handler(handler)
   local fd = unix.fd.get(handler.fd)
   local event = handler.event
   if event == "read" then
@@ -61,7 +61,7 @@ function class:add(handler)
   end
 end
 
-function class:del(handler)
+function class:delete_handler(handler)
   local fd = unix.fd.get(handler.fd)
   local event = handler.event
   if event == "read" then

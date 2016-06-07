@@ -27,13 +27,13 @@ function class.new()
   }
 end
 
-function class:add(handler)
-  self.io:add(handler)
+function class:add_handler(handler)
+  self.io:add_handler(handler)
   return self
 end
 
-function class:del(handler)
-  self.io:del(handler)
+function class:delete_handler(handler)
+  self.io:delete_handler(handler)
   return self
 end
 

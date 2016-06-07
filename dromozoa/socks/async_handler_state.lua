@@ -40,11 +40,11 @@ function class.new(service, fd, event, thread)
 end
 
 function class:launch()
-  assert(self.service:add(self.handler))
+  assert(self.service:add_handler(self.handler))
 end
 
 function class:release(delete_timer_handle)
-  assert(self.service:del(self.handler))
+  assert(self.service:delete_handler(self.handler))
   return async_state.release(self, delete_timer_handle)
 end
 
