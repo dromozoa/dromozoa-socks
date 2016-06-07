@@ -17,14 +17,14 @@
 
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
-local future_service = require "dromozoa.socks.future_service"
 local io_handler = require "dromozoa.socks.io_handler"
+local io_service = require "dromozoa.socks.io_service"
 
 local fd1, fd2 = unix.socketpair(unix.AF_UNIX, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC))
 assert(fd1:ndelay_on())
 assert(fd2:ndelay_on())
 
-local service = future_service()
+local service = io_service()
 
 service:dispatch(coroutine.create(function ()
   service:add_handler(io_handler(fd2, "write", coroutine.create(function (service, handler, event)

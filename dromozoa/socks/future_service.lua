@@ -63,7 +63,7 @@ end
 
 function class:dispatch(thread)
   if thread then
-    local result, message = coroutine.resume(thread)
+    local result, message = coroutine.resume(thread, self)
     if not result then
       return nil, message
     end
