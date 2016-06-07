@@ -17,16 +17,19 @@
 
 local unpack = require "dromozoa.commons.unpack"
 local pack = require "dromozoa.socks.pack"
+local promise = require "dromozoa.socks.promise"
 
 local class = {}
 
 function class.new(service)
-  return {
+  local self = {
     service = service;
   }
+  self.promise = promise(self)
+  return self
 end
 
-function class:release(delete_timer_handle)
+function class:finish(delete_timer_handle)
   if self.timer_handle then
     if delete_timer_handle then
       self.timer_handle:delete()
@@ -40,7 +43,7 @@ end
 
 function class:set_ready()
   self.status = "ready"
-  local thread = self:release(true)
+  local thread = self:finish(true)
   if thread then
     assert(coroutine.resume(thread, "ready"))
   end
@@ -70,7 +73,7 @@ function class:wait(timeout)
     end
     if timeout then
       self.timer_handle = self.service:add_timer(timeout, coroutine.create(function ()
-        local thread = self:release(false)
+        local thread = self:finish(false)
         if thread then
           assert(coroutine.resume(thread, "timeout"))
         end
