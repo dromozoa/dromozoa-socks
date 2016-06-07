@@ -15,6 +15,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local create_thread = require "dromozoa.socks.create_thread"
 local io_service = require "dromozoa.socks.io_service"
 local timer_service = require "dromozoa.socks.timer_service"
 
@@ -31,8 +32,8 @@ function class:get_current_time()
   return self.timer_service:get_current_time()
 end
 
-function class:add_timer(timeout, service)
-  return self.timer_service:add_timer(timeout, service)
+function class:add_timer(timeout, thread)
+  return self.timer_service:add_timer(timeout, thread)
 end
 
 function class:add_handler(handler)
@@ -63,7 +64,7 @@ end
 
 function class:dispatch(thread)
   if thread then
-    local result, message = coroutine.resume(thread, self)
+    local result, message = coroutine.resume(create_thread(thread), self)
     if not result then
       return nil, message
     end

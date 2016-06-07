@@ -16,6 +16,7 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local unix = require "dromozoa.unix"
+local create_thread = require "dromozoa.socks.create_thread"
 local multimap = require "dromozoa.socks.multimap"
 
 local class = {}
@@ -40,7 +41,7 @@ function class:get_current_time()
 end
 
 function class:add_timer(timeout, thread)
-  return self.threads:insert(timeout, thread)
+  return self.threads:insert(timeout, create_thread(thread))
 end
 
 function class:dispatch()

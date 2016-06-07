@@ -15,28 +15,15 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local create_thread = require "dromozoa.socks.create_thread"
-
-local class = {}
-
-function class.new(fd, event, thread)
-  return {
-    fd = fd;
-    event = event;
-    thread = create_thread(thread);
-  }
+return function (thread)
+  local t = type(thread)
+  if t == "function" then
+    return coroutine.create(thread)
+  elseif t == "thread" then
+    return thread
+  else
+    return coroutine.create(function (...)
+      return thread(...)
+    end)
+  end
 end
-
-function class:dispatch(service, event)
-  return coroutine.resume(self.thread, service, self, event)
-end
-
-local metatable = {
-  __index = class;
-}
-
-return setmetatable(class, {
-  __call = function (_, fd, event, thread)
-    return setmetatable(class.new(fd, event, thread), metatable)
-  end;
-})
