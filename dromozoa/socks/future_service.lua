@@ -22,18 +22,32 @@ local class = {}
 
 function class.new()
   return {
-    io = io_service();
-    timer = timer_service();
+    timer_service = timer_service();
+    io_service = io_service();
   }
 end
 
+function class:get_current_time()
+  return self.timer_service:get_current_time()
+end
+
+function class:add_timer(timeout, service)
+  return self.timer_service:add_timer(timeout, service)
+end
+
 function class:add_handler(handler)
-  self.io:add_handler(handler)
+  local result, message = self.io_service:add_handler(handler)
+  if not result then
+    return nil, message
+  end
   return self
 end
 
 function class:delete_handler(handler)
-  self.io:delete_handler(handler)
+  local result, message = self.io_service:delete_handler(handler)
+  if not result then
+    return nil, message
+  end
   return self
 end
 
@@ -58,14 +72,14 @@ function class:dispatch(thread)
     end
   end
   while true do
-    local result, message = self.timer:dispatch()
+    local result, message = self.timer_service:dispatch()
     if not result then
       return nil, message
     end
     if self.stopped then
       return self
     end
-    local result, message = self.io:dispatch()
+    local result, message = self.io_service:dispatch()
     if not result then
       return nil, message
     end

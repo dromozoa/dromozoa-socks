@@ -69,7 +69,7 @@ function class:wait(timeout)
       return "ready"
     end
     if timeout then
-      self.timer_handle = self.service.timer:add_timer(timeout, coroutine.create(function ()
+      self.timer_handle = self.service:add_timer(timeout, coroutine.create(function ()
         local thread = self:release(false)
         if thread then
           assert(coroutine.resume(thread, "timeout"))
@@ -82,7 +82,7 @@ function class:wait(timeout)
 end
 
 function class:wait_for(timeout)
-  return self:wait(self.service.timer:get_current_time():add(timeout))
+  return self:wait(self.service:get_current_time():add(timeout))
 end
 
 function class:get()
