@@ -17,9 +17,9 @@
 
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
-local async_handler_state = require "dromozoa.socks.async_handler_state"
 local future = require "dromozoa.socks.future"
 local future_service = require "dromozoa.socks.future_service"
+local io_handler_state = require "dromozoa.socks.future.io_handler_state"
 
 local fd1, fd2 = unix.socketpair(unix.AF_UNIX, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC))
 assert(fd1:ndelay_on())
@@ -27,7 +27,7 @@ assert(fd2:ndelay_off())
 
 local service = future_service()
 
-local state = async_handler_state(service, fd1, "read", coroutine.create(function (promise)
+local state = io_handler_state(service, fd1, "read", coroutine.create(function (promise)
   local buffer = ""
   while true do
     local char = fd1:read(1)
