@@ -17,8 +17,8 @@
 
 local ipairs = require "dromozoa.commons.ipairs"
 local unpack = require "dromozoa.commons.unpack"
-local async_state = require "dromozoa.socks.async_deferred_state"
 local pack = require "dromozoa.socks.pack"
+local state = require "dromozoa.socks.future.state"
 
 local function count_down(self)
   self.count = self.count - 1
@@ -41,7 +41,7 @@ end
 local class = {}
 
 function class.new(when, future, ...)
-  local self = async_state.new(future.state.service)
+  local self = state.new(future.state.service)
   self.futures = pack(future, ...)
   if when == "any" then
     self.count = 1
@@ -79,7 +79,7 @@ function class:finish(delete_timer_handle)
   for state in each_state(self) do
     state:finish(delete_timer_handle)
   end
-  return async_state.finish(self, delete_timer_handle)
+  return state.finish(self, delete_timer_handle)
 end
 
 local metatable = {
@@ -87,7 +87,7 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __index = async_state;
+  __index = state;
   __call = function (_, when, ...)
     return setmetatable(class.new(when, ...), metatable)
   end;
