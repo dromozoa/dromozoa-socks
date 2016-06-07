@@ -39,7 +39,7 @@ function class:get_current_time()
   return self.current_time
 end
 
-function class:insert(timeout, thread)
+function class:add_timer(timeout, thread)
   return self.threads:insert(timeout, thread)
 end
 
