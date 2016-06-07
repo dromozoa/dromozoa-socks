@@ -16,7 +16,6 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local async_state = require "dromozoa.socks.async_state"
-local promise = require "dromozoa.socks.promise"
 
 local class = {}
 
