@@ -18,9 +18,9 @@
 local async_when_state = require "dromozoa.socks.async_when_state"
 local async_future = require "dromozoa.socks.async_future"
 local async_deferred_state = require "dromozoa.socks.async_deferred_state"
-local async_service = require "dromozoa.socks.async_service"
+local future_service = require "dromozoa.socks.future_service"
 
-local service = async_service()
+local service = future_service()
 
 assert(service:dispatch(coroutine.create(function ()
   local f0 = async_future(async_deferred_state(service, coroutine.create(function (promise)

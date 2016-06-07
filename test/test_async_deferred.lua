@@ -19,10 +19,10 @@ local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
 local async_future = require "dromozoa.socks.async_future"
 local async_deferred_state = require "dromozoa.socks.async_deferred_state"
-local async_service = require "dromozoa.socks.async_service"
+local future_service = require "dromozoa.socks.future_service"
 local async_handler_state = require "dromozoa.socks.async_handler_state"
 
-local service = async_service()
+local service = future_service()
 
 local f1 = async_future(async_deferred_state(service, coroutine.create(function (p)
   print("1a")
