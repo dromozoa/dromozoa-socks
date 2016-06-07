@@ -18,9 +18,9 @@
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
 local future = require "dromozoa.socks.future"
+local deferred_state = require "dromozoa.socks.deferred_state"
+local io_handler_state = require "dromozoa.socks.io_handler_state"
 local future_service = require "dromozoa.socks.future_service"
-local deferred_state = require "dromozoa.socks.future.deferred_state"
-local io_handler_state = require "dromozoa.socks.future.io_handler_state"
 
 local service = future_service()
 

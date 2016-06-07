@@ -16,7 +16,7 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local io_handler = require "dromozoa.socks.io_handler"
-local state = require "dromozoa.socks.future.state"
+local state = require "dromozoa.socks.state"
 
 local class = {}
 

@@ -15,10 +15,10 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local latch_state = require "dromozoa.socks.future.latch_state"
+local deferred_state = require "dromozoa.socks.deferred_state"
 local future = require "dromozoa.socks.future"
 local future_service = require "dromozoa.socks.future_service"
-local deferred_state = require "dromozoa.socks.future.deferred_state"
+local latch_state = require "dromozoa.socks.latch_state"
 
 local service = future_service()
 
