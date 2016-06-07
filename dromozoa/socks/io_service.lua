@@ -93,6 +93,10 @@ function class:delete_handler(handler)
   end
 end
 
+function class:empty()
+  return next(self.readers) == nil and next(self.writers) == nil
+end
+
 function class:dispatch()
   local result = self.selector:select(self.selector_timeout)
   if not result then

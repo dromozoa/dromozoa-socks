@@ -25,20 +25,35 @@ assert(fd1:ndelay_on())
 assert(fd2:ndelay_on())
 
 local service = io_service()
+assert(service:empty())
 
+assert(service:dispatch())
+assert(service:empty())
+
+local done
 service:add_handler(io_handler(fd2, "write", function (service, handler, event)
-  print(event)
+  assert(event == "write")
   service:delete_handler(handler)
   fd2:write("x")
   service:add_handler(io_handler(fd1, "read", function (service, handler, event)
-    print(event)
+    assert(event == "read")
     service:delete_handler(handler)
     assert(fd1:read(1) == "x")
+    done = true
   end))
 end))
+assert(not service:empty())
 
 assert(service:dispatch())
+assert(not service:empty())
+
+assert(not done)
 assert(service:dispatch())
+assert(service:empty())
+assert(done)
+
+assert(service:dispatch())
+assert(service:empty())
 
 assert(fd1:close())
 assert(fd2:close())
