@@ -70,9 +70,8 @@ function class:launch()
     end
   end
   for state in each_state(self) do
-    state.thread = self.counter
+    state.caller = self.counter
   end
-  return state.launch(self)
 end
 
 function class:finish(delete_timer_handle)
