@@ -70,9 +70,7 @@ function class:launch()
     end
   end
   for state in each_state(self) do
-    if not state:is_ready() then
-      state.thread = self.counter
-    end
+    state.thread = self.counter
   end
 end
 
