@@ -16,7 +16,10 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local create_thread = require "dromozoa.socks.create_thread"
+local deferred_state = require "dromozoa.socks.deferred_state"
+local future = require "dromozoa.socks.future"
 local io_service = require "dromozoa.socks.io_service"
+local latch_state = require "dromozoa.socks.latch_state"
 local timer_service = require "dromozoa.socks.timer_service"
 
 local class = {}
@@ -92,6 +95,18 @@ function class:dispatch(thread)
       return self
     end
   end
+end
+
+function class:deferred(thread)
+  return future(deferred_state(self, thread))
+end
+
+function class:when_any(...)
+  return future(latch_state(self, 1, ...))
+end
+
+function class:when_all(...)
+  return future(latch_state(self, "n", ...))
 end
 
 local metatable = {

@@ -15,78 +15,80 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local deferred_state = require "dromozoa.socks.deferred_state"
-local future = require "dromozoa.socks.future"
 local future_service = require "dromozoa.socks.future_service"
-local latch_state = require "dromozoa.socks.latch_state"
 
 local service = future_service()
 
-assert(service:dispatch(coroutine.create(function ()
-  local f0 = future(deferred_state(service, coroutine.create(function (promise)
-  end)))
+assert(service:dispatch(coroutine.create(function (service)
+  local f0 = service:deferred(function (promise)
+  end)
 
-  local f1 = future(deferred_state(service, coroutine.create(function (promise)
-    f0:wait_for(0.5)
+  local f1 = service:deferred(function (promise)
+    assert(f0:wait_for(0.5) == "timeout")
     promise:set_value(1)
-  end)))
+  end)
 
-  local f2 = future(deferred_state(service, coroutine.create(function (promise)
+  local f2 = service:deferred(function (promise)
     promise:set_value(2)
-  end)))
+  end)
 
-  local f3 = future(deferred_state(service, coroutine.create(function (promise)
+  local f3 = service:deferred(function (promise)
     promise:set_value(3)
-  end)))
+  end)
 
   assert(not f1:is_ready())
   assert(not f2:is_ready())
   assert(not f3:is_ready())
 
-  future(latch_state(1, f1, f2, f3)):wait()
+  service:when_any(f1, f2, f3):wait()
   assert(not f1:is_ready())
   assert(f2:is_ready())
   assert(not f3:is_ready())
 
-  future(latch_state(1, f1, f3)):wait()
+  service:when_any(f1, f2, f3):wait()
+  assert(not f1:is_ready())
+  assert(f2:is_ready())
+  assert(not f3:is_ready())
+
+  service:when_any(f1, f3):wait()
   assert(not f1:is_ready())
   assert(f2:is_ready())
   assert(f3:is_ready())
 
-  assert(future(latch_state(1, f1)):wait_for(0.2) == "timeout")
+  assert(service:when_any(f1):wait_for(0.2) == "timeout")
   assert(not f1:is_ready())
   assert(f2:is_ready())
   assert(f3:is_ready())
 
-  assert(future(latch_state(1, f1)):wait_for(0.5) == "ready")
+  assert(service:when_any(f1):wait_for(0.5) == "ready")
   assert(f1:is_ready())
   assert(f2:is_ready())
   assert(f3:is_ready())
 
-  local f1 = future(deferred_state(service, coroutine.create(function (promise)
-    f0:wait_for(0.5)
+  local f1 = service:deferred(function (promise)
+    assert(f0:wait_for(0.5) == "timeout")
     promise:set_value(1)
-  end)))
+  end)
 
-  local f2 = future(deferred_state(service, coroutine.create(function (promise)
+  local f2 = service:deferred(function (promise)
     promise:set_value(2)
-  end)))
+  end)
 
-  local f3 = future(deferred_state(service, coroutine.create(function (promise)
+  local f3 = service:deferred(function (promise)
     promise:set_value(3)
-  end)))
+  end)
 
   assert(not f1:is_ready())
   assert(not f2:is_ready())
   assert(not f3:is_ready())
 
-  assert(future(latch_state("n", f1, f2, f3)):wait_for(0.2) == "timeout")
+  assert(service:when_all(f1, f2, f3):wait_for(0.2) == "timeout")
   assert(not f1:is_ready())
   assert(f2:is_ready())
   assert(f3:is_ready())
 
-  assert(future(latch_state("n", f1, f2, f3)):wait_for(0.5) == "ready")
-  assert(not f1:is_ready())
+  assert(service:when_all(f1, f2, f3):wait_for(0.5) == "ready")
+  assert(f1:is_ready())
   assert(f2:is_ready())
   assert(f3:is_ready())
 

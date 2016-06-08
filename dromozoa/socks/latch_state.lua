@@ -40,9 +40,9 @@ end
 
 local class = {}
 
-function class.new(count, future, ...)
-  local self = state.new(future.state.service)
-  self.futures = pack(future, ...)
+function class.new(service, count, ...)
+  local self = state.new(service)
+  self.futures = pack(...)
   if count == "n" then
     self.count = self.futures.n
   else
@@ -60,18 +60,19 @@ function class:launch()
       if count_down(self) then
         return
       end
-    end
-  end
-  for state in each_state(self) do
-    state:launch()
-    if state:is_ready() then
-      if count_down(self) then
-        return
+    else
+      state:launch()
+      if state:is_ready() then
+        if count_down(self) then
+          return
+        end
       end
     end
   end
   for state in each_state(self) do
-    state.thread = self.counter
+    if not state:is_ready() then
+      state.thread = self.counter
+    end
   end
 end
 
@@ -88,7 +89,7 @@ local metatable = {
 
 return setmetatable(class, {
   __index = state;
-  __call = function (_, when, ...)
-    return setmetatable(class.new(when, ...), metatable)
+  __call = function (_, service, count, ...)
+    return setmetatable(class.new(service, count, ...), metatable)
   end;
 })
