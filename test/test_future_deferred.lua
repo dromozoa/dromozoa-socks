@@ -19,7 +19,6 @@ local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
 local future = require "dromozoa.socks.future"
 local deferred_state = require "dromozoa.socks.deferred_state"
-local io_handler_state = require "dromozoa.socks.io_handler_state"
 local future_service = require "dromozoa.socks.future_service"
 
 local service = future_service()
@@ -43,22 +42,42 @@ local f3 = future(deferred_state(service, coroutine.create(function (p)
   print("3b")
 end)))
 
-assert(service:dispatch(coroutine.create(function ()
+local done
+assert(not done)
+assert(service:dispatch(function (service)
+  local f1 = service:deferred(function (promise)
+    print("1a")
+    promise:set_value(1)
+    print("1b")
+  end)
+  local f2 = service:deferred(function (promise)
+    print("2a")
+    promise:set_value(f1:get() + 2)
+    print("2b")
+  end)
+  local f3 = service:deferred(function (promise)
+    print("3a")
+    promise:set_value(f2:get() + 3)
+    print("3b")
+  end)
   print("4a")
   assert(f3:get() == 6)
   print("4b")
   service:stop()
-end)))
-
-print("--")
+  done = true
+end))
+assert(done)
 
 local fd1, fd2 = unix.socketpair(unix.AF_UNIX, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC))
 assert(fd1:ndelay_on())
 assert(fd2:ndelay_off())
 
-assert(service:dispatch(coroutine.create(function ()
+local done
+assert(not done)
+assert(service:dispatch(function (service)
   service:start()
-  local f1 = io_handler_state(service, fd1, "read", coroutine.create(function (promise)
+
+  local f1 = service:io_handler(fd1, "read", function (promise)
     while true do
       local char = fd1:read(1)
       if char then
@@ -71,18 +90,23 @@ assert(service:dispatch(coroutine.create(function ()
         end
       end
     end
-  end))
-  local f2 = future(deferred_state(service, coroutine.create(function (promise)
-    print("f2a")
-    assert(f1:wait_for(1) == "timeout")
-    print("f2b")
+  end)
+
+  local f2 = service:deferred(function (promise)
+    print("2a")
+    assert(f1:wait_for(0.5) == "timeout")
+    print("2b")
     return promise:set_value(42)
-  end)))
-  assert(f2:wait_for(0.5) == "timeout")
-  assert(f2:wait_for(1) == "ready")
+  end)
+
+  assert(f2:wait_for(0.2) == "timeout")
+  assert(f2:wait_for(0.5) == "ready")
   assert(f2:get() == 42)
   service:stop()
-end)))
+
+  done = true
+end))
+assert(done)
 
 assert(fd1:close())
 assert(fd2:close())

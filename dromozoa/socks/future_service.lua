@@ -18,6 +18,7 @@
 local create_thread = require "dromozoa.socks.create_thread"
 local deferred_state = require "dromozoa.socks.deferred_state"
 local future = require "dromozoa.socks.future"
+local io_handler_state = require "dromozoa.socks.io_handler_state"
 local io_service = require "dromozoa.socks.io_service"
 local latch_state = require "dromozoa.socks.latch_state"
 local timer_service = require "dromozoa.socks.timer_service"
@@ -99,6 +100,10 @@ end
 
 function class:deferred(thread)
   return future(deferred_state(self, thread))
+end
+
+function class:io_handler(fd, event, thread)
+  return future(io_handler_state(self, fd, event, thread))
 end
 
 function class:when_any(...)
