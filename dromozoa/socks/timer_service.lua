@@ -16,6 +16,7 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local unix = require "dromozoa.unix"
+local create_thread = require "dromozoa.socks.create_thread"
 local multimap = require "dromozoa.socks.multimap"
 
 local class = {}
@@ -24,34 +25,36 @@ function class.new(clock)
   if clock == nil then
     clock = unix.CLOCK_MONOTONIC_RAW
   end
-  return class.update({
+  return class.update_current_time({
     clock = clock;
     threads = multimap();
   })
 end
 
-function class:update()
+function class:update_current_time()
   self.current_time = unix.clock_gettime(self.clock)
   return self
 end
 
-function class:insert(timeout, thread)
-  return self.threads:insert(timeout, thread)
+function class:get_current_time()
+  return self.current_time
+end
+
+function class:add_timer(timeout, thread)
+  return self.threads:insert(timeout, create_thread(thread))
+end
+
+function class:empty()
+  return self.threads:empty()
 end
 
 function class:dispatch()
-  while true do
-    self:update()
-    local range = self.threads:upper_bound(self.current_time)
-    if range:empty() then
-      break
-    end
-    for _, thread, handle in range:each() do
-      handle:delete()
-      local result, message = coroutine.resume(thread)
-      if not result then
-        return nil, message
-      end
+  self:update_current_time()
+  for _, thread, handle in self.threads:upper_bound(self:get_current_time()):each() do
+    handle:delete()
+    local result, message = coroutine.resume(thread)
+    if not result then
+      return nil, message
     end
   end
   return self

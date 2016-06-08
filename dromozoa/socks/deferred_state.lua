@@ -15,18 +15,34 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local create_thread = require "dromozoa.socks.create_thread"
+local promise = require "dromozoa.socks.promise"
+local state = require "dromozoa.socks.state"
+
 local class = {}
 
-function class.new(fd, event, thread)
-  return {
-    fd = fd;
-    event = event;
-    thread = thread;
-  }
+function class.new(service, thread)
+  local thread = create_thread(thread)
+  local self = state.new(service)
+  self.deferred = coroutine.create(function ()
+    local promise = promise(self)
+    local result, message = coroutine.resume(thread, promise)
+    if not result then
+      self:set_error(message)
+    end
+  end)
+  return self
 end
 
-function class:dispatch(service, event)
-  return coroutine.resume(self.thread, service, self, event)
+function class:launch()
+  local deferred = self.deferred
+  if deferred then
+    self.deferred = nil
+    local result, message = coroutine.resume(deferred)
+    if not result then
+      self:set_error(message)
+    end
+  end
 end
 
 local metatable = {
@@ -34,7 +50,8 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __call = function (_, fd, event, thread)
-    return setmetatable(class.new(fd, event, thread), metatable)
+  __index = state;
+  __call = function (_, service, thread)
+    return setmetatable(class.new(service, thread), metatable)
   end;
 })

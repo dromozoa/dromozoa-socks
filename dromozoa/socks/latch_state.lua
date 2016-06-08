@@ -17,8 +17,8 @@
 
 local ipairs = require "dromozoa.commons.ipairs"
 local unpack = require "dromozoa.commons.unpack"
-local async_state = require "dromozoa.socks.async_deferred_state"
 local pack = require "dromozoa.socks.pack"
+local state = require "dromozoa.socks.state"
 
 local function count_down(self)
   self.count = self.count - 1
@@ -40,13 +40,13 @@ end
 
 local class = {}
 
-function class.new(service, when, ...)
-  local self = async_state.new(service)
+function class.new(service, count, ...)
+  local self = state.new(service)
   self.futures = pack(...)
-  if when == "any" then
-    self.count = 1
-  elseif when == "all" then
+  if count == "n" then
     self.count = self.futures.n
+  else
+    self.count = count
   end
   self.counter = coroutine.create(function ()
     count_down(self)
@@ -60,13 +60,12 @@ function class:launch()
       if count_down(self) then
         return
       end
-    end
-  end
-  for state in each_state(self) do
-    state:launch()
-    if state:is_ready() then
-      if count_down(self) then
-        return
+    else
+      state:launch()
+      if state:is_ready() then
+        if count_down(self) then
+          return
+        end
       end
     end
   end
@@ -75,11 +74,11 @@ function class:launch()
   end
 end
 
-function class:release(delete_timer_handle)
+function class:finish(delete_timer_handle)
   for state in each_state(self) do
-    state:release(delete_timer_handle)
+    state:finish(delete_timer_handle)
   end
-  return async_state.release(self, delete_timer_handle)
+  return state.finish(self, delete_timer_handle)
 end
 
 local metatable = {
@@ -87,8 +86,8 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __index = async_state;
-  __call = function (_, service, when, ...)
-    return setmetatable(class.new(service, when, ...), metatable)
+  __index = state;
+  __call = function (_, service, count, ...)
+    return setmetatable(class.new(service, count, ...), metatable)
   end;
 })

@@ -15,20 +15,15 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local unix = require "dromozoa.unix"
-local async_timer = require "dromozoa.socks.async_timer"
-
-local timer = async_timer(unix.CLOCK_MONOTONIC_RAW)
-
-local thread = coroutine.create(function ()
-  print(timer.current_time)
-  timer:insert(timer.current_time, coroutine.running())
-  coroutine.yield()
-  print(timer.current_time)
-  timer:insert(timer.current_time, coroutine.running())
-  coroutine.yield()
-end)
-
-assert(coroutine.resume(thread))
-assert(timer:dispatch())
-assert(timer:dispatch())
+return function (thread)
+  local t = type(thread)
+  if t == "function" then
+    return coroutine.create(thread)
+  elseif t == "thread" then
+    return thread
+  else
+    return coroutine.create(function (...)
+      return thread(...)
+    end)
+  end
+end

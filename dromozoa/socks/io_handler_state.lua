@@ -15,16 +15,18 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local async_handler = require "dromozoa.socks.async_handler"
-local async_promise = require "dromozoa.socks.async_promise"
-local async_state = require "dromozoa.socks.async_state"
+local create_thread = require "dromozoa.socks.create_thread"
+local io_handler = require "dromozoa.socks.io_handler"
+local promise = require "dromozoa.socks.promise"
+local state = require "dromozoa.socks.state"
 
 local class = {}
 
 function class.new(service, fd, event, thread)
-  local self = async_state.new(service)
-  self.handler = async_handler(fd, event, coroutine.create(function ()
-    local promise = async_promise(self)
+  local thread = create_thread(thread)
+  local self = state.new(service)
+  self.handler = io_handler(fd, event, coroutine.create(function ()
+    local promise = promise(self)
     while true do
       local result, message = coroutine.resume(thread, promise)
       if not result then
@@ -40,12 +42,12 @@ function class.new(service, fd, event, thread)
 end
 
 function class:launch()
-  assert(self.service:add(self.handler))
+  assert(self.service:add_handler(self.handler))
 end
 
-function class:release(delete_timer_handle)
-  assert(self.service:del(self.handler))
-  return async_state.release(self, delete_timer_handle)
+function class:finish(delete_timer_handle)
+  assert(self.service:delete_handler(self.handler))
+  return state.finish(self, delete_timer_handle)
 end
 
 local metatable = {
@@ -53,7 +55,7 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __index = async_state;
+  __index = state;
   __call = function (_, service, fd, event, thread)
     return setmetatable(class.new(service, fd, event, thread), metatable)
   end;
