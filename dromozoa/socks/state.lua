@@ -43,6 +43,7 @@ function class:set_ready()
   self.status = "ready"
   local caller = self:finish(true)
   if caller then
+    self.service:before_resume_caller(self, caller, "ready")
     assert(coroutine.resume(caller, "ready"))
   end
 end
@@ -73,12 +74,13 @@ function class:wait(timeout)
       self.timer_handle = self.service:add_timer(timeout, coroutine.create(function ()
         local caller = self:finish(false)
         if caller then
+          self.service:before_resume_caller(self, caller, "timeout")
           assert(coroutine.resume(caller, "timeout"))
         end
       end))
     end
     self.caller = coroutine.running()
-    print("wait", self, self.caller, self.thread)
+    self.service:before_yield_caller(self)
     return coroutine.yield()
   end
 end

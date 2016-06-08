@@ -98,6 +98,17 @@ function class:dispatch(thread)
   end
 end
 
+function class:before_yield_caller(state)
+  print("before_yield_caller", state, state.caller, state.thread)
+end
+
+function class:before_resume_caller(state, caller, status)
+  print("before_resume_caller", state, caller, state.thread, status)
+  -- coroutine.running()
+  --   == ???
+  --   == timer_handle:head() -- timer thread
+end
+
 function class:deferred(thread)
   return future(deferred_state(self, thread))
 end
