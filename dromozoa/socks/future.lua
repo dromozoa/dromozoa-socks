@@ -15,6 +15,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local create_thread = require "dromozoa.socks.create_thread"
+
 local class = {}
 
 function class.new(state)
@@ -41,6 +43,14 @@ end
 
 function class:get()
   return self.state:get()
+end
+
+function class:then_(thread)
+  local thread = create_thread(thread)
+  return self.state.service:deferred(function (promise)
+    self:wait()
+    promise:set_value(select(2, assert(coroutine.resume(thread, self))))
+  end)
 end
 
 local metatable = {
