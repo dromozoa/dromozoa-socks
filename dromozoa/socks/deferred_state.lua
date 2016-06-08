@@ -22,11 +22,11 @@ local state = require "dromozoa.socks.state"
 local class = {}
 
 function class.new(service, thread)
-  local thread = create_thread(thread)
   local self = state.new(service)
+  self.thread = create_thread(thread)
   self.deferred = coroutine.create(function ()
     local promise = promise(self)
-    local result, message = coroutine.resume(thread, promise)
+    local result, message = coroutine.resume(self.thread, promise)
     if not result then
       self:set_error(message)
     end

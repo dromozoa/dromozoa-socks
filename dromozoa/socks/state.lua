@@ -78,7 +78,7 @@ function class:wait(timeout)
       end))
     end
     self.caller = coroutine.running()
-    print("wait", self, self.caller)
+    print("wait", self, self.caller, self.thread)
     return coroutine.yield()
   end
 end
