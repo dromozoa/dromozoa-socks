@@ -43,6 +43,7 @@ end
 
 function class:launch()
   assert(self.service:add_handler(self.handler))
+  state.launch(self)
 end
 
 function class:finish(delete_timer_handle)

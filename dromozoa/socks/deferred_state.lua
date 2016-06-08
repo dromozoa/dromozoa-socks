@@ -43,6 +43,7 @@ function class:launch()
       self:set_error(message)
     end
   end
+  return state.launch(self)
 end
 
 local metatable = {

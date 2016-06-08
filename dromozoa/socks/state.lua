@@ -27,6 +27,9 @@ function class.new(service)
   }
 end
 
+function class:launch()
+end
+
 function class:finish(delete_timer_handle)
   if self.timer_handle then
     if delete_timer_handle then
