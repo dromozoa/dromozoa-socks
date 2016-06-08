@@ -17,30 +17,9 @@
 
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
-local future = require "dromozoa.socks.future"
-local deferred_state = require "dromozoa.socks.deferred_state"
 local future_service = require "dromozoa.socks.future_service"
 
 local service = future_service()
-
-local f1 = future(deferred_state(service, coroutine.create(function (p)
-  print("1a")
-  p:set_value(1)
-  print("1b")
-end)))
-
-local f2 = future(deferred_state(service, coroutine.create(function (p)
-  print("2a")
-  assert(f1:wait() == "ready")
-  p:set_value(f1:get() + 2)
-  print("2b")
-end)))
-
-local f3 = future(deferred_state(service, coroutine.create(function (p)
-  print("3a")
-  p:set_value(f2:get() + 3)
-  print("3b")
-end)))
 
 local done
 assert(not done)

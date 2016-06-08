@@ -17,9 +17,7 @@
 
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
-local future = require "dromozoa.socks.future"
 local future_service = require "dromozoa.socks.future_service"
-local io_handler_state = require "dromozoa.socks.io_handler_state"
 
 local fd1, fd2 = unix.socketpair(unix.AF_UNIX, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC))
 assert(fd1:ndelay_on())
@@ -27,48 +25,48 @@ assert(fd2:ndelay_off())
 
 local service = future_service()
 
-local state = io_handler_state(service, fd1, "read", coroutine.create(function (promise)
-  local buffer = ""
-  while true do
-    local char = fd1:read(1)
-    if char then
-      print(("char=%q"):format(char))
-      if char == "\n" then
-        promise:set_value(buffer)
-        break
+local done
+assert(not done)
+assert(service:dispatch(function (service)
+  local f = service:io_handler(fd1, "read", function (promise)
+    local buffer = ""
+    while true do
+      local char = fd1:read(1)
+      if char then
+        print(("char=%q"):format(char))
+        if char == "\n" then
+          promise:set_value(buffer)
+          break
+        else
+          buffer = buffer .. char
+        end
       else
-        buffer = buffer .. char
-      end
-    else
-      if unix.get_last_errno() == unix.EAGAIN then
-        promise = coroutine.yield()
-      else
-        assert(unix.get_last_error())
+        if unix.get_last_errno() == unix.EAGAIN then
+          promise = coroutine.yield()
+        else
+          assert(unix.get_last_error())
+        end
       end
     end
-  end
-end))
+  end)
 
-local f = future(state)
-
-assert(service:dispatch(coroutine.create(function ()
   assert(not f:is_ready())
 
   assert(f:wait_for(0.2) == "timeout")
   print(unix.clock_gettime(unix.CLOCK_REALTIME))
-  fd2:write("f")
+  assert(fd2:write("f"))
 
   assert(f:wait_for(0.2) == "timeout")
   print(unix.clock_gettime(unix.CLOCK_REALTIME))
-  fd2:write("o")
+  assert(fd2:write("o"))
 
   assert(f:wait_for(0.2) == "timeout")
   print(unix.clock_gettime(unix.CLOCK_REALTIME))
-  fd2:write("o")
+  assert(fd2:write("o"))
 
   assert(f:wait_for(0.2) == "timeout")
   print(unix.clock_gettime(unix.CLOCK_REALTIME))
-  fd2:write("\n")
+  assert(fd2:write("\n"))
 
   assert(f:wait() == "ready")
   print(unix.clock_gettime(unix.CLOCK_REALTIME))
@@ -76,8 +74,11 @@ assert(service:dispatch(coroutine.create(function ()
   assert(f:is_ready())
   assert(f:get() == "foo")
   fd2:write("bar\n")
+
   service:stop()
-end)))
+  done = true
+end))
+assert(done)
 
 assert(fd1:close())
 assert(fd2:close())
