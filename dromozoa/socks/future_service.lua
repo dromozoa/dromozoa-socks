@@ -109,6 +109,10 @@ function class:before_resume_caller(state, caller, status)
   --   == timer_handle:head() -- timer thread
 end
 
+function class:before_resume_thread(state)
+  print("before_resume_thread", state, state.thread)
+end
+
 function class:deferred(thread)
   return future(deferred_state(self, thread))
 end

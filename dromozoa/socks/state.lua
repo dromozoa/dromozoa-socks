@@ -41,6 +41,15 @@ end
 
 function class:set_ready()
   self.status = "ready"
+  --[[
+  if self.waiting_state then
+    self.waiting_state:finish("ready")
+  end
+  if self.parent_state then
+    self.parent_state.waiting_state = nil
+  end
+  self.service:set_current_state(self.parent_state)
+  ]]
   local caller = self:finish("ready")
   if caller then
     self.service:before_resume_caller(self, caller, "ready")
@@ -66,12 +75,24 @@ function class:wait(timeout)
   if self:is_ready() then
     return "ready"
   else
+    --[[
+    parent_state = self.service:get_current_state()
+    ]]
     self:launch()
     if self:is_ready() then
       return "ready"
     end
     if timeout then
       self.timer_handle = self.service:add_timer(timeout, coroutine.create(function ()
+        --[[
+        if self.waiting_state then
+          self.waiting_state:finish("ready")
+        end
+        if self.parent_state then
+          self.parent_state.waiting_state = nil
+        end
+        self.service:set_current_state(self.parent_state)
+        ]]
         local caller = self:finish("timeout")
         if caller then
           self.service:before_resume_caller(self, caller, "timeout")
@@ -80,6 +101,13 @@ function class:wait(timeout)
       end))
     end
     self.caller = coroutine.running()
+    --[[
+    self.service:set_current_state(self)
+    if parent_state then
+      parent_state.waiting_state = self
+      self.parent_state = parent_state
+    end
+    ]]
     self.service:before_yield_caller(self)
     return coroutine.yield()
   end
