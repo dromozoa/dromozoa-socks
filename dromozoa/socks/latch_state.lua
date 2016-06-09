@@ -74,11 +74,11 @@ function class:launch()
   end
 end
 
-function class:finish(delete_timer_handle)
+function class:finish(status)
   for state in each_state(self) do
-    state:finish(delete_timer_handle)
+    state:finish(status)
   end
-  return state.finish(self, delete_timer_handle)
+  return state.finish(self, status)
 end
 
 local metatable = {

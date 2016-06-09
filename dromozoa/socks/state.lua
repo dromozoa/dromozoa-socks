@@ -27,9 +27,9 @@ function class.new(service)
   }
 end
 
-function class:finish(delete_timer_handle)
+function class:finish(status)
   if self.timer_handle then
-    if delete_timer_handle then
+    if status == "ready" then
       self.timer_handle:delete()
     end
     self.timer_handle = nil
@@ -41,7 +41,7 @@ end
 
 function class:set_ready()
   self.status = "ready"
-  local caller = self:finish(true)
+  local caller = self:finish("ready")
   if caller then
     self.service:before_resume_caller(self, caller, "ready")
     assert(coroutine.resume(caller, "ready"))
@@ -72,7 +72,7 @@ function class:wait(timeout)
     end
     if timeout then
       self.timer_handle = self.service:add_timer(timeout, coroutine.create(function ()
-        local caller = self:finish(false)
+        local caller = self:finish("timeout")
         if caller then
           self.service:before_resume_caller(self, caller, "timeout")
           assert(coroutine.resume(caller, "timeout"))

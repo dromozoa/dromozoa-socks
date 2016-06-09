@@ -45,9 +45,9 @@ function class:launch()
   assert(self.service:add_handler(self.handler))
 end
 
-function class:finish(delete_timer_handle)
+function class:finish(status)
   assert(self.service:delete_handler(self.handler))
-  return state.finish(self, delete_timer_handle)
+  return state.finish(self, status)
 end
 
 local metatable = {
