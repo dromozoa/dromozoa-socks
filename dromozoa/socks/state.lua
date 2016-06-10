@@ -28,37 +28,29 @@ function class.new(service)
 end
 
 function class:launch()
-  print("launch", self, self.waiting_state)
-  -- if self.waiting_state then
-  --   self.waiting_state:launch()
-  -- end
 end
 
-function class:finish(status)
-  print("finish", self, self.waiting_state, status)
-  -- if self.waiting_state then
-  --   self.waiting_state:finish(status)
-  -- end
+function class:suspend()
+  self.status = "suspended"
+  self.timer_handle = nil
+end
+
+function class:resume()
+end
+
+function class:finish()
   if self.timer_handle then
-    if status == "ready" then
-      self.timer_handle:delete()
-    end
+    self.timer_handle:delete()
     self.timer_handle = nil
   end
-  local caller = self.caller
-  self.caller = nil
-  return caller
 end
 
 function class:set_ready()
   self.status = "ready"
-  local caller = self:finish("ready")
-  local parent_state = self.parent_state
-  if parent_state then
-    parent_state.waiting_state = nil
-  end
-  self.service:set_current_state(parent_state)
+  self:finish()
+  local caller = self.caller
   if caller then
+    self.caller = nil
     assert(coroutine.resume(caller, "ready"))
   end
 end
@@ -73,6 +65,10 @@ function class:set_error(message)
   self:set_ready()
 end
 
+function class:is_suspended()
+  return self.status == "suspended"
+end
+
 function class:is_ready()
   return self.status == "ready"
 end
@@ -81,29 +77,20 @@ function class:wait(timeout)
   if self:is_ready() then
     return "ready"
   else
-    local parent_state = self.service:get_current_state()
-    self.service:set_current_state(self)
-    self:launch()
+    if self:is_suspended() then
+      self:resume()
+    else
+      self:launch()
+    end
     if self:is_ready() then
-      self.service:set_current_state(parent_state)
       return "ready"
     else
-      self.parent_state = parent_state
-      if parent_state then
-        parent_state.waiting_state = self
-      end
-      print("wait", "parent", self.parent_state, "waiting", self)
       if timeout then
         self.timer_handle = self.service:add_timer(timeout, coroutine.create(function ()
-          local caller = self:finish("timeout")
-          local parent_state = self.parent_state
-          if parent_state then
-            parent_state.waiting_state = nil
-          end
-          self.service:set_current_state(parent_state)
-          if caller then
-            assert(coroutine.resume(caller, "timeout"))
-          end
+          self:suspend()
+          local caller = self.caller
+          self.caller = nil
+          assert(coroutine.resume(caller, "timeout"))
         end))
       end
       self.caller = coroutine.running()

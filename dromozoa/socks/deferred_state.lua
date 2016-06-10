@@ -36,13 +36,9 @@ end
 
 function class:launch()
   state.launch(self)
-  local deferred = self.deferred
-  if deferred then
-    self.deferred = nil
-    local result, message = coroutine.resume(deferred)
-    if not result then
-      self:set_error(message)
-    end
+  local result, message = coroutine.resume(self.deferred)
+  if not result then
+    self:set_error(message)
   end
 end
 

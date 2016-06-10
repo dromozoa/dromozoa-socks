@@ -83,6 +83,7 @@ assert(service:dispatch(function (service)
 
   assert(f2:wait_for(0.2) == "timeout")
   assert(f2:wait_for(0.5) == "ready")
+  print("???")
   assert(f2:get() == 42)
   service:stop()
 

@@ -42,15 +42,23 @@ function class.new(service, fd, event, thread)
 end
 
 function class:launch()
-  print("launch-io", self)
   state.launch(self)
   assert(self.service:add_handler(self.handler))
 end
 
-function class:finish(status)
-  print("finish-io", self, status)
+function class:suspend()
+  state.suspend(self)
   assert(self.service:delete_handler(self.handler))
-  return state.finish(self, status)
+end
+
+function class:resume()
+  state.resume(self)
+  assert(self.service:add_handler(self.handler))
+end
+
+function class:finish()
+  state.finish(self)
+  assert(self.service:delete_handler(self.handler))
 end
 
 local metatable = {

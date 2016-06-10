@@ -55,6 +55,7 @@ function class.new(service, count, ...)
 end
 
 function class:launch()
+  state.launch(self)
   for state in each_state(self) do
     if state:is_ready() then
       if count_down(self) then
@@ -74,9 +75,29 @@ function class:launch()
   end
 end
 
+function class:suspend()
+  state.suspend(self)
+  for state in each_state(self) do
+    if not state:is_ready() then
+      state:suspend()
+    end
+  end
+end
+
+function class:resume()
+  state.resume(self)
+  for state in each_state(self) do
+    if state:is_suspended() then
+      state:resume()
+    end
+  end
+end
+
 function class:finish(status)
   for state in each_state(self) do
-    state:finish(status)
+    if not state:is_ready() then
+      state:finish()
+    end
   end
   return state.finish(self, status)
 end
