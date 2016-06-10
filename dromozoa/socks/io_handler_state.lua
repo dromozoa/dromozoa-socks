@@ -28,7 +28,6 @@ function class.new(service, fd, event, thread)
   self.handler = io_handler(fd, event, coroutine.create(function ()
     local promise = promise(self)
     while true do
-      self.service:before_resume_thread(self)
       local result, message = coroutine.resume(self.thread, promise)
       if not result then
         self:set_error(message)
@@ -43,10 +42,13 @@ function class.new(service, fd, event, thread)
 end
 
 function class:launch()
+  print("launch-io", self)
+  state.launch(self)
   assert(self.service:add_handler(self.handler))
 end
 
 function class:finish(status)
+  print("finish-io", self, status)
   assert(self.service:delete_handler(self.handler))
   return state.finish(self, status)
 end

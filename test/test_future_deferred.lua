@@ -78,6 +78,9 @@ assert(service:dispatch(function (service)
     return promise:set_value(42)
   end)
 
+  print("f1", f1.state)
+  print("f2", f2.state)
+
   assert(f2:wait_for(0.2) == "timeout")
   assert(f2:wait_for(0.5) == "ready")
   assert(f2:get() == 42)

@@ -27,7 +27,18 @@ function class.new(service)
   }
 end
 
+function class:launch()
+  print("launch", self, self.waiting_state)
+  -- if self.waiting_state then
+  --   self.waiting_state:launch()
+  -- end
+end
+
 function class:finish(status)
+  print("finish", self, self.waiting_state, status)
+  -- if self.waiting_state then
+  --   self.waiting_state:finish(status)
+  -- end
   if self.timer_handle then
     if status == "ready" then
       self.timer_handle:delete()
@@ -41,18 +52,13 @@ end
 
 function class:set_ready()
   self.status = "ready"
-  --[[
-  if self.waiting_state then
-    self.waiting_state:finish("ready")
-  end
-  if self.parent_state then
-    self.parent_state.waiting_state = nil
-  end
-  self.service:set_current_state(self.parent_state)
-  ]]
   local caller = self:finish("ready")
+  local parent_state = self.parent_state
+  if parent_state then
+    parent_state.waiting_state = nil
+  end
+  self.service:set_current_state(parent_state)
   if caller then
-    self.service:before_resume_caller(self, caller, "ready")
     assert(coroutine.resume(caller, "ready"))
   end
 end
@@ -75,41 +81,34 @@ function class:wait(timeout)
   if self:is_ready() then
     return "ready"
   else
-    --[[
-    parent_state = self.service:get_current_state()
-    ]]
+    local parent_state = self.service:get_current_state()
+    self.service:set_current_state(self)
     self:launch()
     if self:is_ready() then
+      self.service:set_current_state(parent_state)
       return "ready"
-    end
-    if timeout then
-      self.timer_handle = self.service:add_timer(timeout, coroutine.create(function ()
-        --[[
-        if self.waiting_state then
-          self.waiting_state:finish("ready")
-        end
-        if self.parent_state then
-          self.parent_state.waiting_state = nil
-        end
-        self.service:set_current_state(self.parent_state)
-        ]]
-        local caller = self:finish("timeout")
-        if caller then
-          self.service:before_resume_caller(self, caller, "timeout")
-          assert(coroutine.resume(caller, "timeout"))
-        end
-      end))
-    end
-    self.caller = coroutine.running()
-    --[[
-    self.service:set_current_state(self)
-    if parent_state then
-      parent_state.waiting_state = self
+    else
       self.parent_state = parent_state
+      if parent_state then
+        parent_state.waiting_state = self
+      end
+      print("wait", "parent", self.parent_state, "waiting", self)
+      if timeout then
+        self.timer_handle = self.service:add_timer(timeout, coroutine.create(function ()
+          local caller = self:finish("timeout")
+          local parent_state = self.parent_state
+          if parent_state then
+            parent_state.waiting_state = nil
+          end
+          self.service:set_current_state(parent_state)
+          if caller then
+            assert(coroutine.resume(caller, "timeout"))
+          end
+        end))
+      end
+      self.caller = coroutine.running()
+      return coroutine.yield()
     end
-    ]]
-    self.service:before_yield_caller(self)
-    return coroutine.yield()
   end
 end
 

@@ -26,7 +26,6 @@ function class.new(service, thread)
   self.thread = create_thread(thread)
   self.deferred = coroutine.create(function ()
     local promise = promise(self)
-    self.service:before_resume_thread(self)
     local result, message = coroutine.resume(self.thread, promise)
     if not result then
       self:set_error(message)
@@ -36,6 +35,7 @@ function class.new(service, thread)
 end
 
 function class:launch()
+  state.launch(self)
   local deferred = self.deferred
   if deferred then
     self.deferred = nil
