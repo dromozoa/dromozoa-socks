@@ -28,6 +28,7 @@ function class.new(service)
 end
 
 function class:launch()
+  self.status = "running"
 end
 
 function class:suspend()
@@ -36,17 +37,30 @@ function class:suspend()
 end
 
 function class:resume()
+  self.status = "running"
 end
 
 function class:finish()
+  self.status = "ready"
   if self.timer_handle then
     self.timer_handle:delete()
     self.timer_handle = nil
   end
 end
 
+function class:is_running()
+  return self.status == "running"
+end
+
+function class:is_suspended()
+  return self.status == "suspended"
+end
+
+function class:is_ready()
+  return self.status == "ready"
+end
+
 function class:set_ready()
-  self.status = "ready"
   self:finish()
   self.service:set_current_state(self.parent_state)
   local caller = self.caller
@@ -64,14 +78,6 @@ end
 function class:set_error(message)
   self.message = message
   self:set_ready()
-end
-
-function class:is_suspended()
-  return self.status == "suspended"
-end
-
-function class:is_ready()
-  return self.status == "ready"
 end
 
 function class:wait(timeout)
@@ -97,6 +103,9 @@ function class:wait(timeout)
           self.caller = nil
           assert(coroutine.resume(caller, "timeout"))
         end))
+      end
+      if parent_state then
+        parent_state.waiting_state = self
       end
       self.parent_state = parent_state
       self.caller = coroutine.running()
