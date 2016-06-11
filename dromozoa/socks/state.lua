@@ -24,28 +24,12 @@ local class = {}
 function class.new(service)
   return {
     service = service;
+    status = "initial";
   }
 end
 
-function class:launch()
-  self.status = "running"
-end
-
-function class:suspend()
-  self.status = "suspended"
-  self.timer_handle = nil
-end
-
-function class:resume()
-  self.status = "running"
-end
-
-function class:finish()
-  self.status = "ready"
-  if self.timer_handle then
-    self.timer_handle:delete()
-    self.timer_handle = nil
-  end
+function class:is_initial()
+  return self.status == "initial"
 end
 
 function class:is_running()
@@ -58,6 +42,31 @@ end
 
 function class:is_ready()
   return self.status == "ready"
+end
+
+function class:launch()
+  assert(self:is_initial())
+  self.status = "running"
+end
+
+function class:suspend()
+  assert(self:is_running())
+  self.status = "suspended"
+  self.timer_handle = nil
+end
+
+function class:resume()
+  assert(self:is_suspended())
+  self.status = "running"
+end
+
+function class:finish()
+  assert(self:is_running())
+  self.status = "ready"
+  if self.timer_handle then
+    self.timer_handle:delete()
+    self.timer_handle = nil
+  end
 end
 
 function class:set_ready()
