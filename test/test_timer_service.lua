@@ -23,15 +23,17 @@ local service = timer_service()
 local done
 local thread = coroutine.create(function ()
   assert(service:empty())
-  service:add_timer(service:get_current_time(), coroutine.running())
+  local handle = service:add_timer(service:get_current_time(), coroutine.running())
   assert(not service:empty())
   coroutine.yield()
+  handle:delete()
   assert(service:empty())
 
   assert(service:empty())
-  service:add_timer(service:get_current_time():add(0.2), coroutine.running())
+  local handle = service:add_timer(service:get_current_time():add(0.2), coroutine.running())
   assert(not service:empty())
   coroutine.yield()
+  handle:delete()
   assert(service:empty())
 
   done = true

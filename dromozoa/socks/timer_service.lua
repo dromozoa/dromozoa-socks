@@ -51,8 +51,7 @@ end
 function class:dispatch()
   self:update_current_time()
   for _, thread, handle in self.threads:upper_bound(self:get_current_time()):each() do
-    handle:delete()
-    local result, message = coroutine.resume(thread)
+    local result, message = coroutine.resume(thread, handle)
     if not result then
       return nil, message
     end

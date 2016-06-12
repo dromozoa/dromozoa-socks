@@ -58,7 +58,10 @@ function class:suspend()
   end
   assert(self:is_running())
   self.status = "suspended"
-  self.timer_handle = nil
+  if self.timer_handle then
+    self.timer_handle:delete()
+    self.timer_handle = nil
+  end
 end
 
 function class:resume()
@@ -70,6 +73,9 @@ function class:resume()
   end
   assert(self:is_suspended())
   self.status = "running"
+  if self.timeout then
+    self.timer_handle = self.service:add_timer(self.timeout, self.timer)
+  end
 end
 
 function class:finish()
@@ -106,7 +112,6 @@ function class:set_error(message)
 end
 
 function class:wait(timeout)
-  -- 自分が完了していても子をresumeしなければならないかもしれない。
   if self:is_ready() then
     return "ready"
   else
@@ -122,8 +127,11 @@ function class:wait(timeout)
       return "ready"
     else
       if timeout then
-        self.timer_handle = self.service:add_timer(timeout, coroutine.create(function ()
+        self.timeout = timeout
+        self.timer = coroutine.create(function ()
           self:suspend()
+          self.timeout = nil
+          self.timer = nil
           self.service:set_current_state(self.parent_state)
           print("suspend", self, self.parent_state)
           if self.parent_state then
@@ -133,7 +141,8 @@ function class:wait(timeout)
           local caller = self.caller
           self.caller = nil
           assert(coroutine.resume(caller, "timeout"))
-        end))
+        end)
+        self.timer_handle = self.service:add_timer(self.timeout, self.timer)
       end
       if parent_state then
         parent_state.waiting_state = self
