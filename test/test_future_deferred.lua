@@ -78,16 +78,38 @@ assert(service:dispatch(function (service)
     return promise:set_value(42)
   end)
 
-  print("f1", f1.state)
-  print("f2", f2.state)
+  print("X1")
+  print("f1", f1.state, f1.state.status, f1.state.parent_state, f1.state.waiting_state)
+  print("f2", f2.state, f2.state.status, f2.state.parent_state, f2.waiting_state)
 
   assert(f2:wait_for(0.2) == "timeout")
+
+  print("X2")
+  print("f1", f1.state, f1.state.status, f1.state.parent_state, f1.state.waiting_state)
+  print("f2", f2.state, f2.state.status, f2.state.parent_state, f2.waiting_state)
+
+  -- unix.nanosleep(0.5)
+
+  print("X3")
+  print("f1", f1.state, f1.state.status, f1.state.parent_state, f1.state.waiting_state)
+  print("f2", f2.state, f2.state.status, f2.state.parent_state, f2.waiting_state)
+
   assert(f2:wait_for(0.5) == "ready")
-  print("???")
+
+  print("X4")
+  print("f1", f1.state, f1.state.status, f1.state.parent_state, f1.state.waiting_state)
+  print("f2", f2.state, f2.state.status, f2.state.parent_state, f2.waiting_state)
+
+  print("X5")
   assert(f2:get() == 42)
+
+  print("X6")
   service:stop()
 
+  print("X7")
   done = true
+
+  print("X8")
 end))
 assert(done)
 
