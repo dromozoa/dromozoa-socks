@@ -24,11 +24,11 @@ local class = {}
 
 function class.new(service, fd, event, thread)
   local self = state.new(service)
-  self.thread = create_thread(thread)
+  local thread = create_thread(thread)
   self.handler = io_handler(fd, event, coroutine.create(function ()
     local promise = promise(self)
     while true do
-      local result, message = coroutine.resume(self.thread, promise)
+      local result, message = coroutine.resume(thread, promise)
       if not result then
         self:set_error(message)
       end

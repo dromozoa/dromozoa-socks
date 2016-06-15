@@ -62,7 +62,11 @@ function class:launch()
         return
       end
     else
-      state:launch()
+      if state:is_suspended() then
+        state:resume()
+      else
+        state:launch()
+      end
       if state:is_ready() then
         if count_down(self) then
           return
@@ -71,14 +75,16 @@ function class:launch()
     end
   end
   for state in each_state(self) do
-    state.caller = self.counter
+    if not state:is_ready() then
+      state.caller = self.counter
+    end
   end
 end
 
 function class:suspend()
   state.suspend(self)
   for state in each_state(self) do
-    if not state:is_ready() then
+    if state:is_running() then
       state:suspend()
     end
   end
@@ -94,12 +100,12 @@ function class:resume()
 end
 
 function class:finish(status)
+  state.finish(self, status)
   for state in each_state(self) do
-    if not state:is_ready() then
+    if state:is_running() then
       state:finish()
     end
   end
-  return state.finish(self, status)
 end
 
 local metatable = {
