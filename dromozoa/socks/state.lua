@@ -109,9 +109,9 @@ function class:set_error(message)
   self:set_ready()
 end
 
-function class:wait(timeout)
+function class:dispatch(timeout)
   if self:is_ready() then
-    return "ready"
+    return true
   else
     local parent_state = self.service:get_current_state()
     self.service:set_current_state(self)
@@ -122,7 +122,7 @@ function class:wait(timeout)
     end
     if self:is_ready() then
       self.service:set_current_state(parent_state)
-      return "ready"
+      return true
     else
       if timeout then
         self.timeout = timeout
@@ -145,9 +145,17 @@ function class:wait(timeout)
         parent_state.waiting_state = self
       end
       self.parent_state = parent_state
-      self.caller = coroutine.running()
-      return coroutine.yield()
+      return false
     end
+  end
+end
+
+function class:wait(timeout)
+  if self:dispatch(timeout) then
+    return "ready"
+  else
+    self.caller = coroutine.running()
+    return coroutine.yield()
   end
 end
 

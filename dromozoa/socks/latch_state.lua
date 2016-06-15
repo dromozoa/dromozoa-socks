@@ -56,54 +56,42 @@ end
 
 function class:launch()
   state.launch(self)
-  for state in each_state(self) do
-    if state:is_ready() then
+  self.service:set_current_state(nil)
+  for that in each_state(self) do
+    if that:dispatch() then
       if count_down(self) then
-        return
+        break
       end
     else
-      if state:is_suspended() then
-        state:resume()
-      else
-        state:launch()
-      end
-      if state:is_ready() then
-        if count_down(self) then
-          return
-        end
-      end
+      that.caller = self.counter
     end
   end
-  for state in each_state(self) do
-    if not state:is_ready() then
-      state.caller = self.counter
-    end
-  end
+  self.service:set_current_state(self)
 end
 
 function class:suspend()
   state.suspend(self)
-  for state in each_state(self) do
-    if state:is_running() then
-      state:suspend()
+  for that in each_state(self) do
+    if not that:is_ready() then
+      that:suspend()
     end
   end
 end
 
 function class:resume()
   state.resume(self)
-  for state in each_state(self) do
-    if state:is_suspended() then
-      state:resume()
+  for that in each_state(self) do
+    if not that:is_ready() then
+      that:resume()
     end
   end
 end
 
-function class:finish(status)
-  state.finish(self, status)
-  for state in each_state(self) do
-    if state:is_running() then
-      state:finish()
+function class:finish()
+  state.finish(self)
+  for that in each_state(self) do
+    if that:is_running() then
+      that:suspend()
     end
   end
 end
