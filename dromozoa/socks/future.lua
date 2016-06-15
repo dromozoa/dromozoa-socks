@@ -32,7 +32,7 @@ function class:wait()
 end
 
 function class:wait_until(timeout)
-  return self.state:wait(timeout)
+  return self.state:wait_until(timeout)
 end
 
 function class:wait_for(timeout)

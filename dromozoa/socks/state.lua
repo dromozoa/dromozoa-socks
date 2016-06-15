@@ -162,6 +162,10 @@ function class:wait(timeout)
   end
 end
 
+function class:wait_until(timeout)
+  return self:wait(timeout)
+end
+
 function class:wait_for(timeout)
   return self:wait(self.service:get_current_time():add(timeout))
 end
