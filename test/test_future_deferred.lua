@@ -15,9 +15,15 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local dumper = require "dromozoa.commons.dumper"
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
 local future_service = require "dromozoa.socks.future_service"
+
+debug.sethook(function (event, line)
+  local info = debug.getinfo(2)
+  print("HOOK", event, line, dumper.encode(info))
+end, "l")
 
 local service = future_service()
 
@@ -58,7 +64,9 @@ assert(service:dispatch(function (service)
 
   local f1 = service:io_handler(fd1, "read", function (promise)
     while true do
+      print("read", 1)
       local char = fd1:read(1)
+      print("char", char)
       if char then
         return promise:set_value(char)
       else
@@ -88,7 +96,7 @@ assert(service:dispatch(function (service)
   print("f1", f1.state, f1.state.status, f1.state.parent_state, f1.state.waiting_state)
   print("f2", f2.state, f2.state.status, f2.state.parent_state, f2.waiting_state)
 
-  -- unix.nanosleep(0.5)
+  unix.nanosleep(0.5)
 
   print("X3")
   print("f1", f1.state, f1.state.status, f1.state.parent_state, f1.state.waiting_state)
