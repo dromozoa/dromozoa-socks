@@ -49,10 +49,6 @@ function class:delete_timer(handle)
   return self
 end
 
-function class:empty()
-  return self.threads:empty()
-end
-
 function class:dispatch()
   self:update_current_time()
   local range = self.threads:upper_bound(self:get_current_time())
