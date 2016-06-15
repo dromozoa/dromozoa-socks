@@ -56,6 +56,7 @@ end
 local class = {}
 
 function class.new(service, fd)
+  assert(fd:is_ndelay_on())
   return {
     service = service;
     fd = fd;
