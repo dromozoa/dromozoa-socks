@@ -52,7 +52,6 @@ end
 function class:suspend()
   if self.waiting_state then
     if self.waiting_state:is_running() then
-      print("suspend_waiting", self.waiting_state)
       self.waiting_state:suspend()
     end
   end
@@ -67,7 +66,6 @@ end
 function class:resume()
   if self.waiting_state then
     if self.waiting_state:is_suspended() then
-      print("resume_waiting", self.waiting_state)
       self.waiting_state:resume()
     end
   end
@@ -133,7 +131,6 @@ function class:wait(timeout)
           self.timeout = nil
           self.timer = nil
           self.service:set_current_state(self.parent_state)
-          print("suspend", self, self.parent_state)
           if self.parent_state then
             self.parent_state.waiting_state = nil
             self.parent_state = nil
