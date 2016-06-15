@@ -61,7 +61,6 @@ local function minimum(T, x)
   local left = T.left
 
   local lx = left[x]
-  assert(lx)
   while lx ~= NIL do
     x = lx
     lx = left[x]
