@@ -40,6 +40,11 @@ function class:add_timer(timeout, thread)
   return self.timer_service:add_timer(timeout, thread)
 end
 
+function class:delete_timer(handle)
+  self.timer_service:delete_timer(handle)
+  return self
+end
+
 function class:add_handler(handler)
   local result, message = self.io_service:add_handler(handler)
   if not result then

@@ -20,10 +20,10 @@ local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
 local future_service = require "dromozoa.socks.future_service"
 
-debug.sethook(function (event, line)
-  local info = debug.getinfo(2)
-  print("HOOK", event, line, dumper.encode(info))
-end, "l")
+-- debug.sethook(function (event, line)
+--   local info = debug.getinfo(2)
+--   print("HOOK", event, line, dumper.encode(info))
+-- end, "l")
 
 local service = future_service()
 
