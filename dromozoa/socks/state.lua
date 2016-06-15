@@ -105,6 +105,9 @@ function class:set_value(...)
 end
 
 function class:set_error(message)
+  if self:is_ready() then
+    error(message)
+  end
   self.message = message
   self:set_ready()
 end

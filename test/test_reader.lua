@@ -39,8 +39,6 @@ assert(service:dispatch(function (service)
   assert(f:get() == "foo")
   assert(r:read_until("\n"):get() == "bar")
 
-  error("???")
-
   service:stop()
   done = true
 end))
