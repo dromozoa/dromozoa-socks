@@ -19,6 +19,7 @@ local future_service = require "dromozoa.socks.future_service"
 
 local service = future_service()
 
+local done = false
 assert(service:dispatch(coroutine.create(function (service)
   local f0 = service:deferred(function (promise)
   end)
@@ -36,24 +37,36 @@ assert(service:dispatch(coroutine.create(function (service)
     promise:set_value(3)
   end)
 
+  print("a")
+
   assert(not f1:is_ready())
   assert(not f2:is_ready())
   assert(not f3:is_ready())
 
-  service:when_any(f1, f2, f3):wait()
-  assert(not f1:is_ready())
-  assert(f2:is_ready())
-  assert(not f3:is_ready())
+  print("b")
+  print(f1.state.status, f2.state.status, f3.state.status)
 
   service:when_any(f1, f2, f3):wait()
   assert(not f1:is_ready())
   assert(f2:is_ready())
   assert(not f3:is_ready())
+
+  print("c")
+  print(f1.state.status, f2.state.status, f3.state.status)
+
+  service:when_any(f1, f2, f3):wait()
+  assert(not f1:is_ready())
+  assert(f2:is_ready())
+  assert(not f3:is_ready())
+
+  print("d")
 
   service:when_any(f1, f3):wait()
   assert(not f1:is_ready())
   assert(f2:is_ready())
   assert(f3:is_ready())
+
+  print("e")
 
   assert(service:when_any(f1):wait_for(0.2) == "timeout")
   assert(not f1:is_ready())
@@ -93,4 +106,6 @@ assert(service:dispatch(coroutine.create(function (service)
   assert(f3:is_ready())
 
   service:stop()
+  done = true
 end)))
+assert(done)

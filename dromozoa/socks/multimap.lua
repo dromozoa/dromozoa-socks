@@ -65,20 +65,21 @@ function class:each()
   local a = tree:minimum()
   if a == nil then
     return function () end
-  end
-  local b = tree:maximum()
-  local that = multimap_handle(tree)
-  return coroutine.wrap(function ()
-    while true do
-      local s = tree:successor(a)
-      local k, v = tree:get(a)
-      coroutine.yield(k, v, that:reset(a))
-      if a == b then
-        break
+  else
+    local b = tree:maximum()
+    local that = multimap_handle(tree)
+    return coroutine.wrap(function ()
+      while true do
+        local s = tree:successor(a)
+        local k, v = tree:get(a)
+        coroutine.yield(k, v, that:reset(a))
+        if a == b then
+          break
+        end
+        a = s
       end
-      a = s
-    end
-  end)
+    end)
+  end
 end
 
 function class:empty()

@@ -109,3 +109,28 @@ for k, v in m:each() do
   end
 end
 assert(count == 4)
+
+local m = multimap()
+m:insert(1, "foo")
+m:insert(2, "bar")
+m:insert(3, "baz")
+assert(equal({ m:head() }, { 1, "foo" }))
+assert(equal({ m:tail() }, { 3, "baz" }))
+
+for k, v, h in m:each() do
+  h:set(v .. k)
+end
+
+assert(equal({ m:head() }, { 1, "foo1" }))
+assert(equal({ m:tail() }, { 3, "baz3" }))
+
+for k, v, h in m:each() do
+  h:set(nil)
+end
+
+assert(equal({ m:head() }, { 1 }))
+assert(equal({ m:tail() }, { 3 }))
+
+for k, v, h in m:each() do
+  h:delete()
+end

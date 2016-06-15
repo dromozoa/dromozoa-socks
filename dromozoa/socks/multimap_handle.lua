@@ -34,18 +34,39 @@ function class:delete()
   local a = self.a
   if a == nil then
     return 0
-  end
-  local tree = self.tree
-  local b = self.b
-  local count = 0
-  while true do
-    local s = tree:successor(a)
-    tree:delete(a)
-    count = count + 1
-    if a == b then
-      return count
+  else
+    local tree = self.tree
+    local b = self.b
+    local count = 0
+    while true do
+      local s = tree:successor(a)
+      tree:delete(a)
+      count = count + 1
+      if a == b then
+        return count
+      end
+      a = s
     end
-    a = s
+  end
+end
+
+function class:set(value)
+  local a = self.a
+  if a == nil then
+    return 0
+  else
+    local tree = self.tree
+    local b = self.b
+    local count = 0
+    while true do
+      local s = tree:successor(a)
+      tree:set(a, value)
+      count = count + 1
+      if a == b then
+        return count
+      end
+      a = s
+    end
   end
 end
 

@@ -55,30 +55,48 @@ function class.new(service, count, ...)
 end
 
 function class:launch()
-  for state in each_state(self) do
-    if state:is_ready() then
+  state.launch(self)
+  self.service:set_current_state(nil)
+  for that in each_state(self) do
+    if that:dispatch() then
       if count_down(self) then
-        return
+        break
       end
     else
-      state:launch()
-      if state:is_ready() then
-        if count_down(self) then
-          return
-        end
-      end
+      that.caller = self.counter
     end
   end
-  for state in each_state(self) do
-    state.thread = self.counter
+  self.service:set_current_state(self)
+end
+
+function class:suspend()
+  state.suspend(self)
+  for that in each_state(self) do
+    assert(that:is_running() or that:is_ready())
+    if that:is_running() then
+      that:suspend()
+    end
   end
 end
 
-function class:finish(delete_timer_handle)
-  for state in each_state(self) do
-    state:finish(delete_timer_handle)
+function class:resume()
+  state.resume(self)
+  for that in each_state(self) do
+    assert(that:is_suspended() or that:is_ready())
+    if that:is_suspended() then
+      that:resume()
+    end
   end
-  return state.finish(self, delete_timer_handle)
+end
+
+function class:finish()
+  state.finish(self)
+  for that in each_state(self) do
+    assert(that:is_initial() or that:is_running() or that:is_ready())
+    if that:is_running() then
+      that:suspend()
+    end
+  end
 end
 
 local metatable = {

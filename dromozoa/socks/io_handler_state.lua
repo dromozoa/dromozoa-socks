@@ -23,8 +23,8 @@ local state = require "dromozoa.socks.state"
 local class = {}
 
 function class.new(service, fd, event, thread)
-  local thread = create_thread(thread)
   local self = state.new(service)
+  local thread = create_thread(thread)
   self.handler = io_handler(fd, event, coroutine.create(function ()
     local promise = promise(self)
     while true do
@@ -42,12 +42,23 @@ function class.new(service, fd, event, thread)
 end
 
 function class:launch()
+  state.launch(self)
   assert(self.service:add_handler(self.handler))
 end
 
-function class:finish(delete_timer_handle)
+function class:suspend()
+  state.suspend(self)
   assert(self.service:delete_handler(self.handler))
-  return state.finish(self, delete_timer_handle)
+end
+
+function class:resume()
+  state.resume(self)
+  assert(self.service:add_handler(self.handler))
+end
+
+function class:finish()
+  state.finish(self)
+  assert(self.service:delete_handler(self.handler))
 end
 
 local metatable = {

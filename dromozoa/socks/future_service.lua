@@ -40,6 +40,11 @@ function class:add_timer(timeout, thread)
   return self.timer_service:add_timer(timeout, thread)
 end
 
+function class:delete_timer(handle)
+  self.timer_service:delete_timer(handle)
+  return self
+end
+
 function class:add_handler(handler)
   local result, message = self.io_service:add_handler(handler)
   if not result then
@@ -54,10 +59,6 @@ function class:delete_handler(handler)
     return nil, message
   end
   return self
-end
-
-function class:empty()
-  return self.timer_service:empty() and self.io_service:empty()
 end
 
 function class:start()
@@ -96,6 +97,14 @@ function class:dispatch(thread)
       return self
     end
   end
+end
+
+function class:set_current_state(current_state)
+  self.current_state = current_state
+end
+
+function class:get_current_state()
+  return self.current_state
 end
 
 function class:deferred(thread)
