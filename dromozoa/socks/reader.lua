@@ -42,11 +42,10 @@ local function read(self, f)
             return promise:set_value(result)
           end
         else
-          local errno = unix.get_last_errno()
-          if errno == unix.EAGAIN then
+          if unix.get_last_errno() == unix.EAGAIN then
             promise = coroutine.yield()
           else
-            return promise:set_error(unix.strerror(errno))
+            return promise:set_error(unix.strerror(unix.get_last_errno()))
           end
         end
       end
