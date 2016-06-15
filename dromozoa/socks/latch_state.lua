@@ -72,7 +72,8 @@ end
 function class:suspend()
   state.suspend(self)
   for that in each_state(self) do
-    if not that:is_ready() then
+    assert(that:is_running() or that:is_ready())
+    if that:is_running() then
       that:suspend()
     end
   end
@@ -81,7 +82,8 @@ end
 function class:resume()
   state.resume(self)
   for that in each_state(self) do
-    if not that:is_ready() then
+    assert(that:is_suspended() or that:is_ready())
+    if that:is_suspended() then
       that:resume()
     end
   end
@@ -90,6 +92,7 @@ end
 function class:finish()
   state.finish(self)
   for that in each_state(self) do
+    assert(that:is_initial() or that:is_running() or that:is_ready())
     if that:is_running() then
       that:suspend()
     end

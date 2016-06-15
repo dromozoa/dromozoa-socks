@@ -45,15 +45,15 @@ function class:is_ready()
 end
 
 function class:launch()
+  assert(not self.waiting_state)
   assert(self:is_initial())
   self.status = "running"
 end
 
 function class:suspend()
-  if self.waiting_state then
-    if self.waiting_state:is_running() then
-      self.waiting_state:suspend()
-    end
+  local waiting_state = self.waiting_state
+  if waiting_state then
+    waiting_state:suspend()
   end
   assert(self:is_running())
   self.status = "suspended"
@@ -64,10 +64,9 @@ function class:suspend()
 end
 
 function class:resume()
-  if self.waiting_state then
-    if self.waiting_state:is_suspended() then
-      self.waiting_state:resume()
-    end
+  local waiting_state = self.waiting_state
+  if waiting_state then
+    waiting_state:resume()
   end
   assert(self:is_suspended())
   self.status = "running"
@@ -77,6 +76,7 @@ function class:resume()
 end
 
 function class:finish()
+  assert(not self.waiting_state)
   assert(self:is_running())
   self.status = "ready"
   if self.timer_handle then
