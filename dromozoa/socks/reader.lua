@@ -16,6 +16,7 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local unix = require "dromozoa.unix"
+local make_ready_future = require "dromozoa.socks.make_ready_future"
 local stream_buffer = require "dromozoa.socks.stream_buffer"
 
 local BUFFER_SIZE = 256
@@ -23,9 +24,7 @@ local BUFFER_SIZE = 256
 local function read(self, f)
   local result = f(self.stream_buffer)
   if result then
-    return self.service:deferred(function (promise)
-      return promise:set_value(result)
-    end)
+    return make_ready_future(result)
   else
     return self.service:io_handler(self.fd, "read", function (promise)
       while true do

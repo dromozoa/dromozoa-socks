@@ -37,7 +37,9 @@ assert(service:dispatch(function (service)
   fd2:write("\nbar\n")
   assert(f:get() == "foo")
   assert(f:get() == "foo")
-  assert(r:read_until("\n"):get() == "bar")
+  local f = r:read_until("\n")
+  assert(f:wait_for(0.2) == "ready")
+  assert(f:get() == "bar")
 
   service:stop()
   done = true
