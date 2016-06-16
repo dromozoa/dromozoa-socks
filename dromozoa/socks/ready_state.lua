@@ -15,36 +15,20 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local pack = require "dromozoa.socks.pack"
+local state = require "dromozoa.socks.state"
+
 local class = {}
 
-function class.new(state)
+function class.new(...)
   return {
-    state = state;
+    status = "ready";
+    value = pack(...);
   }
 end
 
-function class:is_ready()
-  return self.state:is_ready()
-end
-
-function class:wait()
-  return self.state:wait()
-end
-
-function class:wait_until(timeout)
-  return self.state:wait_until(timeout)
-end
-
-function class:wait_for(timeout)
-  return self.state:wait_for(timeout)
-end
-
-function class:get()
-  return self.state:get()
-end
-
-function class:then_(thread)
-  return self.state:then_(thread)
+function class:wait_for()
+  return self:wait()
 end
 
 local metatable = {
@@ -52,7 +36,8 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __call = function (_, state)
-    return setmetatable(class.new(state), metatable)
+  __index = state;
+  __call = function (_, ...)
+    return setmetatable(class.new(...), metatable)
   end;
 })

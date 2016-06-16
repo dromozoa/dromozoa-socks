@@ -15,44 +15,9 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local class = {}
+local future = require "dromozoa.socks.future"
+local ready_state = require "dromozoa.socks.ready_state"
 
-function class.new(state)
-  return {
-    state = state;
-  }
+return function (...)
+  return future(ready_state(...))
 end
-
-function class:is_ready()
-  return self.state:is_ready()
-end
-
-function class:wait()
-  return self.state:wait()
-end
-
-function class:wait_until(timeout)
-  return self.state:wait_until(timeout)
-end
-
-function class:wait_for(timeout)
-  return self.state:wait_for(timeout)
-end
-
-function class:get()
-  return self.state:get()
-end
-
-function class:then_(thread)
-  return self.state:then_(thread)
-end
-
-local metatable = {
-  __index = class;
-}
-
-return setmetatable(class, {
-  __call = function (_, state)
-    return setmetatable(class.new(state), metatable)
-  end;
-})

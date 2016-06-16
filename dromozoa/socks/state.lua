@@ -105,6 +105,9 @@ function class:set_value(...)
 end
 
 function class:set_error(message)
+  if self:is_ready() then
+    error(message)
+  end
   self.message = message
   self:set_ready()
 end
@@ -157,6 +160,10 @@ function class:wait(timeout)
     self.caller = coroutine.running()
     return coroutine.yield()
   end
+end
+
+function class:wait_until(timeout)
+  return self:wait(timeout)
 end
 
 function class:wait_for(timeout)
