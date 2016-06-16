@@ -21,37 +21,6 @@ local stream_buffer = require "dromozoa.socks.stream_buffer"
 
 local BUFFER_SIZE = 256
 
-local function read(self, f)
-  local result = f(self.stream_buffer)
-  if result then
-    return make_ready_future(result)
-  else
-    return self.service:io_handler(self.fd, "read", function (promise)
-      while true do
-        local result = self.fd:read(BUFFER_SIZE)
-        if result then
-          if result == "" then
-            self.stream_buffer:close()
-          else
-            self.stream_buffer:write(result)
-          end
-          local result = f(self.stream_buffer)
-          if result then
-            -- should return capture
-            return promise:set_value(result)
-          end
-        else
-          if unix.get_last_errno() == unix.EAGAIN then
-            promise = coroutine.yield()
-          else
-            return promise:set_error(unix.strerror(unix.get_last_errno()))
-          end
-        end
-      end
-    end)
-  end
-end
-
 local class = {}
 
 function class.new(service, fd)
@@ -64,21 +33,63 @@ function class.new(service, fd)
 end
 
 function class:read(count)
-  return read(self, function (stream_buffer)
-    return stream_buffer:read(count)
-  end)
-end
-
-function class:read_some(count)
-  return read(self, function (stream_buffer)
-    return stream_buffer:read_some(count)
-  end)
+  local result = self.stream_buffer:read(count)
+  if result then
+    return make_ready_future(result)
+  else
+    return self.service:io_handler(self.fd, "read", function (promise)
+      while true do
+        local result, message, code = self.fd:read(BUFFER_SIZE)
+        if result then
+          if result == "" then
+            self.stream_buffer:close()
+          else
+            self.stream_buffer:write(result)
+          end
+          local result = self.stream_buffer:read(count)
+          if result then
+            return promise:set_value(result)
+          end
+        else
+          if code == unix.EAGAIN then
+            promise = coroutine.yield()
+          else
+            return promise:set_error(message)
+          end
+        end
+      end
+    end)
+  end
 end
 
 function class:read_until(pattern)
-  return read(self, function (stream_buffer)
-    return stream_buffer:read_until(pattern)
-  end)
+  local result, capture = self.stream_buffer:read_until(pattern)
+  if result then
+    return make_ready_future(result, capture)
+  else
+    return self.service:io_handler(self.fd, "read", function (promise)
+      while true do
+        local result, message, code = self.fd:read(BUFFER_SIZE)
+        if result then
+          if result == "" then
+            self.stream_buffer:close()
+          else
+            self.stream_buffer:write(result)
+          end
+          local result, capture = self.stream_buffer:read_until(pattern)
+          if result then
+            return promise:set_value(result, capture)
+          end
+        else
+          if code == unix.EAGAIN then
+            promise = coroutine.yield()
+          else
+            return promise:set_error(message)
+          end
+        end
+      end
+    end)
+  end
 end
 
 local metatable = {

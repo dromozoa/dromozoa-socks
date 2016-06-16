@@ -41,6 +41,15 @@ assert(service:dispatch(function (service)
   assert(f:wait_for(0.2) == "ready")
   assert(f:get() == "bar")
 
+  local f = r:read(3)
+  fd2:write("a")
+  assert(f:wait_for(0.2) == "timeout")
+  fd2:write("b")
+  assert(f:wait_for(0.2) == "timeout")
+  fd2:write("c")
+  assert(f:wait_for(0.2) == "ready")
+  assert(f:get() == "abc")
+
   service:stop()
   done = true
 end))
