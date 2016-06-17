@@ -35,8 +35,9 @@ end
 
 local class = {}
 
-function class.new(future)
+function class.new(service, future)
   local self = {
+    service = service;
     future = future;
     sharer_states = sequence();
   }
@@ -52,14 +53,14 @@ function class:launch(sharer_state)
   if that:is_ready() then
     propagate(self)
   elseif that:is_initial() or that:is_suspended() then
-    local current_state = sharer_state.service:get_current_state()
-    sharer_state.service:set_current_state(nil)
+    local current_state = self.service:get_current_state()
+    self.service:set_current_state(nil)
     if that:dispatch() then
       propagate(self)
     else
       that.caller = self.propagator
     end
-    sharer_state.service:set_current_state(current_state)
+    self.service:set_current_state(current_state)
   end
 end
 
@@ -93,7 +94,7 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __call = function (_, future)
-    return setmetatable(class.new(future), metatable)
+  __call = function (_, service, future)
+    return setmetatable(class.new(service, future), metatable)
   end;
 })
