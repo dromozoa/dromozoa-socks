@@ -23,6 +23,10 @@ function class.new(state)
   }
 end
 
+function class:valid()
+  return self.state ~= nil
+end
+
 function class:is_ready()
   return self.state:is_ready()
 end
@@ -40,7 +44,9 @@ function class:wait_for(timeout)
 end
 
 function class:get()
-  return self.state:get()
+  local state = self.state
+  self.state = nil
+  return state:get()
 end
 
 function class:then_(thread)
