@@ -15,8 +15,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local create_thread = require "dromozoa.socks.create_thread"
 local unpack = require "dromozoa.commons.unpack"
+local create_thread = require "dromozoa.socks.create_thread"
 local pack = require "dromozoa.socks.pack"
 
 local class = {}
