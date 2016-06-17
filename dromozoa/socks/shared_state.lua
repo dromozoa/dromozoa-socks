@@ -47,7 +47,6 @@ function class.new(future)
 end
 
 function class:launch(sharer_state)
-  print("shared:launch", sharer_state)
   local that = self.future.state
   self.sharer_states:push(sharer_state)
   if that:is_ready() then
@@ -75,7 +74,6 @@ function class:suspend()
       break
     end
   end
-  print("shared:suspend", is_running)
   if not is_running then
     that:suspend()
   end

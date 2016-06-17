@@ -26,19 +26,16 @@ function class.new(service, shared_state)
 end
 
 function class:launch()
-  print("sharer:launch", self)
   state.launch(self)
   self.shared_state:launch(self)
 end
 
 function class:suspend()
-  print("sharer:suspend", self)
   state.suspend(self)
   self.shared_state:suspend()
 end
 
 function class:resume()
-  print("sharer:resume", self)
   state.resume(self)
   self.shared_state:resume()
 end

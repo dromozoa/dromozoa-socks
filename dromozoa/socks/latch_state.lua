@@ -78,7 +78,6 @@ end
 function class:suspend()
   state.suspend(self)
   for that in each_state(self) do
-    print("latch:suspend each", that.status, that, that.waiting_state)
     assert(that:is_running() or that:is_ready())
     if that:is_running() then
       that:suspend()

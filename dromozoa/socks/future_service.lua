@@ -100,7 +100,6 @@ function class:dispatch(thread)
 end
 
 function class:set_current_state(current_state)
-  print("set_current_state", self.current_state, "=>", current_state)
   self.current_state = current_state
 end
 

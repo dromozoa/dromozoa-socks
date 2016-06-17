@@ -97,6 +97,30 @@ assert(service:dispatch(function (service)
   print("f3", f3.state.status)
   print("f4", f4.state.status)
 
+  local f3 = service:deferred(function (promise)
+    print("u1a", unix.clock_gettime(unix.CLOCK_REALTIME))
+    sharer1:wait_for(0.5)
+    print("u1b", unix.clock_gettime(unix.CLOCK_REALTIME))
+    promise:set_value(true)
+  end)
+
+  local f4 = service:deferred(function (promise)
+    print("u2a", unix.clock_gettime(unix.CLOCK_REALTIME))
+    sharer2:wait_for(0.3)
+    print("u2b", unix.clock_gettime(unix.CLOCK_REALTIME))
+    promise:set_value(true)
+  end)
+
+  print("f3", f3.state)
+  print("f4", f4.state)
+
+  local f5 = service:when_all(f3, f4)
+  assert(f5:wait_for(0.2) == "timeout")
+
+  fd2:write("x")
+
+  f5:get()
+
   service:stop()
   done = true
 end))

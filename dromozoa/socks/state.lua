@@ -51,7 +51,6 @@ function class:launch()
 end
 
 function class:suspend()
-  print("state:suspend", self, self.waiting_state)
   local waiting_state = self.waiting_state
   if waiting_state then
     waiting_state:suspend()
@@ -87,7 +86,6 @@ function class:finish()
 end
 
 function class:set_ready()
-  print("state:set_ready", self, self.caller)
   self:finish()
   self.service:set_current_state(self.parent_state)
   if self.parent_state then
