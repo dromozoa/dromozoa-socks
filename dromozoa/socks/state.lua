@@ -15,8 +15,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local create_thread = require "dromozoa.socks.create_thread"
 local unpack = require "dromozoa.commons.unpack"
+local create_thread = require "dromozoa.socks.create_thread"
 local pack = require "dromozoa.socks.pack"
 
 local class = {}
@@ -51,6 +51,7 @@ function class:launch()
 end
 
 function class:suspend()
+  print("state:suspend", self, self.waiting_state)
   local waiting_state = self.waiting_state
   if waiting_state then
     waiting_state:suspend()
@@ -86,6 +87,7 @@ function class:finish()
 end
 
 function class:set_ready()
+  print("state:set_ready", self, self.caller)
   self:finish()
   self.service:set_current_state(self.parent_state)
   if self.parent_state then

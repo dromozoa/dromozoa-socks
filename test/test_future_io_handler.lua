@@ -26,7 +26,6 @@ assert(fd2:ndelay_off())
 local service = future_service()
 
 local done
-assert(not done)
 assert(service:dispatch(function (service)
   local f = service:io_handler(fd1, "read", function (promise)
     local buffer = ""

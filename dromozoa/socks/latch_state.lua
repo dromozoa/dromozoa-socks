@@ -49,15 +49,21 @@ function class.new(service, count, ...)
     self.count = count
   end
   self.counter = coroutine.create(function ()
-    count_down(self)
+    while true do
+      if count_down(self) then
+        break
+      end
+      coroutine.yield()
+    end
   end)
   return self
 end
 
 function class:launch()
   state.launch(self)
-  self.service:set_current_state(nil)
+  local current_state = self.service:get_current_state()
   for that in each_state(self) do
+    self.service:set_current_state(nil)
     if that:dispatch() then
       if count_down(self) then
         break
@@ -66,12 +72,13 @@ function class:launch()
       that.caller = self.counter
     end
   end
-  self.service:set_current_state(self)
+  self.service:set_current_state(current_state)
 end
 
 function class:suspend()
   state.suspend(self)
   for that in each_state(self) do
+    print("latch:suspend each", that.status, that, that.waiting_state)
     assert(that:is_running() or that:is_ready())
     if that:is_running() then
       that:suspend()

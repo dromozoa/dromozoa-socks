@@ -28,7 +28,6 @@ local future_service = require "dromozoa.socks.future_service"
 local service = future_service()
 
 local done
-assert(not done)
 assert(service:dispatch(function (service)
   local f1 = service:deferred(function (promise)
     print("1a")
@@ -58,7 +57,6 @@ assert(fd1:ndelay_on())
 assert(fd2:ndelay_off())
 
 local done
-assert(not done)
 assert(service:dispatch(function (service)
   service:start()
 
@@ -70,7 +68,7 @@ assert(service:dispatch(function (service)
       if char then
         return promise:set_value(char)
       else
-        if unix.get_last_error() == unix.EAGAIN then
+        if unix.get_last_errno() == unix.EAGAIN then
           promise = coroutine.yield()
         else
           assert(unix.get_last_error())
