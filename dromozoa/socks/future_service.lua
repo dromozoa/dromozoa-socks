@@ -21,6 +21,9 @@ local future = require "dromozoa.socks.future"
 local io_handler_state = require "dromozoa.socks.io_handler_state"
 local io_service = require "dromozoa.socks.io_service"
 local latch_state = require "dromozoa.socks.latch_state"
+local make_ready_future = require "dromozoa.socks.make_ready_future"
+local shared_future = require "dromozoa.socks.shared_future"
+local shared_state = require "dromozoa.socks.shared_state"
 local timer_service = require "dromozoa.socks.timer_service"
 
 local class = {}
@@ -121,6 +124,16 @@ end
 
 function class:when_all(...)
   return future(latch_state(self, "n", ...))
+end
+
+function class:make_ready_future(...)
+  return make_ready_future(...)
+end
+
+function class:make_shared_future(future)
+  local state = future.state
+  future.state = nil
+  return shared_future(self, shared_state(self, state))
 end
 
 local metatable = {

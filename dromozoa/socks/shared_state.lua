@@ -19,15 +19,14 @@ local sequence = require "dromozoa.commons.sequence"
 local unpack = require "dromozoa.commons.unpack"
 
 local function propagate(self)
-  local that = self.future.state
-  assert(that:is_ready())
+  assert(self.state:is_ready())
   for sharer_state in self.sharer_states:each() do
     assert(sharer_state:is_running() or sharer_state:is_suspended())
     if sharer_state:is_running() then
-      if that.message ~= nil then
-        sharer_state:set_error(that.message)
+      if self.state.message ~= nil then
+        sharer_state:set_error(self.state.message)
       else
-        sharer_state:set_value(unpack(that.value))
+        sharer_state:set_value(unpack(self.state.value))
       end
     end
   end
@@ -35,9 +34,10 @@ end
 
 local class = {}
 
-function class.new(future)
+function class.new(service, state)
   local self = {
-    future = future;
+    service = service;
+    state = state;
     sharer_states = sequence();
   }
   self.propagator = coroutine.create(function ()
@@ -47,25 +47,23 @@ function class.new(future)
 end
 
 function class:launch(sharer_state)
-  local that = self.future.state
   self.sharer_states:push(sharer_state)
-  if that:is_ready() then
+  if self.state:is_ready() then
     propagate(self)
-  elseif that:is_initial() or that:is_suspended() then
-    local current_state = sharer_state.service:get_current_state()
-    sharer_state.service:set_current_state(nil)
-    if that:dispatch() then
+  elseif self.state:is_initial() or self.state:is_suspended() then
+    local current_state = self.service:get_current_state()
+    self.service:set_current_state(nil)
+    if self.state:dispatch() then
       propagate(self)
     else
-      that.caller = self.propagator
+      self.state.caller = self.propagator
     end
-    sharer_state.service:set_current_state(current_state)
+    self.service:set_current_state(current_state)
   end
 end
 
 function class:suspend()
-  local that = self.future.state
-  assert(that:is_running())
+  assert(self.state:is_running())
   local is_running = false
   for sharer_state in self.sharer_states:each() do
     assert(sharer_state:is_running() or sharer_state:is_suspended())
@@ -75,16 +73,15 @@ function class:suspend()
     end
   end
   if not is_running then
-    that:suspend()
+    self.state:suspend()
   end
 end
 
 function class:resume()
-  local that = self.future.state
-  if that:is_ready() then
+  if self.state:is_ready() then
     propagate(self)
-  elseif that:is_suspended() then
-    that:resume()
+  elseif self.state:is_suspended() then
+    self.state:resume()
   end
 end
 
@@ -93,7 +90,7 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __call = function (_, future)
-    return setmetatable(class.new(future), metatable)
+  __call = function (_, service, state)
+    return setmetatable(class.new(service, state), metatable)
   end;
 })

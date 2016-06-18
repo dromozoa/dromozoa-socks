@@ -17,10 +17,7 @@
 
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
-local future = require "dromozoa.socks.future"
 local future_service = require "dromozoa.socks.future_service"
-local shared_state = require "dromozoa.socks.shared_state"
-local sharer_state = require "dromozoa.socks.sharer_state"
 
 local fd1, fd2 = unix.socketpair(unix.AF_UNIX, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC))
 assert(fd1:ndelay_on())
@@ -54,9 +51,12 @@ assert(service:dispatch(function (service)
     return promise:set_value(char)
   end)
 
-  local shared = shared_state(f2)
-  local sharer1 = future(sharer_state(service, shared))
-  local sharer2 = future(sharer_state(service, shared))
+  assert(f2:valid())
+  local shared = service:make_shared_future(f2)
+  assert(not f2:valid())
+
+  local sharer1 = shared:share()
+  local sharer2 = shared:share()
 
   local f3 = service:deferred(function (promise)
     print("u1a", unix.clock_gettime(unix.CLOCK_REALTIME))

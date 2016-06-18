@@ -15,42 +15,20 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local future = require "dromozoa.socks.future"
+local sharer_state = require "dromozoa.socks.sharer_state"
+
 local class = {}
 
-function class.new(state)
+function class.new(service, shared_state)
   return {
-    state = state;
+    service = service;
+    shared_state = shared_state;
   }
 end
 
-function class:valid()
-  return self.state ~= nil
-end
-
-function class:is_ready()
-  return self.state:is_ready()
-end
-
-function class:wait()
-  return self.state:wait()
-end
-
-function class:wait_until(timeout)
-  return self.state:wait_until(timeout)
-end
-
-function class:wait_for(timeout)
-  return self.state:wait_for(timeout)
-end
-
-function class:get()
-  local state = self.state
-  self.state = nil
-  return state:get()
-end
-
-function class:then_(thread)
-  return self.state:then_(thread)
+function class:share()
+  return future(sharer_state(self.service, self.shared_state))
 end
 
 local metatable = {
@@ -58,7 +36,7 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __call = function (_, state)
-    return setmetatable(class.new(state), metatable)
+  __call = function (_, service, shared_state)
+    return setmetatable(class.new(service, shared_state), metatable)
   end;
 })
