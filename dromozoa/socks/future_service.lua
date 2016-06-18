@@ -131,7 +131,9 @@ function class:make_ready_future(...)
 end
 
 function class:make_shared_future(future)
-  return shared_future(self, shared_state(self, future))
+  local state = future.state
+  future.state = nil
+  return shared_future(self, shared_state(self, state))
 end
 
 local metatable = {

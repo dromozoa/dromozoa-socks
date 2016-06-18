@@ -51,7 +51,10 @@ assert(service:dispatch(function (service)
     return promise:set_value(char)
   end)
 
+  assert(f2:valid())
   local shared = service:make_shared_future(f2)
+  assert(not f2:valid())
+
   local sharer1 = shared:share()
   local sharer2 = shared:share()
 
