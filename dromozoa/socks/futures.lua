@@ -15,6 +15,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local translate_range = require "dromozoa.commons.translate_range"
+local unix = require "dromozoa.unix"
 local future = require "dromozoa.socks.future"
 local deferred_state = require "dromozoa.socks.deferred_state"
 local io_handler_state = require "dromozoa.socks.io_handler_state"
@@ -22,6 +24,11 @@ local latch_state = require "dromozoa.socks.latch_state"
 local make_ready_future = require "dromozoa.socks.make_ready_future"
 local shared_future = require "dromozoa.socks.shared_future"
 local shared_state = require "dromozoa.socks.shared_state"
+
+local function is_resource_unavailable_try_again()
+  local code = unix.get_last_errno()
+  return code == unix.EAGAIN or code == unix.EWOULDBLOCK
+end
 
 local class = {}
 
@@ -49,6 +56,113 @@ function class.make_shared_future(service, future)
   local state = future.state
   future.state = nil
   return shared_future(service, shared_state(service, state))
+end
+
+function class.accept(service, fd, flags)
+  return service:deferred(function (promise)
+    assert(fd:is_ndelay_on())
+    local result, address = fd:accept(flags)
+    if result then
+      return promise:set_value(result, address)
+    elseif is_resource_unavailable_try_again() then
+      local f = service:io_handler(fd, "read", function (promise)
+        while true do
+          assert(fd:is_ndelay_on())
+          local result, address = fd:accept(flags)
+          if result then
+            return promise:set_value(result, address)
+          elseif is_resource_unavailable_try_again() then
+            promise = coroutine.yield()
+          else
+            return promise:set_error(unix.strerror(unix.get_last_errno()))
+          end
+        end
+      end)
+      return promise:set_value(f:get())
+    else
+      return promise:set_error(unix.strerror(unix.get_last_errno()))
+    end
+  end)
+end
+
+function class.connect(service, fd, address)
+  return service:deferred(function (promise)
+    assert(fd:is_ndelay_on())
+    local result = fd:connect(address)
+    if result then
+      return promise:set_value(result)
+    elseif unix.get_last_errno() == unix.EINPROGRESS then
+      local f = service:io_handler(fd, "write", function (promise)
+        local code = fd:getsockopt(unix.SOL_SOCKET, unix.SO_ERROR)
+        if code then
+          if code == 0 then
+            return promise:set_value(fd)
+          else
+            return promise:set_error(unix.strerror(code))
+          end
+        else
+          return promise:set_error(unix.strerror(unix.get_last_errno()))
+        end
+      end)
+      return promise:set_value(f:get())
+    else
+      return promise:set_error(unix.strerror(unix.get_last_errno()))
+    end
+  end)
+end
+
+function class.read(service, fd, size)
+  return service:deferred(function (promise)
+    assert(fd:is_ndelay_on())
+    local result = fd:read(size)
+    if result then
+      return promise:set_value(result)
+    elseif is_resource_unavailable_try_again() then
+      local f = service:io_handler(fd, "read", function (promise)
+        while true do
+          assert(fd:is_ndelay_on())
+          local result = fd:read(size)
+          if result then
+            return promise:set_value(result)
+          elseif is_resource_unavailable_try_again() then
+            promise = coroutine.yield()
+          else
+            return promise:set_error(unix.strerror(unix.get_last_errno()))
+          end
+        end
+      end)
+      return promise:set_value(f:get())
+    else
+      return promise:set_error(unix.strerror(unix.get_last_errno()))
+    end
+  end)
+end
+
+function class.write(service, fd, buffer, i, j)
+  return service:deferred(function (promise)
+    assert(fd:is_ndelay_on())
+    local result = fd:write(buffer, i, j)
+    if result then
+      return promise:set_value(result)
+    elseif is_resource_unavailable_try_again() then
+      local f = service:io_handler(fd, "write", function (promise)
+        while true do
+          assert(fd:is_ndelay_on())
+          local result = fd:write(buffer, i, j)
+          if result then
+            return promise:set_value(result)
+          elseif is_resource_unavailable_try_again() then
+            promise = coroutine.yield()
+          else
+            return promise:set_error(unix.strerror(unix.get_last_errno()))
+          end
+        end
+      end)
+      return promise:set_value(f:get())
+    else
+      return promise:set_error(unix.strerror(unix.get_last_errno()))
+    end
+  end)
 end
 
 return class
