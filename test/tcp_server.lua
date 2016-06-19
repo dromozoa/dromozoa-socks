@@ -19,55 +19,52 @@ local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
 local future_service = require "dromozoa.socks.future_service"
 
--- local host = "10.211.55.30"
--- local host = "49.212.170.128"
-local host = localhost
-local addrinfo = assert(unix.getaddrinfo(host, "4242", {
+local addrinfo = assert(unix.getaddrinfo(nil, "4242", {
   ai_family = unix.AF_INET;
   ai_socktype = unix.SOCK_STREAM;
+  ai_hints = AF_PASSIVE;
 }))
 local ai = addrinfo[1]
 local fd = assert(unix.socket(ai.ai_family, uint32.bor(ai.ai_socktype, unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC), ai.ai_protocol))
 
+assert(fd:setsockopt(unix.SOL_SOCKET, unix.SO_REUSEADDR, 1))
+assert(fd:bind(ai.ai_addr))
+assert(fd:listen())
+
 local service = future_service()
 assert(service:dispatch(function (service)
-  print(service:connect(fd, ai.ai_addr):get())
+  local f1 = service:accept(fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC))
 
-  print(fd:getsockname():getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
-  print(fd:getpeername():getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
-
-  local f1 = service:deferred(function (promise)
-    -- local data = (("x"):rep(1022) .. "\r\n"):rep(1024)
-    local data = "foo\n"
-    local i = 1
-    local j = #data
-    while i <= j do
-      local n = service:write(fd, data, i, j):get()
-      i = i + n
-      print("written", i, j)
-    end
-    assert(fd:shutdown(unix.SHUT_WR))
-    promise:set_value(true)
-  end)
-
-  local f2 = service:deferred(function (promise)
+  local f2 = f1:then_(function (f, p)
+    local fd, address = f:get()
     while true do
       local f = service:read(fd, 1500)
-      if f:wait_for(1) == "timeout" then
+      print("rf", f.state, f.state.status)
+      if f:wait_for(1000) == "timeout" then
         print("timeout")
         break
       end
+      print("rf", f.state, f.state.status)
       local result = f:get()
       print("read", #result)
       if result == "" then
         break
       end
+      local i = 1
+      local j = #result
+      while i <= j do
+        local n = service:write(fd, result, i, j):get()
+        i = i + n
+        print("written", i, j)
+      end
     end
-    promise:set_value(true)
+    assert(fd:close())
+    return p:set_value()
   end)
 
-  service:when_all(f1, f2):get()
+  print("f1", f1.state)
+  print("f2", f2.state)
+
+  f2:get()
   service:stop()
 end))
-
-assert(fd:close())

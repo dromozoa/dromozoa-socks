@@ -20,10 +20,10 @@ local future_service = require "dromozoa.socks.future_service"
 assert(future_service():dispatch(function (service)
   assert(service:deferred(function (promise)
     promise:set_value(1)
-  end):then_(function (future)
-    return future:get() + 2
-  end):then_(function (future)
-    return future:get() + 3
+  end):then_(function (future, promise)
+    return promise:set_value(future:get() + 2)
+  end):then_(function (future, promise)
+    return promise:set_value(future:get() + 3)
   end):get() == 6)
   service:stop()
 end))
