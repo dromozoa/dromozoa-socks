@@ -183,7 +183,7 @@ function class:then_(thread)
   local thread = create_thread(thread)
   return self.service:deferred(function (promise)
     self:wait()
-    promise:set_value(select(2, assert(coroutine.resume(thread, self))))
+    assert(coroutine.resume(thread, self, promise))
   end)
 end
 

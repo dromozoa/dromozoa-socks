@@ -16,14 +16,8 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local create_thread = require "dromozoa.socks.create_thread"
-local deferred_state = require "dromozoa.socks.deferred_state"
-local future = require "dromozoa.socks.future"
-local io_handler_state = require "dromozoa.socks.io_handler_state"
+local futures = require "dromozoa.socks.futures"
 local io_service = require "dromozoa.socks.io_service"
-local latch_state = require "dromozoa.socks.latch_state"
-local make_ready_future = require "dromozoa.socks.make_ready_future"
-local shared_future = require "dromozoa.socks.shared_future"
-local shared_state = require "dromozoa.socks.shared_state"
 local timer_service = require "dromozoa.socks.timer_service"
 
 local class = {}
@@ -110,37 +104,12 @@ function class:get_current_state()
   return self.current_state
 end
 
-function class:deferred(thread)
-  return future(deferred_state(self, thread))
-end
-
-function class:io_handler(fd, event, thread)
-  return future(io_handler_state(self, fd, event, thread))
-end
-
-function class:when_any(...)
-  return future(latch_state(self, 1, ...))
-end
-
-function class:when_all(...)
-  return future(latch_state(self, "n", ...))
-end
-
-function class:make_ready_future(...)
-  return make_ready_future(...)
-end
-
-function class:make_shared_future(future)
-  local state = future.state
-  future.state = nil
-  return shared_future(self, shared_state(self, state))
-end
-
 local metatable = {
   __index = class;
 }
 
 return setmetatable(class, {
+  __index = futures;
   __call = function ()
     return setmetatable(class.new(), metatable)
   end;
