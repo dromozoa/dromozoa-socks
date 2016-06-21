@@ -21,7 +21,7 @@ local unpack = require "dromozoa.commons.unpack"
 local function propagate(self)
   assert(self.state:is_ready())
   for sharer_state in self.sharer_states:each() do
-    assert(sharer_state:is_ready() or sharer_state:is_running() or sharer_state:is_suspended())
+    assert(sharer_state:is_running() or sharer_state:is_suspended() or sharer_state:is_ready())
     if sharer_state:is_running() then
       if self.state.message ~= nil then
         sharer_state:set_error(self.state.message)
@@ -67,7 +67,7 @@ function class:launch(sharer_state)
 end
 
 function class:suspend()
-  assert(self.state:is_ready() or self.state:is_running())
+  assert(self.state:is_running() or self.state:is_ready())
   if self.state:is_running() then
     local is_running = false
     for sharer_state in self.sharer_states:each() do
@@ -84,6 +84,7 @@ function class:suspend()
 end
 
 function class:resume()
+  assert(self.state:is_running() or self.state:is_suspended() or self.state:is_ready())
   if self.state:is_ready() then
     propagate(self)
   elseif self.state:is_suspended() then
