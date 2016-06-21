@@ -33,38 +33,33 @@ assert(fd:listen())
 
 local service = future_service()
 assert(service:dispatch(function (service)
-  local f1 = service:accept(fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC))
+  local futures = {}
 
-  local f2 = f1:then_(function (f, p)
-    local fd, address = f:get()
-    while true do
-      local f = service:read(fd, 1500)
-      print("rf", f.state, f.state.status)
-      if f:wait_for(1000) == "timeout" then
-        print("timeout")
-        break
+  for i = 1, 4 do
+    futures[i] = service:accept(fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC)):then_(function (future, promise)
+      local fd, address = future:get()
+      while true do
+        local result = service:read(fd, 1500):get()
+        print("read", #result)
+        if result == "" then
+          break
+        end
+        local i = 1
+        local j = #result
+        while i <= j do
+          local n = service:write(fd, result, i, j):get()
+          i = i + n
+          print("written", i, j)
+        end
       end
-      print("rf", f.state, f.state.status)
-      local result = f:get()
-      print("read", #result)
-      if result == "" then
-        break
-      end
-      local i = 1
-      local j = #result
-      while i <= j do
-        local n = service:write(fd, result, i, j):get()
-        i = i + n
-        print("written", i, j)
-      end
-    end
-    assert(fd:close())
-    return p:set_value()
-  end)
+      assert(fd:close())
+      return promise:set_value()
+    end)
 
-  print("f1", f1.state)
-  print("f2", f2.state)
+    local f = service:when_any_table(futures)
+    local k = f:get()
+    futures[k] = nil
+  end
 
-  f2:get()
   service:stop()
 end))

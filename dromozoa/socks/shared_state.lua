@@ -21,7 +21,7 @@ local unpack = require "dromozoa.commons.unpack"
 local function propagate(self)
   assert(self.state:is_ready())
   for sharer_state in self.sharer_states:each() do
-    assert(sharer_state:is_running() or sharer_state:is_suspended())
+    assert(sharer_state:is_running() or sharer_state:is_suspended() or sharer_state:is_ready())
     if sharer_state:is_running() then
       if self.state.message ~= nil then
         sharer_state:set_error(self.state.message)
@@ -46,6 +46,10 @@ function class.new(service, state)
   return self
 end
 
+function class:is_ready()
+  return self.state:is_ready()
+end
+
 function class:launch(sharer_state)
   self.sharer_states:push(sharer_state)
   if self.state:is_ready() then
@@ -63,21 +67,24 @@ function class:launch(sharer_state)
 end
 
 function class:suspend()
-  assert(self.state:is_running())
-  local is_running = false
-  for sharer_state in self.sharer_states:each() do
-    assert(sharer_state:is_running() or sharer_state:is_suspended())
-    if sharer_state:is_running() then
-      is_running = true
-      break
+  assert(self.state:is_running() or self.state:is_ready())
+  if self.state:is_running() then
+    local is_running = false
+    for sharer_state in self.sharer_states:each() do
+      assert(sharer_state:is_running() or sharer_state:is_suspended())
+      if sharer_state:is_running() then
+        is_running = true
+        break
+      end
     end
-  end
-  if not is_running then
-    self.state:suspend()
+    if not is_running then
+      self.state:suspend()
+    end
   end
 end
 
 function class:resume()
+  assert(self.state:is_running() or self.state:is_suspended() or self.state:is_ready())
   if self.state:is_ready() then
     propagate(self)
   elseif self.state:is_suspended() then
