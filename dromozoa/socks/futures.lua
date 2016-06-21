@@ -24,6 +24,7 @@ local latch_state = require "dromozoa.socks.latch_state"
 local make_ready_future = require "dromozoa.socks.make_ready_future"
 local shared_future = require "dromozoa.socks.shared_future"
 local shared_state = require "dromozoa.socks.shared_state"
+local when_any_table_state = require "dromozoa.socks.when_any_table_state"
 
 local function is_resource_unavailable_try_again()
   local code = unix.get_last_errno()
@@ -40,12 +41,16 @@ function class.io_handler(service, fd, event, thread)
   return future(io_handler_state(service, fd, event, thread))
 end
 
+function class.when_all(service, ...)
+  return future(latch_state(service, "n", ...))
+end
+
 function class.when_any(service, ...)
   return future(latch_state(service, 1, ...))
 end
 
-function class.when_all(service, ...)
-  return future(latch_state(service, "n", ...))
+function class.when_any_table(service, futures)
+  return future(when_any_table_state(service, futures))
 end
 
 function class.make_ready_future(_, ...)
