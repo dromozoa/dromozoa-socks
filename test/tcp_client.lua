@@ -36,15 +36,21 @@ assert(service:dispatch(function (service)
   print(fd:getsockname():getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
   print(fd:getpeername():getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
 
+  local f0 = service:deferred(function (promise)
+  end)
+
   local f1 = service:deferred(function (promise)
     -- local data = (("x"):rep(1022) .. "\r\n"):rep(1024)
-    local data = "foo\n"
-    local i = 1
-    local j = #data
-    while i <= j do
-      local n = service:write(fd, data, i, j):get()
-      i = i + n
-      print("written", i, j)
+    for i = 1, 8 do
+      local data = "foo\n"
+      local i = 1
+      local j = #data
+      while i <= j do
+        local n = service:write(fd, data, i, j):get()
+        i = i + n
+        print("written", i, j)
+      end
+      f0:wait_for(0.5)
     end
     assert(fd:shutdown(unix.SHUT_WR))
     promise:set_value(true)
@@ -53,7 +59,7 @@ assert(service:dispatch(function (service)
   local f2 = service:deferred(function (promise)
     while true do
       local f = service:read(fd, 1500)
-      if f:wait_for(1) == "timeout" then
+      if f:wait_for(10) == "timeout" then
         print("timeout")
         break
       end
