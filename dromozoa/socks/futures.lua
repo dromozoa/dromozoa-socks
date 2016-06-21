@@ -70,7 +70,7 @@ function class.accept(service, fd, flags)
     if result then
       return promise:set_value(result, address)
     elseif is_resource_unavailable_try_again() then
-      local f = service:io_handler(fd, "read", function (promise)
+      local future = service:io_handler(fd, "read", function (promise)
         while true do
           assert(fd:is_ndelay_on())
           local result, address = fd:accept(flags)
@@ -83,7 +83,7 @@ function class.accept(service, fd, flags)
           end
         end
       end)
-      return promise:set_value(f:get())
+      return promise:set_value(future:get())
     else
       return promise:set_error(unix.strerror(unix.get_last_errno()))
     end
@@ -97,7 +97,7 @@ function class.connect(service, fd, address)
     if result then
       return promise:set_value(result)
     elseif unix.get_last_errno() == unix.EINPROGRESS then
-      local f = service:io_handler(fd, "write", function (promise)
+      local future = service:io_handler(fd, "write", function (promise)
         local code = fd:getsockopt(unix.SOL_SOCKET, unix.SO_ERROR)
         if code then
           if code == 0 then
@@ -109,7 +109,7 @@ function class.connect(service, fd, address)
           return promise:set_error(unix.strerror(unix.get_last_errno()))
         end
       end)
-      return promise:set_value(f:get())
+      return promise:set_value(future:get())
     else
       return promise:set_error(unix.strerror(unix.get_last_errno()))
     end
@@ -123,7 +123,7 @@ function class.read(service, fd, size)
     if result then
       return promise:set_value(result)
     elseif is_resource_unavailable_try_again() then
-      local f = service:io_handler(fd, "read", function (promise)
+      local future = service:io_handler(fd, "read", function (promise)
         while true do
           assert(fd:is_ndelay_on())
           local result = fd:read(size)
@@ -136,7 +136,7 @@ function class.read(service, fd, size)
           end
         end
       end)
-      return promise:set_value(f:get())
+      return promise:set_value(future:get())
     else
       return promise:set_error(unix.strerror(unix.get_last_errno()))
     end
@@ -150,7 +150,7 @@ function class.write(service, fd, buffer, i, j)
     if result then
       return promise:set_value(result)
     elseif is_resource_unavailable_try_again() then
-      local f = service:io_handler(fd, "write", function (promise)
+      local future = service:io_handler(fd, "write", function (promise)
         while true do
           assert(fd:is_ndelay_on())
           local result = fd:write(buffer, i, j)
@@ -163,7 +163,7 @@ function class.write(service, fd, buffer, i, j)
           end
         end
       end)
-      return promise:set_value(f:get())
+      return promise:set_value(future:get())
     else
       return promise:set_error(unix.strerror(unix.get_last_errno()))
     end
@@ -176,7 +176,7 @@ function class.selfpipe(service)
     if result > 0 then
       return promise:set_value(result)
     else
-      local f = service:io_handler(unix.selfpipe.get(), "read", function (promise)
+      local future = service:io_handler(unix.selfpipe.get(), "read", function (promise)
         while true do
           local result = unix.selfpipe.read()
           if result > 0 then
@@ -186,7 +186,7 @@ function class.selfpipe(service)
           end
         end
       end)
-      return promise:set_value(f:get())
+      return promise:set_value(future:get())
     end
   end)
 end
