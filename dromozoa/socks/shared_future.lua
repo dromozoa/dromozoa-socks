@@ -27,6 +27,10 @@ function class.new(service, shared_state)
   }
 end
 
+function class:is_ready()
+  return self.shared_state:is_ready()
+end
+
 function class:share()
   return future(sharer_state(self.service, self.shared_state))
 end

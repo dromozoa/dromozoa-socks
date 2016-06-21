@@ -170,4 +170,39 @@ function class.write(service, fd, buffer, i, j)
   end)
 end
 
+function class.selfpipe(service)
+  return service:deferred(function (promise)
+    local result = unix.selfpipe.read()
+    if result > 0 then
+      return promise:set_value(result)
+    else
+      local f = service:io_handler(unix.selfpipe.get(), "read", function (promise)
+        while true do
+          local result = unix.selfpipe.read()
+          if result > 0 then
+            return promise:set_value(result)
+          else
+            promise = coroutine.yield()
+          end
+        end
+      end)
+      return promise:set_value(f:get())
+    end
+  end)
+end
+
+-- function class.wait(service, pid)
+--   return service:deferred(function (promise)
+--     local result, code, status = unix.wait(pid, unix.WNOHANG)
+--     if result then
+--       if result == 0 then
+--         if service.selfpipe_future then
+--         end
+--       else
+--         promise:set_value(result, code, status)
+--       end
+--     end
+--   end)
+-- end
+
 return class

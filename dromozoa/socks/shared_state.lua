@@ -46,6 +46,10 @@ function class.new(service, state)
   return self
 end
 
+function class:is_ready()
+  return self.state:is_ready()
+end
+
 function class:launch(sharer_state)
   self.sharer_states:push(sharer_state)
   if self.state:is_ready() then

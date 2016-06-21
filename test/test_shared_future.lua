@@ -97,6 +97,8 @@ assert(service:dispatch(function (service)
   print("f3", f3.state.status)
   print("f4", f4.state.status)
 
+  print("----")
+
   local f3 = service:deferred(function (promise)
     print("u1a", unix.clock_gettime(unix.CLOCK_REALTIME))
     sharer1:wait_for(0.5)
@@ -119,7 +121,23 @@ assert(service:dispatch(function (service)
 
   fd2:write("x")
 
+  print("shared", shared.shared_state.state.status)
+  print("sharer1", sharer1.state.status)
+  print("sharer2", sharer2.state.status)
+
+  assert(not shared:is_ready())
+  assert(not sharer1:is_ready())
+  assert(not sharer2:is_ready())
+
   f5:get()
+
+  print("shared", shared.shared_state.state.status)
+  print("sharer1", sharer1.state.status)
+  print("sharer2", sharer2.state.status)
+
+  assert(shared:is_ready())
+  assert(sharer1:is_ready())
+  assert(sharer2:is_ready())
 
   service:stop()
   done = true
