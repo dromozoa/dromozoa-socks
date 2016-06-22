@@ -22,6 +22,7 @@ local deferred_state = require "dromozoa.socks.deferred_state"
 local io_handler_state = require "dromozoa.socks.io_handler_state"
 local latch_state = require "dromozoa.socks.latch_state"
 local make_ready_future = require "dromozoa.socks.make_ready_future"
+local reader = require "dromozoa.socks.reader"
 local shared_future = require "dromozoa.socks.shared_future"
 local shared_state = require "dromozoa.socks.shared_state"
 local when_any_table_state = require "dromozoa.socks.when_any_table_state"
@@ -168,6 +169,10 @@ function class.write(service, fd, buffer, i, j)
       return promise:set_error(unix.strerror(unix.get_last_errno()))
     end
   end)
+end
+
+function class.make_reader(service, fd)
+  return reader(service, fd)
 end
 
 function class.selfpipe(service)
