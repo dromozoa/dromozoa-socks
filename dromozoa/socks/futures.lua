@@ -28,6 +28,7 @@ local shared_future = require "dromozoa.socks.shared_future"
 local shared_reader = require "dromozoa.socks.shared_reader"
 local shared_state = require "dromozoa.socks.shared_state"
 local when_any_table_state = require "dromozoa.socks.when_any_table_state"
+local writer = require "dromozoa.socks.writer"
 
 local function is_resource_unavailable_try_again()
   local code = unix.get_last_errno()
@@ -179,6 +180,10 @@ end
 
 function class.make_shared_reader(service, fd)
   return shared_reader(service, fd)
+end
+
+function class.make_writer(service, fd)
+  return writer(service, fd)
 end
 
 function class.selfpipe(service)

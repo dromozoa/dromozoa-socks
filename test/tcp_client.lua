@@ -64,7 +64,7 @@ assert(service:dispatch(function (service)
         break
       end
       local result = f:get()
-      print("read", #result)
+      print("read", #result, result)
       if result == "" then
         break
       end
