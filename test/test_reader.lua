@@ -48,6 +48,14 @@ assert(service:dispatch(function (service)
   assert(f:wait_for(0.2) == "ready")
   assert(f:get() == "abc")
 
+  assert(r:read_some(3):get() == "")
+  fd2:write("a")
+  assert(r:read_some(3):get() == "")
+  assert(r:read_any(3):get() == "a")
+  fd2:write("abcdef")
+  assert(r:read_any(3):get() == "abc")
+  assert(r:read_some(3):get() == "def")
+
   service:stop()
   done = true
 end))

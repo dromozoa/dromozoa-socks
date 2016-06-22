@@ -22,7 +22,6 @@ local BUFFER_SIZE = 256
 local class = {}
 
 function class.new(service, fd)
-  assert(fd:is_ndelay_on())
   return {
     service = service;
     fd = fd;
@@ -31,47 +30,60 @@ function class.new(service, fd)
 end
 
 function class:read(count)
-  local result = self.buffer:read(count)
-  if result then
-    return self.service:make_ready_future(result)
-  else
-    return self.service:deferred(function (promise)
-      while true do
-        local result = self.service:read(self.fd, BUFFER_SIZE):get()
-        if result == "" then
-          self.buffer:close()
-        else
-          self.buffer:write(result)
-        end
-        local result = self.buffer:read(count)
-        if result then
-          return promise:set_value(result)
-        end
+  return self.service:deferred(function (promise)
+    while true do
+      local result = self.buffer:read(count)
+      if result then
+        return promise:set_value(result)
       end
-    end)
-  end
+      local result = self.service:read(self.fd, BUFFER_SIZE):get()
+      if result == "" then
+        self.buffer:close()
+      else
+        self.buffer:write(result)
+      end
+    end
+  end)
+end
+
+function class:read_some(count)
+  return self.service:deferred(function (promise)
+    return promise:set_value(self.buffer:read_some(count))
+  end)
+end
+
+function class:read_any(count)
+  return self.service:deferred(function (promise)
+    while true do
+      local result = self.buffer:read_some(count)
+      if result ~= "" or self.buffer.closed then
+        return promise:set_value(result)
+      end
+      local result = self.service:read(self.fd, BUFFER_SIZE):get()
+      if result == "" then
+        self.buffer:close()
+      else
+        self.buffer:write(result)
+      end
+    end
+  end)
 end
 
 function class:read_until(pattern)
-  local result, capture = self.buffer:read_until(pattern)
-  if result then
-    return self.service:make_ready_future(result, capture)
-  else
-    return self.service:deferred(function (promise)
-      while true do
-        local result = self.service:read(self.fd, BUFFER_SIZE):get()
-        if result == "" then
-          self.buffer:close()
-        else
-          self.buffer:write(result)
-        end
-        local result, capture = self.buffer:read_until(pattern)
-        if result then
-          return promise:set_value(result, capture)
-        end
+  return self.service:deferred(function (promise)
+    while true do
+      local result, capture = self.buffer:read_until(pattern)
+      if result then
+        return promise:set_value(result, capture)
       end
-    end)
-  end
+      local result = self.service:read(self.fd, BUFFER_SIZE):get()
+      if result == "" then
+        self.buffer:close()
+      else
+        self.buffer:write(result)
+      end
+    end
+  end)
 end
 
 local metatable = {
