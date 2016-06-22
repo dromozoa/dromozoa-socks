@@ -15,81 +15,69 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local unix = require "dromozoa.unix"
-local make_ready_future = require "dromozoa.socks.make_ready_future"
-local stream_buffer = require "dromozoa.socks.stream_buffer"
+local reader_buffer = require "dromozoa.socks.reader_buffer"
 
 local BUFFER_SIZE = 256
 
+local function fill(self)
+  local result = self.source:read(BUFFER_SIZE):get()
+  if result == "" then
+    self.buffer:close()
+  else
+    self.buffer:write(result)
+  end
+end
+
 local class = {}
 
-function class.new(service, fd)
-  assert(fd:is_ndelay_on())
+function class.new(service, source)
   return {
     service = service;
-    fd = fd;
-    stream_buffer = stream_buffer();
+    source = source;
+    buffer = reader_buffer();
   }
 end
 
 function class:read(count)
-  local result = self.stream_buffer:read(count)
-  if result then
-    return make_ready_future(result)
-  else
-    return self.service:io_handler(self.fd, "read", function (promise)
-      while true do
-        local result, message, code = self.fd:read(BUFFER_SIZE)
-        if result then
-          if result == "" then
-            self.stream_buffer:close()
-          else
-            self.stream_buffer:write(result)
-          end
-          local result = self.stream_buffer:read(count)
-          if result then
-            return promise:set_value(result)
-          end
-        else
-          if code == unix.EAGAIN then
-            promise = coroutine.yield()
-          else
-            return promise:set_error(message)
-          end
-        end
+  return self.service:deferred(function (promise)
+    while true do
+      local result = self.buffer:read(count)
+      if result then
+        return promise:set_value(result)
       end
-    end)
-  end
+      fill(self)
+    end
+  end)
+end
+
+function class:read_some(count)
+  return self.service:deferred(function (promise)
+    return promise:set_value(self.buffer:read_some(count))
+  end)
+end
+
+function class:read_any(count)
+  return self.service:deferred(function (promise)
+    while true do
+      local result = self.buffer:read_some(count)
+      if result ~= "" or self.buffer.closed then
+        return promise:set_value(result)
+      end
+      fill(self)
+    end
+  end)
 end
 
 function class:read_until(pattern)
-  local result, capture = self.stream_buffer:read_until(pattern)
-  if result then
-    return make_ready_future(result, capture)
-  else
-    return self.service:io_handler(self.fd, "read", function (promise)
-      while true do
-        local result, message, code = self.fd:read(BUFFER_SIZE)
-        if result then
-          if result == "" then
-            self.stream_buffer:close()
-          else
-            self.stream_buffer:write(result)
-          end
-          local result, capture = self.stream_buffer:read_until(pattern)
-          if result then
-            return promise:set_value(result, capture)
-          end
-        else
-          if code == unix.EAGAIN then
-            promise = coroutine.yield()
-          else
-            return promise:set_error(message)
-          end
-        end
+  return self.service:deferred(function (promise)
+    while true do
+      local result, capture = self.buffer:read_until(pattern)
+      if result then
+        return promise:set_value(result, capture)
       end
-    end)
-  end
+      fill(self)
+    end
+  end)
 end
 
 local metatable = {
@@ -97,7 +85,7 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __call = function (_, service, fd)
-    return setmetatable(class.new(service, fd), metatable)
+  __call = function (_, service, source)
+    return setmetatable(class.new(service, source), metatable)
   end;
 })

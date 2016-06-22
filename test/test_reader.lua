@@ -18,7 +18,6 @@
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
 local future_service = require "dromozoa.socks.future_service"
-local reader = require "dromozoa.socks.reader"
 
 local fd1, fd2 = unix.socketpair(unix.AF_UNIX, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC))
 assert(fd1:ndelay_on())
@@ -28,7 +27,7 @@ local service = future_service()
 
 local done
 assert(service:dispatch(function (service)
-  local r = reader(service, fd1)
+  local r = service:make_reader(fd1)
 
   local f = r:read_until("\n")
   assert(f:wait_for(0.2) == "timeout")
@@ -48,6 +47,14 @@ assert(service:dispatch(function (service)
   fd2:write("c")
   assert(f:wait_for(0.2) == "ready")
   assert(f:get() == "abc")
+
+  assert(r:read_some(3):get() == "")
+  fd2:write("a")
+  assert(r:read_some(3):get() == "")
+  assert(r:read_any(3):get() == "a")
+  fd2:write("abcdef")
+  assert(r:read_any(3):get() == "abc")
+  assert(r:read_some(3):get() == "def")
 
   service:stop()
   done = true
