@@ -26,7 +26,6 @@ function class.new()
   return {
     timer_service = timer_service();
     io_service = io_service();
-    shared_futures = {};
   }
 end
 
