@@ -19,12 +19,21 @@ local reader_buffer = require "dromozoa.socks.reader_buffer"
 
 local BUFFER_SIZE = 256
 
+local function fill(self)
+  local result = self.source:read(BUFFER_SIZE):get()
+  if result == "" then
+    self.buffer:close()
+  else
+    self.buffer:write(result)
+  end
+end
+
 local class = {}
 
-function class.new(service, fd)
+function class.new(service, source)
   return {
     service = service;
-    fd = fd;
+    source = source;
     buffer = reader_buffer();
   }
 end
@@ -36,12 +45,7 @@ function class:read(count)
       if result then
         return promise:set_value(result)
       end
-      local result = self.service:read(self.fd, BUFFER_SIZE):get()
-      if result == "" then
-        self.buffer:close()
-      else
-        self.buffer:write(result)
-      end
+      fill(self)
     end
   end)
 end
@@ -59,12 +63,7 @@ function class:read_any(count)
       if result ~= "" or self.buffer.closed then
         return promise:set_value(result)
       end
-      local result = self.service:read(self.fd, BUFFER_SIZE):get()
-      if result == "" then
-        self.buffer:close()
-      else
-        self.buffer:write(result)
-      end
+      fill(self)
     end
   end)
 end
@@ -76,12 +75,7 @@ function class:read_until(pattern)
       if result then
         return promise:set_value(result, capture)
       end
-      local result = self.service:read(self.fd, BUFFER_SIZE):get()
-      if result == "" then
-        self.buffer:close()
-      else
-        self.buffer:write(result)
-      end
+      fill(self)
     end
   end)
 end
@@ -91,7 +85,7 @@ local metatable = {
 }
 
 return setmetatable(class, {
-  __call = function (_, service, fd)
-    return setmetatable(class.new(service, fd), metatable)
+  __call = function (_, service, source)
+    return setmetatable(class.new(service, source), metatable)
   end;
 })
