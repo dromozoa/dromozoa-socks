@@ -33,6 +33,7 @@ function class:add_handler(handler)
   local fd = unix.fd.get(handler.fd)
   local event = handler.event
   if event == "read" then
+    assert(self.read_handlers[fd] == nil)
     if self.write_handlers[fd] == nil then
       if not self.selector:add(fd, unix.SELECTOR_READ) then
         return unix.get_last_error()
@@ -46,6 +47,7 @@ function class:add_handler(handler)
     handler.status = true
     return self
   elseif event == "write" then
+    assert(self.write_handlers[fd] == nil)
     if self.read_handlers[fd] == nil then
       if not self.selector:add(fd, unix.SELECTOR_WRITE) then
         return unix.get_last_error()
@@ -65,6 +67,7 @@ function class:delete_handler(handler)
   local fd = unix.fd.get(handler.fd)
   local event = handler.event
   if event == "read" then
+    assert(self.read_handlers[fd] ~= nil)
     if self.write_handlers[fd] == nil then
       if not self.selector:del(fd) then
         return unix.get_last_error()
@@ -78,6 +81,7 @@ function class:delete_handler(handler)
     handler.status = nil
     return self
   elseif event == "write" then
+    assert(self.write_handlers[fd] ~= nil)
     if self.read_handlers[fd] == nil then
       if not self.selector:del(fd) then
         return unix.get_last_error()
