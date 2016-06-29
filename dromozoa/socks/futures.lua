@@ -228,8 +228,16 @@ function class.wait(service, pid)
   end)
 end
 
+function class.getaddrinfo(service, nodename, servname, hints)
+  return future(async_state(service, unix.async_getaddrinfo(nodename, servname, hints)))
+end
+
+function class.getnameinfo(service, address, flags)
+  return future(async_state(service, address:async_getnameinfo(flags)))
+end
+
 function class.nanosleep(service, tv1)
-  return async_state(service, unix.async_nanosleep(tv1))
+  return future(async_state(service, unix.async_nanosleep(tv1)))
 end
 
 return class

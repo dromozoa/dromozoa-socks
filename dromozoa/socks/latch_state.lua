@@ -102,6 +102,7 @@ function class:finish()
     if that:is_running() then
       that:suspend()
     end
+    that.caller = nil
   end
 end
 

@@ -25,14 +25,16 @@ function class.new(service, task)
   local self = state.new(service)
   self.task = task
   self.thread = coroutine.create(function ()
-    self.task_result = pack(self.task:result())
+    local result = pack(self.task:result())
     self.task = nil
     if self:is_running() then
-      if self.task_result[1] == nil then
-        self:set_error(self.task_result[2])
+      if result[1] == nil then
+        self:set_error(result[2])
       else
-        self:set_value(unpack(self.task_result))
+        self:set_value(unpack(result))
       end
+    else
+      self.task_result = result
     end
   end)
   return self
@@ -45,11 +47,13 @@ end
 
 function class:resume()
   state.resume(self)
-  if self.task_result then
-    if self.task_result[1] == nil then
-      self:set_error(self.task_result[2])
+  local result = self.task_result
+  self.task_result = nil
+  if result then
+    if result[1] == nil then
+      self:set_error(result[2])
     else
-      self:set_value(unpack(self.task_result))
+      self:set_value(unpack(result))
     end
   end
 end

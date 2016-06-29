@@ -15,7 +15,10 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local dumper = require "dromozoa.commons.dumper"
 local pairs = require "dromozoa.commons.pairs"
+local sequence = require "dromozoa.commons.sequence"
+local unpack = require "dromozoa.commons.unpack"
 local unix = require "dromozoa.unix"
 local future_service = require "dromozoa.socks.future_service"
 
@@ -54,6 +57,53 @@ assert(service:dispatch(function (service)
   check_repository(true)
   assert(f:get())
   check_repository(false)
+
+  local f1 = service:getaddrinfo("github.com", "https")
+  local f2 = service:getaddrinfo("luarocks.org", "https")
+  local f3 = service:getaddrinfo("www.lua.org", "https")
+  local f4 = service:getaddrinfo("www.google.com", "https")
+  local f5 = service:getaddrinfo("test-ipv6.com", "https")
+
+  local futures = {
+    f1 = f1,
+    f2 = f2;
+    f3 = f3;
+    f4 = f4;
+    f5 = f5;
+  }
+
+  local addrinfo = sequence()
+
+  local f = service:when_any(f1, f2, f3, f4, f5)
+  print("when_any", f.state)
+  f:get()
+  for key, future in pairs(futures) do
+    if future:is_ready() then
+      futures[key] = nil
+      print(key)
+      -- addrinfo:push(unpack(future:get()))
+    end
+  end
+
+  local f = service:when_any_table(futures)
+  print("when_any_table", f.state)
+  local key = f:get()
+  print(key)
+  -- addrinfo:push(unpack(futures[key]:get()))
+  futures[key] = nil
+
+  print("--1")
+  addrinfo:push(unpack(f1:get()))
+  print("--2")
+  addrinfo:push(unpack(f2:get()))
+  print("--3")
+  addrinfo:push(unpack(f3:get()))
+  print("--4")
+  addrinfo:push(unpack(f4:get()))
+  print("--5")
+  addrinfo:push(unpack(f5:get()))
+  print("--6")
+  print(dumper.encode(addrinfo))
 
   service:stop()
 end))
