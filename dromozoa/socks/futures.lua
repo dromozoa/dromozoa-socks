@@ -17,6 +17,7 @@
 
 local translate_range = require "dromozoa.commons.translate_range"
 local unix = require "dromozoa.unix"
+local async_state = require "dromozoa.socks.async_state"
 local future = require "dromozoa.socks.future"
 local deferred_state = require "dromozoa.socks.deferred_state"
 local io_handler_state = require "dromozoa.socks.io_handler_state"
@@ -225,6 +226,10 @@ function class.wait(service, pid)
       end
     end
   end)
+end
+
+function class.nanosleep(service, tv1)
+  return async_state(service, unix.async_nanosleep(tv1))
 end
 
 return class
