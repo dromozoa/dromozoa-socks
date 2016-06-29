@@ -38,19 +38,17 @@ assert(service:dispatch(function (service)
   for i = 1, 4 do
     futures[i] = service:accept(fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC)):then_(function (future, promise)
       local fd, address = future:get()
+      local reader = service:make_reader(fd)
+      local writer = service:make_writer(fd)
+
       while true do
-        local result = service:read(fd, 1500):get()
-        print("read", #result)
+        local result = reader:read_until("\n"):get()
+        print("read", result)
         if result == "" then
           break
         end
-        local i = 1
-        local j = #result
-        while i <= j do
-          local n = service:write(fd, result, i, j):get()
-          i = i + n
-          print("written", i, j)
-        end
+        writer:write(result:upper()):get()
+        print("written")
       end
       assert(fd:close())
       return promise:set_value()

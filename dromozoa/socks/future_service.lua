@@ -15,18 +15,45 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local unix = require "dromozoa.unix"
 local create_thread = require "dromozoa.socks.create_thread"
 local futures = require "dromozoa.socks.futures"
+local io_handler = require "dromozoa.socks.io_handler"
 local io_service = require "dromozoa.socks.io_service"
 local timer_service = require "dromozoa.socks.timer_service"
 
 local class = {}
 
 function class.new()
-  return {
+  local async_service = unix.async_service()
+  local async_threads = {}
+  local self = {
     timer_service = timer_service();
     io_service = io_service();
+    async_service = async_service;
+    async_threads = async_threads;
   }
+  class.add_handler(self, io_handler(unix.fd_ref(async_service:get()), "read", function ()
+    while true do
+      local result = self.async_service:read()
+      if result > 0 then
+        while true do
+          local task = self.async_service:pop()
+          if task then
+            local thread = self.async_threads[task]
+            if thread then
+              self.async_threads[task] = nil
+              assert(coroutine.resume(thread))
+            end
+          else
+            break
+          end
+        end
+      end
+      coroutine.yield()
+    end
+  end))
+  return self
 end
 
 function class:get_current_time()
@@ -55,6 +82,12 @@ function class:delete_handler(handler)
   if not result then
     return nil, message
   end
+  return self
+end
+
+function class:add_task(task, thread)
+  self.async_service:push(task)
+  self.async_threads[task] = thread
   return self
 end
 

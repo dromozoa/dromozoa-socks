@@ -1,0 +1,117 @@
+#! /usr/bin/env lua
+
+-- Copyright (C) 2016 Tomoyuki Fujimori <moyu@dromozoa.com>
+--
+-- This file is part of dromozoa-socks.
+--
+-- dromozoa-socks is free software: you can redistribute it and/or modify
+-- it under the terms of the GNU General Public License as published by
+-- the Free Software Foundation, either version 3 of the License, or
+-- (at your option) any later version.
+--
+-- dromozoa-socks is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-- GNU General Public License for more details.
+--
+-- You should have received a copy of the GNU General Public License
+-- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
+
+local ipairs = require "dromozoa.commons.ipairs"
+local sequence = require "dromozoa.commons.sequence"
+local uint32 = require "dromozoa.commons.uint32"
+local unix = require "dromozoa.unix"
+local future_service = require "dromozoa.socks.future_service"
+
+local host, serv = ...
+if host == "" then
+  host = nil
+end
+
+local service = future_service()
+
+local function process(future, promise)
+  local fd, address = future:get()
+  print(address:getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
+
+  local reader = service:make_reader(fd)
+  local writer = service:make_writer(fd)
+
+  local version = reader:read(1):get():byte()
+  print("version", version)
+  assert(version == 0x05)
+  local nmethods = reader:read(1):get():byte()
+  print("nmethods", nmethods)
+  local methods = sequence():push(reader:read(nmethods):get():byte(1, nmethods))
+  for method in methods:each() do
+    print("method", method)
+  end
+
+  writer:write("\5\0"):get()
+
+  local version = reader:read(1):get():byte()
+  print("version", version)
+
+  local command = reader:read(1):get():byte()
+  print("command", command)
+
+  local reserved = reader:read(1):get():byte()
+  print("reserved", reserved)
+
+  local address_type = reader:read(1):get():byte()
+  print("address_type", address_type)
+
+  local address
+  if address_type == 0x03 then
+    local n = reader:read(1):get():byte()
+    address = reader:read(n):get()
+    print("address", address)
+  end
+  assert(address)
+
+  local a, b = reader:read(2):get():byte(1, 2)
+  local port = a * 256 + b
+  print("port", port)
+
+  local addrinfo = assert(unix.getaddrinfo(address, port, {
+    ai_socktype = unix.SOCK_STREAM;
+  }))
+  local ai = addrinfo[1]
+  local upstream_fd = assert(unix.socket(ai.ai_family, uint32.bor(ai.ai_socktype, unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC), ai.ai_protocol))
+
+  fd:close()
+  return promise:set_value()
+end
+
+assert(service:dispatch(function (service)
+  local addrinfo = assert(unix.getaddrinfo(host, serv, {
+    ai_socktype = unix.SOCK_STREAM;
+    ai_hints = AF_PASSIVE;
+  }))
+
+  local server_fds = sequence()
+  for i, ai in ipairs(addrinfo) do
+    local fd = assert(unix.socket(ai.ai_family, uint32.bor(ai.ai_socktype, unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC), ai.ai_protocol))
+    assert(fd:setsockopt(unix.SOL_SOCKET, unix.SO_REUSEADDR, 1))
+    assert(fd:bind(ai.ai_addr))
+    assert(fd:listen())
+    server_fds:push(fd)
+  end
+
+  local futures = {}
+  local key = 0
+
+  for i, fd in ipairs(server_fds) do
+    key = key + 1
+    futures[i .. "/" .. key] = service:accept(fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC)):then_(process)
+  end
+
+  while true do
+    local k = service:when_any_table(futures):get()
+    futures[k] = nil
+    local i = tonumber(assert(k:match("^(%d+)/%d+$")))
+    local fd = server_fds[i]
+    key = key + 1
+    futures[i .. "/" .. key] = service:accept(fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC)):then_(process)
+  end
+end))

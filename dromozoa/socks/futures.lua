@@ -17,6 +17,7 @@
 
 local translate_range = require "dromozoa.commons.translate_range"
 local unix = require "dromozoa.unix"
+local async_state = require "dromozoa.socks.async_state"
 local future = require "dromozoa.socks.future"
 local deferred_state = require "dromozoa.socks.deferred_state"
 local io_handler_state = require "dromozoa.socks.io_handler_state"
@@ -28,6 +29,7 @@ local shared_future = require "dromozoa.socks.shared_future"
 local shared_reader = require "dromozoa.socks.shared_reader"
 local shared_state = require "dromozoa.socks.shared_state"
 local when_any_table_state = require "dromozoa.socks.when_any_table_state"
+local writer = require "dromozoa.socks.writer"
 
 local function is_resource_unavailable_try_again()
   local code = unix.get_last_errno()
@@ -181,6 +183,10 @@ function class.make_shared_reader(service, fd)
   return shared_reader(service, fd)
 end
 
+function class.make_writer(service, fd)
+  return writer(service, fd)
+end
+
 function class.selfpipe(service)
   return service:deferred(function (promise)
     local result = unix.selfpipe.read()
@@ -220,6 +226,18 @@ function class.wait(service, pid)
       end
     end
   end)
+end
+
+function class.getaddrinfo(service, nodename, servname, hints)
+  return future(async_state(service, unix.async_getaddrinfo(nodename, servname, hints)))
+end
+
+function class.getnameinfo(service, address, flags)
+  return future(async_state(service, address:async_getnameinfo(flags)))
+end
+
+function class.nanosleep(service, tv1)
+  return future(async_state(service, unix.async_nanosleep(tv1)))
 end
 
 return class
