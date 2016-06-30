@@ -15,7 +15,9 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local ipairs = require "dromozoa.commons.ipairs"
 local translate_range = require "dromozoa.commons.translate_range"
+local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
 local async_state = require "dromozoa.socks.async_state"
 local future = require "dromozoa.socks.future"
@@ -238,6 +240,30 @@ end
 
 function class.nanosleep(service, tv1)
   return future(async_state(service, unix.async_nanosleep(tv1)))
+end
+
+function class.connect_tcp(service, nodename, servname)
+  return service:deferred(function (promise)
+    local future = service:getaddrinfo(nodename, servname, { ai_socktype = unix.SOCK_STREAM })
+    local result = future:get()
+    local message
+    local futures = {}
+    for i, ai in ipairs(result) do
+      local fd = assert(unix.socket(ai.ai_family, uint32.bor(ai.ai_socktype, unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC), ai.ai_protocol))
+      print(ai.ai_addr:getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
+      local future = service:connect(fd, ai.ai_addr)
+      result, message = pcall(function ()
+        future:get()
+      end)
+      if result then
+        return promise:set_value(fd)
+      else
+        print(message)
+        fd:close()
+      end
+    end
+    return promise:set_error(message)
+  end)
 end
 
 return class
