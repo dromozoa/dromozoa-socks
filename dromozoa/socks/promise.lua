@@ -33,6 +33,11 @@ function class:set_value(...)
   return self
 end
 
+function class:set_result(future)
+  self.state:set_result(future.state)
+  return self
+end
+
 local metatable = {
   __index = class;
 }

@@ -113,6 +113,14 @@ function class:set_value(...)
   self:set_ready()
 end
 
+function class:set_result(that)
+  if that.message ~= nil then
+    self:set_error(that.message)
+  else
+    self:set_value(unpack(that.value))
+  end
+end
+
 function class:dispatch(timeout)
   if self:is_ready() then
     return true
