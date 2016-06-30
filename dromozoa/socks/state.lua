@@ -44,6 +44,10 @@ function class:is_ready()
   return self.status == "ready"
 end
 
+function class:is_error()
+  return self.message ~= nil
+end
+
 function class:launch()
   assert(not self.waiting_state)
   assert(self:is_initial())
@@ -111,6 +115,14 @@ end
 function class:set_value(...)
   self.value = pack(...)
   self:set_ready()
+end
+
+function class:set_result(that)
+  if that.message ~= nil then
+    self:set_error(that.message)
+  else
+    self:set_value(unpack(that.value))
+  end
 end
 
 function class:dispatch(timeout)
