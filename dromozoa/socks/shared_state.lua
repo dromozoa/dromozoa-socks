@@ -23,7 +23,7 @@ local function propagate(self)
   for sharer_state in self.sharer_states:each() do
     assert(sharer_state:is_running() or sharer_state:is_suspended() or sharer_state:is_ready())
     if sharer_state:is_running() then
-      sharer_state:set_result(self.state)
+      sharer_state:set_value(unpack(self.state.value))
     end
   end
 end

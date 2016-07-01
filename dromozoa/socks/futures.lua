@@ -90,8 +90,7 @@ function class.accept(service, fd, flags)
           end
         end
       end)
-      future:wait()
-      return promise:set_result(future)
+      return promise:set_value(future:get())
     else
       return promise:set_value(unix.get_last_error())
     end
@@ -117,8 +116,7 @@ function class.connect(service, fd, address)
           return promise:set_value(unix.get_last_error())
         end
       end)
-      future:wait()
-      return promise:set_result(future)
+      return promise:set_value(future:get())
     else
       return promise:set_value(unix.get_last_error())
     end
@@ -145,8 +143,7 @@ function class.read(service, fd, size)
           end
         end
       end)
-      future:wait()
-      return promise:set_result(future)
+      return promise:set_value(future:get())
     else
       return promise:set_value(unix.get_last_error())
     end
@@ -173,8 +170,7 @@ function class.write(service, fd, buffer, i, j)
           end
         end
       end)
-      future:wait()
-      return promise:set_result(future)
+      return promise:set_value(future:get())
     else
       return promise:set_value(unix.get_last_error())
     end
@@ -209,8 +205,7 @@ function class.selfpipe(service)
           end
         end
       end)
-      future:wait()
-      return promise:set_result(future)
+      return promise:set_value(future:get())
     end
   end)
 end
