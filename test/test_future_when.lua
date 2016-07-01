@@ -26,15 +26,15 @@ assert(service:dispatch(coroutine.create(function (service)
 
   local f1 = service:deferred(function (promise)
     assert(f0:wait_for(0.5) == "timeout")
-    promise:set_value(1)
+    promise:set(1)
   end)
 
   local f2 = service:deferred(function (promise)
-    promise:set_value(2)
+    promise:set(2)
   end)
 
   local f3 = service:deferred(function (promise)
-    promise:set_value(3)
+    promise:set(3)
   end)
 
   print("a")
@@ -80,15 +80,15 @@ assert(service:dispatch(coroutine.create(function (service)
 
   local f1 = service:deferred(function (promise)
     assert(f0:wait_for(0.5) == "timeout")
-    promise:set_value(1)
+    promise:set(1)
   end)
 
   local f2 = service:deferred(function (promise)
-    promise:set_value(2)
+    promise:set(2)
   end)
 
   local f3 = service:deferred(function (promise)
-    promise:set_value(3)
+    promise:set(3)
   end)
 
   assert(not f1:is_ready())

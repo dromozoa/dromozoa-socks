@@ -103,7 +103,7 @@ function class:set_ready()
   end
 end
 
-function class:set_value(...)
+function class:set(...)
   self.value = pack(...)
   self:set_ready()
 end

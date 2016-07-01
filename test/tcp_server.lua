@@ -51,7 +51,7 @@ assert(service:dispatch(function (service)
         print("written")
       end
       assert(fd:close())
-      return promise:set_value()
+      return promise:set()
     end)
 
     local f = service:when_any_table(futures)

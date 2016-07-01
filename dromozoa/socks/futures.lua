@@ -75,24 +75,24 @@ function class.accept(service, fd, flags)
     assert(fd:is_ndelay_on())
     local result, address = fd:accept(flags)
     if result then
-      return promise:set_value(result, address)
+      return promise:set(result, address)
     elseif is_resource_unavailable_try_again() then
       local future = service:io_handler(fd, "read", function (promise)
         while true do
           assert(fd:is_ndelay_on())
           local result, address = fd:accept(flags)
           if result then
-            return promise:set_value(result, address)
+            return promise:set(result, address)
           elseif is_resource_unavailable_try_again() then
             promise = coroutine.yield()
           else
-            return promise:set_value(unix.get_last_error())
+            return promise:set(unix.get_last_error())
           end
         end
       end)
-      return promise:set_value(future:get())
+      return promise:set(future:get())
     else
-      return promise:set_value(unix.get_last_error())
+      return promise:set(unix.get_last_error())
     end
   end)
 end
@@ -102,23 +102,23 @@ function class.connect(service, fd, address)
     assert(fd:is_ndelay_on())
     local result = fd:connect(address)
     if result then
-      return promise:set_value(result)
+      return promise:set(result)
     elseif unix.get_last_errno() == unix.EINPROGRESS then
       local future = service:io_handler(fd, "write", function (promise)
         local code = fd:getsockopt(unix.SOL_SOCKET, unix.SO_ERROR)
         if code then
           if code == 0 then
-            return promise:set_value(fd)
+            return promise:set(fd)
           else
-            return promise:set_value(nil, unix.strerror(code), code)
+            return promise:set(nil, unix.strerror(code), code)
           end
         else
-          return promise:set_value(unix.get_last_error())
+          return promise:set(unix.get_last_error())
         end
       end)
-      return promise:set_value(future:get())
+      return promise:set(future:get())
     else
-      return promise:set_value(unix.get_last_error())
+      return promise:set(unix.get_last_error())
     end
   end)
 end
@@ -128,24 +128,24 @@ function class.read(service, fd, size)
     assert(fd:is_ndelay_on())
     local result = fd:read(size)
     if result then
-      return promise:set_value(result)
+      return promise:set(result)
     elseif is_resource_unavailable_try_again() then
       local future = service:io_handler(fd, "read", function (promise)
         while true do
           assert(fd:is_ndelay_on())
           local result = fd:read(size)
           if result then
-            return promise:set_value(result)
+            return promise:set(result)
           elseif is_resource_unavailable_try_again() then
             promise = coroutine.yield()
           else
-            return promise:set_value(unix.get_last_error())
+            return promise:set(unix.get_last_error())
           end
         end
       end)
-      return promise:set_value(future:get())
+      return promise:set(future:get())
     else
-      return promise:set_value(unix.get_last_error())
+      return promise:set(unix.get_last_error())
     end
   end)
 end
@@ -155,24 +155,24 @@ function class.write(service, fd, buffer, i, j)
     assert(fd:is_ndelay_on())
     local result = fd:write(buffer, i, j)
     if result then
-      return promise:set_value(result)
+      return promise:set(result)
     elseif is_resource_unavailable_try_again() then
       local future = service:io_handler(fd, "write", function (promise)
         while true do
           assert(fd:is_ndelay_on())
           local result = fd:write(buffer, i, j)
           if result then
-            return promise:set_value(result)
+            return promise:set(result)
           elseif is_resource_unavailable_try_again() then
             promise = coroutine.yield()
           else
-            return promise:set_value(unix.get_last_error())
+            return promise:set(unix.get_last_error())
           end
         end
       end)
-      return promise:set_value(future:get())
+      return promise:set(future:get())
     else
-      return promise:set_value(unix.get_last_error())
+      return promise:set(unix.get_last_error())
     end
   end)
 end
@@ -193,19 +193,19 @@ function class.selfpipe(service)
   return service:deferred(function (promise)
     local result = unix.selfpipe.read()
     if result > 0 then
-      return promise:set_value(result)
+      return promise:set(result)
     else
       local future = service:io_handler(unix.selfpipe.get(), "read", function (promise)
         while true do
           local result = unix.selfpipe.read()
           if result > 0 then
-            return promise:set_value(result)
+            return promise:set(result)
           else
             promise = coroutine.yield()
           end
         end
       end)
-      return promise:set_value(future:get())
+      return promise:set(future:get())
     end
   end)
 end
@@ -221,10 +221,10 @@ function class.wait(service, pid)
           end
           service.shared_selfpipe_future:share():get()
         else
-          return promise:set_value(result, code, status)
+          return promise:set(result, code, status)
         end
       else
-        return promise:set_value(unix.get_last_error())
+        return promise:set(unix.get_last_error())
       end
     end
   end)
@@ -252,12 +252,12 @@ function class.connect_tcp(service, nodename, servname)
       local future = service:connect(fd, ai.ai_addr)
       a, b, c = future:get()
       if a then
-        return promise:set_value(fd)
+        return promise:set(fd)
       else
         fd:close()
       end
     end
-    return promise:set_value(a, b, c)
+    return promise:set(a, b, c)
   end)
 end
 

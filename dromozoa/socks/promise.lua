@@ -23,8 +23,8 @@ function class.new(state)
   }
 end
 
-function class:set_value(...)
-  self.state:set_value(...)
+function class:set(...)
+  self.state:set(...)
   return self
 end
 

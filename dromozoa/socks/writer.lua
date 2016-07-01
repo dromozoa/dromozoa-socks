@@ -33,7 +33,7 @@ function class:write(buffer, i, j)
       local result = self.service:write(self.fd, buffer, min, max):get()
       min = min + result
     end
-    return promise:set_value(self)
+    return promise:set(self)
   end)
 end
 

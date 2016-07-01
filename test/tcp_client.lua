@@ -53,7 +53,7 @@ assert(service:dispatch(function (service)
       f0:wait_for(0.5)
     end
     assert(fd:shutdown(unix.SHUT_WR))
-    promise:set_value(true)
+    promise:set(true)
   end)
 
   local f2 = service:deferred(function (promise)
@@ -69,7 +69,7 @@ assert(service:dispatch(function (service)
         break
       end
     end
-    promise:set_value(true)
+    promise:set(true)
   end)
 
   service:when_all(f1, f2):get()

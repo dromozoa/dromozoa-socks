@@ -43,7 +43,7 @@ for i = 1, #T do
       f0:wait_for(t1)
       local elapsed = timer:stop():elapsed()
       print("1:", elapsed, t1)
-      promise:set_value()
+      promise:set()
     end)
 
     local f2 = service:deferred(function (promise)
@@ -51,7 +51,7 @@ for i = 1, #T do
       f1:wait_for(t2)
       local elapsed = timer:stop():elapsed()
       print("2:", elapsed, t2)
-      promise:set_value()
+      promise:set()
     end)
 
     local timer = unix.timer():start()

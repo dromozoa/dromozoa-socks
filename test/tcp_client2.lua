@@ -30,7 +30,7 @@ assert(service:dispatch(function (service)
     print("written")
     assert(fd:shutdown(unix.SHUT_WR))
     print("shut_wr")
-    return promise:set_value()
+    return promise:set()
   end)
 
   local f2 = service:deferred(function(promise)
@@ -42,7 +42,7 @@ assert(service:dispatch(function (service)
         break
       end
     end
-    return promise:set_value()
+    return promise:set()
   end)
 
   service:when_all(f1, f2):get()
