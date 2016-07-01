@@ -28,10 +28,7 @@ function class.new(service, fd, event, thread)
   self.handler = io_handler(fd, event, coroutine.create(function ()
     local promise = promise(self)
     while true do
-      local result, message = coroutine.resume(thread, promise)
-      if not result then
-        self:set_error(message)
-      end
+      assert(coroutine.resume(thread, promise))
       if self:is_ready() then
         return
       end
