@@ -86,14 +86,14 @@ function class.accept(service, fd, flags)
           elseif is_resource_unavailable_try_again() then
             promise = coroutine.yield()
           else
-            return promise:set_error(unix.strerror(unix.get_last_errno()))
+            return promise:set_value(unix.get_last_error())
           end
         end
       end)
       future:wait()
       return promise:set_result(future)
     else
-      return promise:set_error(unix.strerror(unix.get_last_errno()))
+      return promise:set_value(unix.get_last_error())
     end
   end)
 end
@@ -111,16 +111,16 @@ function class.connect(service, fd, address)
           if code == 0 then
             return promise:set_value(fd)
           else
-            return promise:set_error(unix.strerror(code))
+            return promise:set_value(nil, unix.strerror(code), code)
           end
         else
-          return promise:set_error(unix.strerror(unix.get_last_errno()))
+          return promise:set_value(unix.get_last_error())
         end
       end)
       future:wait()
       return promise:set_result(future)
     else
-      return promise:set_error(unix.strerror(unix.get_last_errno()))
+      return promise:set_value(unix.get_last_error())
     end
   end)
 end
@@ -141,14 +141,14 @@ function class.read(service, fd, size)
           elseif is_resource_unavailable_try_again() then
             promise = coroutine.yield()
           else
-            return promise:set_error(unix.strerror(unix.get_last_errno()))
+            return promise:set_value(unix.get_last_error())
           end
         end
       end)
       future:wait()
       return promise:set_result(future)
     else
-      return promise:set_error(unix.strerror(unix.get_last_errno()))
+      return promise:set_value(unix.get_last_error())
     end
   end)
 end
@@ -169,14 +169,14 @@ function class.write(service, fd, buffer, i, j)
           elseif is_resource_unavailable_try_again() then
             promise = coroutine.yield()
           else
-            return promise:set_error(unix.strerror(unix.get_last_errno()))
+            return promise:set_value(unix.get_last_error())
           end
         end
       end)
       future:wait()
       return promise:set_result(future)
     else
-      return promise:set_error(unix.strerror(unix.get_last_errno()))
+      return promise:set_value(unix.get_last_error())
     end
   end)
 end
@@ -229,7 +229,7 @@ function class.wait(service, pid)
           return promise:set_value(result, code, status)
         end
       else
-        return promise:set_error(unix.strerror(unix.get_last_errno()))
+        return promise:set_value(unix.get_last_error())
       end
     end
   end)
@@ -251,18 +251,18 @@ function class.connect_tcp(service, nodename, servname)
   return service:deferred(function (promise)
     local future = service:getaddrinfo(nodename, servname, { ai_socktype = unix.SOCK_STREAM })
     local result = future:get()
-    local future
+    local a, b, c
     for i, ai in ipairs(result) do
       local fd = assert(unix.socket(ai.ai_family, uint32.bor(ai.ai_socktype, unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC), ai.ai_protocol))
-      future = service:connect(fd, ai.ai_addr)
-      future:wait()
-      if future:is_error() then
-        fd:close()
-      else
+      local future = service:connect(fd, ai.ai_addr)
+      a, b, c = future:get()
+      if a then
         return promise:set_value(fd)
+      else
+        fd:close()
       end
     end
-    return promise:set_result(future)
+    return promise:set_value(a, b, c)
   end)
 end
 

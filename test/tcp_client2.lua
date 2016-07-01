@@ -22,7 +22,7 @@ local nodename, servname = ...
 
 local service = future_service()
 assert(service:dispatch(function (service)
-  local fd = service:connect_tcp(nodename, servname):get()
+  local fd = assert(service:connect_tcp(nodename, servname):get())
 
   local f1 = service:deferred(function (promise)
     local writer = service:make_writer(fd)
