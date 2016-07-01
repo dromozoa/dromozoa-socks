@@ -43,7 +43,7 @@ function class:read(count)
     while true do
       local result = self.buffer:read(count)
       if result then
-        return promise:set_value(result)
+        return promise:set(result)
       end
       fill(self)
     end
@@ -52,7 +52,7 @@ end
 
 function class:read_some(count)
   return self.service:deferred(function (promise)
-    return promise:set_value(self.buffer:read_some(count))
+    return promise:set(self.buffer:read_some(count))
   end)
 end
 
@@ -61,7 +61,7 @@ function class:read_any(count)
     while true do
       local result = self.buffer:read_some(count)
       if result ~= "" or self.buffer.closed then
-        return promise:set_value(result)
+        return promise:set(result)
       end
       fill(self)
     end
@@ -73,7 +73,7 @@ function class:read_until(pattern)
     while true do
       local result, capture = self.buffer:read_until(pattern)
       if result then
-        return promise:set_value(result, capture)
+        return promise:set(result, capture)
       end
       fill(self)
     end

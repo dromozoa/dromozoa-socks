@@ -27,13 +27,13 @@ assert(service:dispatch(function (service)
   local futures = {
     foo = service:deferred(function (promise)
       assert(f0:wait_for(0.5) == "timeout")
-      promise:set_value("bar")
+      promise:set("bar")
     end);
     [1] = service:deferred(function (promise)
-      promise:set_value(42)
+      promise:set(42)
     end);
     [2] = service:deferred(function (promise)
-      promise:set_value({})
+      promise:set({})
     end);
   }
 

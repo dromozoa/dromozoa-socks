@@ -40,11 +40,11 @@ function class:launch()
   for key, that in each_state(self) do
     self.service:set_current_state(nil)
     if that:dispatch() then
-      self:set_value(key)
+      self:set(key)
       break
     else
       that.caller = coroutine.create(function ()
-        self:set_value(key)
+        self:set(key)
       end)
     end
   end

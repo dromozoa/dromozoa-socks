@@ -25,15 +25,13 @@ local timer_service = require "dromozoa.socks.timer_service"
 local class = {}
 
 function class.new()
-  local async_service = unix.async_service()
-  local async_threads = {}
   local self = {
     timer_service = timer_service();
     io_service = io_service();
-    async_service = async_service;
-    async_threads = async_threads;
+    async_service = unix.async_service();
+    async_threads = {};
   }
-  class.add_handler(self, io_handler(unix.fd_ref(async_service:get()), "read", function ()
+  class.add_handler(self, io_handler(self.async_service:get(), "read", function ()
     while true do
       local result = self.async_service:read()
       if result > 0 then
@@ -41,9 +39,9 @@ function class.new()
           local task = self.async_service:pop()
           if task then
             local thread = self.async_threads[task]
+            self.async_threads[task] = nil
             if thread then
-              self.async_threads[task] = nil
-              assert(coroutine.resume(thread))
+              assert(coroutine.resume(thread, task))
             end
           else
             break

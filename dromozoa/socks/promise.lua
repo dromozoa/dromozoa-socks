@@ -23,18 +23,8 @@ function class.new(state)
   }
 end
 
-function class:set_error(message)
-  self.state:set_error(message)
-  return self
-end
-
-function class:set_value(...)
-  self.state:set_value(...)
-  return self
-end
-
-function class:set_result(future)
-  self.state:set_result(future.state)
+function class:set(...)
+  self.state:set(...)
   return self
 end
 

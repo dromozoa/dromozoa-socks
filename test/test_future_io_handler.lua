@@ -34,7 +34,7 @@ assert(service:dispatch(function (service)
       if char then
         print(("char=%q"):format(char))
         if char == "\n" then
-          promise:set_value(buffer)
+          promise:set(buffer)
           break
         else
           buffer = buffer .. char

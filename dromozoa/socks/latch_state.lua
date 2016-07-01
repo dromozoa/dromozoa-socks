@@ -23,7 +23,7 @@ local state = require "dromozoa.socks.state"
 local function count_down(self)
   self.count = self.count - 1
   if self.count == 0 then
-    self:set_value(unpack(self.futures))
+    self:set(unpack(self.futures))
     return true
   else
     return false

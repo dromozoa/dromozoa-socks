@@ -103,26 +103,9 @@ function class:set_ready()
   end
 end
 
-function class:set_error(message)
-  assert(message ~= nil)
-  if self:is_ready() then
-    error(message)
-  end
-  self.message = message
-  self:set_ready()
-end
-
-function class:set_value(...)
+function class:set(...)
   self.value = pack(...)
   self:set_ready()
-end
-
-function class:set_result(that)
-  if that.message ~= nil then
-    self:set_error(that.message)
-  else
-    self:set_value(unpack(that.value))
-  end
 end
 
 function class:dispatch(timeout)

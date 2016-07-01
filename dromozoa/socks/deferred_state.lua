@@ -26,20 +26,14 @@ function class.new(service, thread)
   local thread = create_thread(thread)
   self.deferred = coroutine.create(function ()
     local promise = promise(self)
-    local result, message = coroutine.resume(thread, promise)
-    if not result then
-      self:set_error(message)
-    end
+    assert(coroutine.resume(thread, promise))
   end)
   return self
 end
 
 function class:launch()
   state.launch(self)
-  local result, message = coroutine.resume(self.deferred)
-  if not result then
-    self:set_error(message)
-  end
+  assert(coroutine.resume(self.deferred))
 end
 
 local metatable = {
