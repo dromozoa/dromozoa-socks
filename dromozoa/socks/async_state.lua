@@ -24,9 +24,8 @@ local class = {}
 function class.new(service, task)
   local self = state.new(service)
   self.task = task
-  self.thread = coroutine.create(function ()
-    local result = pack(self.task:result())
-    self.task = nil
+  self.thread = coroutine.create(function (task)
+    local result = pack(task:result())
     if self:is_running() then
       if result[1] == nil then
         self:set_error(result[2])
@@ -42,7 +41,9 @@ end
 
 function class:launch()
   state.launch(self)
-  assert(self.service:add_task(self.task, self.thread))
+  local task = self.task
+  self.task = nil
+  assert(self.service:add_task(task, self.thread))
 end
 
 function class:resume()
