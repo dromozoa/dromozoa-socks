@@ -31,10 +31,6 @@ function class:is_ready()
   return self.state:is_ready()
 end
 
-function class:is_error()
-  return self.state:is_error()
-end
-
 function class:wait()
   return self.state:wait()
 end
