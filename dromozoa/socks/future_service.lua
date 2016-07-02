@@ -31,7 +31,7 @@ function class.new()
     async_service = unix.async_service();
     async_threads = {};
   }
-  class.add_handler(self, io_handler(self.async_service:get(), "read", function ()
+  return class.add_handler(self, io_handler(self.async_service:get(), "read", function ()
     while true do
       local result = self.async_service:read()
       if result > 0 then
@@ -51,7 +51,6 @@ function class.new()
       coroutine.yield()
     end
   end))
-  return self
 end
 
 function class:get_current_time()
@@ -101,26 +100,17 @@ end
 
 function class:dispatch(thread)
   if thread then
-    local result, message = coroutine.resume(create_thread(thread), self)
-    if not result then
-      return nil, message
-    end
+    assert(coroutine.resume(create_thread(thread), self))
     if self.stopped then
       return self
     end
   end
   while true do
-    local result, message = self.timer_service:dispatch()
-    if not result then
-      return nil, message
-    end
+    self.timer_service:dispatch()
     if self.stopped then
       return self
     end
-    local result, message = self.io_service:dispatch()
-    if not result then
-      return nil, message
-    end
+    self.io_service:dispatch()
     if self.stopped then
       return self
     end

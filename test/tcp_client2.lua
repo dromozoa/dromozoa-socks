@@ -21,7 +21,7 @@ local future_service = require "dromozoa.socks.future_service"
 local nodename, servname = ...
 
 local service = future_service()
-assert(service:dispatch(function (service)
+service:dispatch(function (service)
   local fd = assert(service:connect_tcp(nodename, servname):get())
 
   local f1 = service:deferred(function (promise)
@@ -51,4 +51,4 @@ assert(service:dispatch(function (service)
   assert(fd:close())
 
   service:stop()
-end))
+end)
