@@ -246,18 +246,16 @@ function class.connect_tcp(service, nodename, servname)
   return service:deferred(function (promise)
     local future = service:getaddrinfo(nodename, servname, { ai_socktype = unix.SOCK_STREAM })
     local result = future:get()
-    local a, b, c
     for i, ai in ipairs(result) do
       local fd = assert(unix.socket(ai.ai_family, uint32.bor(ai.ai_socktype, unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC), ai.ai_protocol))
-      local future = service:connect(fd, ai.ai_addr)
-      a, b, c = future:get()
-      if a then
+      future = service:connect(fd, ai.ai_addr)
+      if future:get() then
         return promise:set(fd)
       else
         fd:close()
       end
     end
-    return promise:set(a, b, c)
+    return promise:set(future:get())
   end)
 end
 
