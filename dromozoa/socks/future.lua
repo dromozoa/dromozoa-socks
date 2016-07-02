@@ -44,9 +44,7 @@ function class:wait_for(timeout)
 end
 
 function class:get()
-  local state = self.state
-  self.state = nil
-  return state:get()
+  return self.state:get()
 end
 
 function class:then_(thread)
