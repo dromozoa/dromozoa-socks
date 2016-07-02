@@ -33,7 +33,9 @@ end
 
 function class:launch()
   state.launch(self)
-  assert(coroutine.resume(self.deferred))
+  local deferred = self.deferred
+  self.deferred = nil
+  assert(coroutine.resume(deferred))
 end
 
 local metatable = {

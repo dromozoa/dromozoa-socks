@@ -31,10 +31,6 @@ function class:is_ready()
   return self.state:is_ready()
 end
 
-function class:is_error()
-  return self.state:is_error()
-end
-
 function class:wait()
   return self.state:wait()
 end
@@ -48,9 +44,7 @@ function class:wait_for(timeout)
 end
 
 function class:get()
-  local state = self.state
-  self.state = nil
-  return state:get()
+  return self.state:get()
 end
 
 function class:then_(thread)

@@ -44,10 +44,6 @@ function class:is_ready()
   return self.status == "ready"
 end
 
-function class:is_error()
-  return self.message ~= nil
-end
-
 function class:launch()
   assert(not self.waiting_state)
   assert(self:is_initial())
@@ -168,11 +164,7 @@ end
 
 function class:get()
   self:wait()
-  if self.message ~= nil then
-    error(self.message)
-  else
-    return unpack(self.value)
-  end
+  return unpack(self.value)
 end
 
 function class:then_(thread)

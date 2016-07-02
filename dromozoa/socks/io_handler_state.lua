@@ -25,7 +25,7 @@ local class = {}
 function class.new(service, fd, event, thread)
   local self = state.new(service)
   local thread = create_thread(thread)
-  self.handler = io_handler(fd, event, coroutine.create(function ()
+  self.io_handler = io_handler(fd, event, coroutine.create(function ()
     local promise = promise(self)
     while true do
       assert(coroutine.resume(thread, promise))
@@ -40,22 +40,24 @@ end
 
 function class:launch()
   state.launch(self)
-  assert(self.service:add_handler(self.handler))
+  assert(self.service:add_handler(self.io_handler))
 end
 
 function class:suspend()
   state.suspend(self)
-  assert(self.service:delete_handler(self.handler))
+  assert(self.service:delete_handler(self.io_handler))
 end
 
 function class:resume()
   state.resume(self)
-  assert(self.service:add_handler(self.handler))
+  assert(self.service:add_handler(self.io_handler))
 end
 
 function class:finish()
   state.finish(self)
-  assert(self.service:delete_handler(self.handler))
+  local io_handler = self.io_handler
+  self.io_handler = nil
+  assert(self.service:delete_handler(io_handler))
 end
 
 local metatable = {
