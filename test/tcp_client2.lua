@@ -21,11 +21,18 @@ local future_service = require "dromozoa.socks.future_service"
 local nodename, servname = ...
 
 local service = future_service()
-assert(service:dispatch(function (service)
+service:dispatch(function (service)
   local fd = assert(service:connect_tcp(nodename, servname):get())
+
+  local f = service:deferred(function (promise) end)
 
   local f1 = service:deferred(function (promise)
     local writer = service:make_writer(fd)
+    -- for i = 1, 10 do
+    --   print(i)
+    --   writer:write((("x"):rep(80) .. "z\n")):get()
+    --   f:wait_for(0.2)
+    -- end
     writer:write((("x"):rep(80) .. "z\n"):rep(10)):get()
     print("written")
     assert(fd:shutdown(unix.SHUT_WR))
@@ -51,4 +58,4 @@ assert(service:dispatch(function (service)
   assert(fd:close())
 
   service:stop()
-end))
+end)

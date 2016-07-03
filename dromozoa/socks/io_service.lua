@@ -107,16 +107,10 @@ function class:dispatch()
     for i = 1, result do
       local fd, event = self.selector:event(i)
       if uint32.band(event, unix.SELECTOR_READ) ~= 0 then
-        local result, message = self.read_handlers[fd]:dispatch(self, "read")
-        if not result then
-          return nil, message
-        end
+        self.read_handlers[fd]:dispatch(self, "read")
       end
       if uint32.band(event, unix.SELECTOR_WRITE) ~= 0 then
-        local result, message = self.write_handlers[fd]:dispatch(self, "write")
-        if not result then
-          return nil, message
-        end
+        self.write_handlers[fd]:dispatch(self, "write")
       end
     end
   end

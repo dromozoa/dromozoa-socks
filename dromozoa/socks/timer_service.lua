@@ -54,10 +54,7 @@ function class:dispatch()
   local range = self.threads:upper_bound(self:get_current_time())
   for _, thread, handle in range:each() do
     if thread then
-      local result, message = coroutine.resume(thread, handle)
-      if not result then
-        return nil, message
-      end
+      assert(coroutine.resume(thread, handle))
     end
   end
   for _, thread, handle in range:each() do
