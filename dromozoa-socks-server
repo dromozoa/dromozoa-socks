@@ -30,59 +30,6 @@ end
 
 local service = future_service()
 
-local function process(future, promise)
-  local fd, address = future:get()
-  print(address:getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
-
-  local reader = service:make_reader(fd)
-  local writer = service:make_writer(fd)
-
-  local version = reader:read(1):get():byte()
-  print("version", version)
-  assert(version == 0x05)
-  local nmethods = reader:read(1):get():byte()
-  print("nmethods", nmethods)
-  local methods = sequence():push(reader:read(nmethods):get():byte(1, nmethods))
-  for method in methods:each() do
-    print("method", method)
-  end
-
-  writer:write("\5\0"):get()
-
-  local version = reader:read(1):get():byte()
-  print("version", version)
-
-  local command = reader:read(1):get():byte()
-  print("command", command)
-
-  local reserved = reader:read(1):get():byte()
-  print("reserved", reserved)
-
-  local address_type = reader:read(1):get():byte()
-  print("address_type", address_type)
-
-  local address
-  if address_type == 0x03 then
-    local n = reader:read(1):get():byte()
-    address = reader:read(n):get()
-    print("address", address)
-  end
-  assert(address)
-
-  local a, b = reader:read(2):get():byte(1, 2)
-  local port = a * 256 + b
-  print("port", port)
-
-  local addrinfo = assert(unix.getaddrinfo(address, port, {
-    ai_socktype = unix.SOCK_STREAM;
-  }))
-  local ai = addrinfo[1]
-  local upstream_fd = assert(unix.socket(ai.ai_family, uint32.bor(ai.ai_socktype, unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC), ai.ai_protocol))
-
-  fd:close()
-  return promise:set_value()
-end
-
 service:dispatch(function (service)
   local futures = {}
   local acceptors = {}
