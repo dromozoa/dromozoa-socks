@@ -21,6 +21,8 @@ local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
 local future_service = require "dromozoa.socks.future_service"
 
+assert(unix.block_signal(unix.SIGPIPE))
+
 local bind_nodename, bind_servname, nodename, servname = ...
 if bind_nodename == "" then
   bind_nodename = nil
@@ -68,35 +70,45 @@ service:dispatch(function (service)
         local client_writer = service:make_writer(client_fd)
 
         local upstream_future = service:deferred(function (promise)
+          local count = 0
           while true do
-            local result = server_reader:read_any(256):get()
+            local result = assert(server_reader:read_any(256):get())
             if result == "" then
               break
             end
-            client_writer:write(result):get()
+            assert(client_writer:write(result):get())
+            count = count + #result
           end
           assert(client_fd:shutdown(unix.SHUT_WR))
-          return promise:set(true)
+          return promise:set(count)
         end)
 
         local downstream_future = service:deferred(function (promise)
+          local count = 0
           while true do
-            local result = client_reader:read_any(256):get()
+            local result = assert(client_reader:read_any(256):get())
             if result == "" then
               break
             end
-            server_writer:write(result):get()
+            assert(server_writer:write(result):get())
+            count = count + #result
           end
           assert(server_fd:shutdown(unix.SHUT_WR))
-          return promise:set(true)
+          return promise:set(count)
         end)
 
         service:when_all(upstream_future, downstream_future):get()
-
         assert(client_fd:close())
         assert(server_fd:close())
+        return promise:set(upstream_future:get(), downstream_future:get())
       end)
+      fdmap[server_fd:get()] = {
+        name = "tunnel";
+        fd = server_fd;
+      }
       futures[key] = service:accept(fdmap[key].fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC))
+    else
+      print(future:get())
     end
   end
 
