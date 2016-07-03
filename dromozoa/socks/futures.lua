@@ -70,17 +70,17 @@ function class.make_shared_future(service, future)
   return shared_future(service, shared_state(service, state))
 end
 
-function class.accept(service, fd, flags)
+function class.accept(service, fd)
   return service:deferred(function (promise)
     assert(fd:is_ndelay_on())
-    local result, address = fd:accept(flags)
+    local result, address = fd:accept(uint32.bor(unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK))
     if result then
       return promise:set(result, address)
     elseif is_resource_unavailable_try_again() then
       local future = service:io_handler(fd, "read", function (promise)
         while true do
           assert(fd:is_ndelay_on())
-          local result, address = fd:accept(flags)
+          local result, address = fd:accept(uint32.bor(unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK))
           if result then
             return promise:set(result, address)
           elseif is_resource_unavailable_try_again() then
