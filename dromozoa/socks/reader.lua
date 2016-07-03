@@ -19,15 +19,6 @@ local reader_buffer = require "dromozoa.socks.reader_buffer"
 
 local BUFFER_SIZE = 256
 
-local function fill(self)
-  local result = self.source:read(BUFFER_SIZE):get()
-  if result == "" then
-    self.buffer:close()
-  else
-    self.buffer:write(result)
-  end
-end
-
 local class = {}
 
 function class.new(service, source)
@@ -45,7 +36,14 @@ function class:read(count)
       if result then
         return promise:set(result)
       end
-      fill(self)
+      local result, message, code = self.source:read(BUFFER_SIZE):get()
+      if not result then
+        return promise:set(nil, message, code)
+      elseif result == "" then
+        self.buffer:close()
+      else
+        self.buffer:write(result)
+      end
     end
   end)
 end
@@ -63,7 +61,14 @@ function class:read_any(count)
       if result ~= "" or self.buffer.closed then
         return promise:set(result)
       end
-      fill(self)
+      local result, message, code = self.source:read(BUFFER_SIZE):get()
+      if not result then
+        return promise:set(nil, message, code)
+      elseif result == "" then
+        self.buffer:close()
+      else
+        self.buffer:write(result)
+      end
     end
   end)
 end
@@ -75,7 +80,14 @@ function class:read_until(pattern)
       if result then
         return promise:set(result, capture)
       end
-      fill(self)
+      local result, message, code = self.source:read(BUFFER_SIZE):get()
+      if not result then
+        return promise:set(nil, message, code)
+      elseif result == "" then
+        self.buffer:close()
+      else
+        self.buffer:write(result)
+      end
     end
   end)
 end

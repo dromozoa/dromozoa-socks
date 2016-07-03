@@ -1,0 +1,116 @@
+#! /usr/bin/env lua
+
+-- Copyright (C) 2016 Tomoyuki Fujimori <moyu@dromozoa.com>
+--
+-- This file is part of dromozoa-socks.
+--
+-- dromozoa-socks is free software: you can redistribute it and/or modify
+-- it under the terms of the GNU General Public License as published by
+-- the Free Software Foundation, either version 3 of the License, or
+-- (at your option) any later version.
+--
+-- dromozoa-socks is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-- GNU General Public License for more details.
+--
+-- You should have received a copy of the GNU General Public License
+-- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
+
+local uint32 = require "dromozoa.commons.uint32"
+local unix = require "dromozoa.unix"
+local future_service = require "dromozoa.socks.future_service"
+
+assert(unix.block_signal(unix.SIGPIPE))
+
+local bind_nodename, bind_servname, nodename, servname = ...
+if bind_nodename == "" then
+  bind_nodename = nil
+end
+if nodename == "" then
+  nodename = nil
+end
+
+local service = future_service()
+
+service:dispatch(function (service)
+  local futures = {}
+  local fdmap = {}
+
+  for fd in assert(service:bind_tcp(bind_nodename, bind_servname):get()):each() do
+    fdmap[fd:get()] = {
+      name = "acceptor";
+      fd = fd;
+    }
+    futures[fd:get()] = service:accept(fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC))
+  end
+
+  while true do
+    local any_future = service:when_any_table(futures)
+    local key = any_future:get()
+
+    local future = futures[key]
+    futures[key] = nil
+
+    if fdmap[key].name == "acceptor" then
+      local server_fd, address = assert(future:get())
+      futures[server_fd:get()] = service:deferred(function (promise)
+        print("server:sock", server_fd:getsockname():getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
+        print("server:peer", server_fd:getpeername():getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
+
+        local server_reader = service:make_reader(server_fd)
+        local server_writer = service:make_writer(server_fd)
+
+        local client_fd = assert(service:connect_tcp(nodename, servname):get())
+
+        print("client:sock", client_fd:getsockname():getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
+        print("client:peer", client_fd:getpeername():getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
+
+        local client_reader = service:make_reader(client_fd)
+        local client_writer = service:make_writer(client_fd)
+
+        local upstream_future = service:deferred(function (promise)
+          local count = 0
+          while true do
+            local result = assert(server_reader:read_any(256):get())
+            if result == "" then
+              break
+            end
+            assert(client_writer:write(result):get())
+            count = count + #result
+          end
+          assert(client_fd:shutdown(unix.SHUT_WR))
+          return promise:set(count)
+        end)
+
+        local downstream_future = service:deferred(function (promise)
+          local count = 0
+          while true do
+            local result = assert(client_reader:read_any(256):get())
+            if result == "" then
+              break
+            end
+            assert(server_writer:write(result):get())
+            count = count + #result
+          end
+          assert(server_fd:shutdown(unix.SHUT_WR))
+          return promise:set(count)
+        end)
+
+        service:when_all(upstream_future, downstream_future):get()
+        assert(client_fd:close())
+        assert(server_fd:close())
+        return promise:set(upstream_future:get(), downstream_future:get())
+      end)
+      fdmap[server_fd:get()] = {
+        name = "tunnel";
+        fd = server_fd;
+      }
+      futures[key] = service:accept(fdmap[key].fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC))
+    else
+      print(future:get())
+    end
+  end
+
+  service:stop()
+end)

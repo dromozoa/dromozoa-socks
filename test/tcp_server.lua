@@ -15,9 +15,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local ipairs = require "dromozoa.commons.ipairs"
 local uint32 = require "dromozoa.commons.uint32"
-local unpack = require "dromozoa.commons.unpack"
 local unix = require "dromozoa.unix"
 local future_service = require "dromozoa.socks.future_service"
 
@@ -31,27 +29,22 @@ local service = future_service()
 service:dispatch(function (service)
   local futures = {}
 
-  local acceptors = assert(service:bind_tcp(nodename, servname):get())
-  for i, fd in ipairs(acceptors) do
-    futures[i] = service:accept(fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC))
+  local acceptors = {}
+  for fd in assert(service:bind_tcp(nodename, servname):get()):each() do
+    acceptors[fd:get()] = fd
+    futures[fd:get()] = service:accept(fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC))
   end
-
-  local n = #futures
-  local m = n
 
   while true do
     local f = service:when_any_table(futures)
     local k = f:get()
 
-    print("k", k, n, m)
-
     local future = futures[k]
     futures[k] = nil
 
-    if k <= n then
+    if acceptors[k] then
       local fd, address = assert(future:get())
-      m = m + 1
-      futures[m] = service:deferred(function (promise)
+      futures[fd:get()] = service:deferred(function (promise)
         print("sock", fd:getsockname():getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
         print("peer", fd:getpeername():getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
 

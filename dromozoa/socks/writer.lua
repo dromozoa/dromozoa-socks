@@ -30,8 +30,12 @@ function class:write(buffer, i, j)
   return self.service:deferred(function (promise)
     local min, max = translate_range(#buffer, i, j)
     while min <= max do
-      local result = self.service:write(self.fd, buffer, min, max):get()
-      min = min + result
+      local result, message, code = self.service:write(self.fd, buffer, min, max):get()
+      if not result then
+        return promise:set(nil, message, code)
+      else
+        min = min + result
+      end
     end
     return promise:set(self)
   end)
