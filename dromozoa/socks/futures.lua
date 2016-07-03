@@ -15,7 +15,6 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local ipairs = require "dromozoa.commons.ipairs"
 local sequence = require "dromozoa.commons.sequence"
 local translate_range = require "dromozoa.commons.translate_range"
 local uint32 = require "dromozoa.commons.uint32"
@@ -249,24 +248,24 @@ function class.bind_tcp(service, nodename, servname)
     if not addrinfo then
       return promise:set(nil, message, code)
     end
-    local acceptor = sequence()
-    for i, ai in ipairs(addrinfo) do
+    local result = sequence()
+    for ai in sequence.each(addrinfo) do
       local fd = unix.socket(ai.ai_family, uint32.bor(ai.ai_socktype, unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK), ai.ai_protocol)
       if not fd then
         return promise:set(unix.get_last_error())
       end
       if fd:setsockopt(unix.SOL_SOCKET, unix.SO_REUSEADDR, 1) and fd:bind(ai.ai_addr) and fd:listen() then
-        acceptor:push(fd)
+        result:push(fd)
       else
         code = unix.get_last_errno()
         message = unix.strerror(code)
         fd:close()
       end
     end
-    if #acceptor == 0 then
+    if #result == 0 then
       return promise:set(nil, message, code)
     else
-      return promise:set(acceptor)
+      return promise:set(result)
     end
   end)
 end
@@ -278,7 +277,7 @@ function class.connect_tcp(service, nodename, servname)
       return promise:set(nil, message, code)
     end
     local future
-    for i, ai in ipairs(addrinfo) do
+    for ai in sequence.each(addrinfo) do
       local fd = unix.socket(ai.ai_family, uint32.bor(ai.ai_socktype, unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK), ai.ai_protocol)
       if not fd then
         return promise:set(unix.get_last_error())
