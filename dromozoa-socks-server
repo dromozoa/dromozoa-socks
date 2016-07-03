@@ -17,15 +17,15 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local ipairs = require "dromozoa.commons.ipairs"
 local sequence = require "dromozoa.commons.sequence"
+local unpack = require "dromozoa.commons.unpack"
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
 local future_service = require "dromozoa.socks.future_service"
 
-local host, serv = ...
-if host == "" then
-  host = nil
+local nodename, servname = ...
+if nodename == "" then
+  nodename = nil
 end
 
 local service = future_service()
@@ -83,35 +83,127 @@ local function process(future, promise)
   return promise:set_value()
 end
 
-assert(service:dispatch(function (service)
-  local addrinfo = assert(unix.getaddrinfo(host, serv, {
-    ai_socktype = unix.SOCK_STREAM;
-    ai_hints = AF_PASSIVE;
-  }))
-
-  local server_fds = sequence()
-  for i, ai in ipairs(addrinfo) do
-    local fd = assert(unix.socket(ai.ai_family, uint32.bor(ai.ai_socktype, unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC), ai.ai_protocol))
-    assert(fd:setsockopt(unix.SOL_SOCKET, unix.SO_REUSEADDR, 1))
-    assert(fd:bind(ai.ai_addr))
-    assert(fd:listen())
-    server_fds:push(fd)
-  end
-
+service:dispatch(function (service)
   local futures = {}
-  local key = 0
+  local acceptors = {}
 
-  for i, fd in ipairs(server_fds) do
-    key = key + 1
-    futures[i .. "/" .. key] = service:accept(fd):then_(process)
+  for fd in assert(service:bind_tcp(nodename, servname):get()):each() do
+    futures[fd:get()] = service:accept(fd)
+    acceptors[fd:get()] = fd
   end
 
   while true do
-    local k = service:when_any_table(futures):get()
-    futures[k] = nil
-    local i = tonumber(assert(k:match("^(%d+)/%d+$")))
-    local fd = server_fds[i]
-    key = key + 1
-    futures[i .. "/" .. key] = service:accept(fd):then_(process)
+    local key = service:when_any_table(futures):get()
+    local future = futures[key]
+    futures[key] = nil
+
+    if acceptors[key] then
+      local fd1, address = assert(future:get())
+      futures[fd1:get()] = service:deferred(function (promise)
+        local reader1 = service:make_reader(fd1)
+        local writer1 = service:make_writer(fd1)
+
+        local version = reader1:read(1):get():byte()
+        print("version", version)
+        local nmethods = reader1:read(1):get():byte()
+        print("nmethods", nmethods)
+        local methods = sequence():push(reader1:read(nmethods):get():byte(1, nmethods))
+        print("methods", unpack(methods))
+
+        writer1:write("\5\0"):get()
+
+        local version = reader1:read(1):get():byte()
+        print("version", version)
+        local command = reader1:read(1):get():byte()
+        print("command", version)
+        local reserved = reader1:read(1):get():byte()
+        local atyp = reader1:read(1):get():byte()
+        print("atyp", atyp)
+
+        local fd2
+        if atyp == 0x01 or atyp == 0x04 then
+          local dst_address
+          if atyp == 0x01 then
+            local dst_addr = reader1:read(4):get()
+            local dst_port = reader1:read(2):get()
+            dst_address = unix.sockaddr_in(dst_addr, dst_port)
+            fd2 = assert(unix.socket(unix.AF_INET, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK), 0))
+          else
+            local dst_addr = reader1:read(16):get()
+            local dst_port = reader1:read(2):get()
+            dst_address = unix.sockaddr_in6(dst_addr, dst_port)
+            fd2 = assert(unix.socket(unix.AF_INET6, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK), 0))
+          end
+          print("fd2", fd2:get(), "connecting")
+          fd2 = assert(service:connect(fd2, dst_address):get())
+          print("fd2", fd2:get(), "connected")
+        else
+          local n = reader1:read(1):get():byte()
+          local dst_addr = reader1:read(n):get()
+          local a, b = reader1:read(2):get():byte(1, 2)
+          local dst_port = a * 256 + b
+          fd2 = assert(service:connect_tcp(dst_addr, dst_port):get())
+        end
+
+        print("fd2", fd2:get())
+
+        local buffer = "\5\0\0"
+
+        print("---")
+
+        local bind_address = fd2:getsockname()
+        if bind_address:family() == unix.AF_INET then
+          buffer = buffer .. "\1"
+        elseif bind_address:family() == unix.AF_INET6 then
+          buffer = buffer .. "\4"
+        else
+          print("???", bind_address:family())
+        end
+        buffer = buffer .. bind_address:addr() .. bind_address:port()
+        writer1:write(buffer):get()
+
+        local reader2 = service:make_reader(fd2)
+        local writer2 = service:make_writer(fd2)
+
+        print("done setup")
+
+        local f1 = service:deferred(function (promise)
+          local count = 0
+          while true do
+            local result = reader1:read_any(256):get()
+            -- print("read1", #result)
+            if result == "" then
+              break
+            end
+            writer2:write(result):get()
+          end
+          fd2:shutdown(unix.SHUT_WR)
+          return promise:set(true)
+        end)
+
+        local f2 = service:deferred(function (promise)
+          local count = 0
+          while true do
+            local result = reader2:read_any(256):get()
+            -- print("read2", #result)
+            if result == "" then
+              break
+            end
+            writer1:write(result):get()
+          end
+          fd1:shutdown(unix.SHUT_WR)
+          return promise:set(true)
+        end)
+
+        print("start")
+        service:when_all(f1, f2):get()
+        assert(fd1:close())
+        assert(fd2:close())
+        return promise:set(f1:get(), f2:get())
+      end)
+      futures[key] = service:accept(acceptors[key])
+    else
+      print(future:get())
+    end
   end
-end))
+end)
