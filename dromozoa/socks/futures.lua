@@ -16,6 +16,7 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local ipairs = require "dromozoa.commons.ipairs"
+local sequence = require "dromozoa.commons.sequence"
 local translate_range = require "dromozoa.commons.translate_range"
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
@@ -242,12 +243,46 @@ function class.nanosleep(service, tv1)
   return future(async_state(service, unix.async_nanosleep(tv1)))
 end
 
+function class.bind_tcp(service, nodename, servname)
+  return service:deferred(function (promise)
+    local addrinfo, message, code = service:getaddrinfo(nodename, servname, { ai_socktype = unix.SOCK_STREAM, ai_flags = unix.AI_PASSIVE }):get()
+    if not addrinfo then
+      return promise:set(nil, message, code)
+    end
+    local acceptor = sequence()
+    for i, ai in ipairs(addrinfo) do
+      local fd = unix.socket(ai.ai_family, uint32.bor(ai.ai_socktype, unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK), ai.ai_protocol)
+      if not fd then
+        return promise:set(unix.get_last_error())
+      end
+      if fd:setsockopt(unix.SOL_SOCKET, unix.SO_REUSEADDR, 1) and fd:bind(ai.ai_addr) and fd:listen() then
+        acceptor:push(fd)
+      else
+        code = unix.get_last_errno()
+        message = unix.strerror(code)
+        fd:close()
+      end
+    end
+    if #acceptor == 0 then
+      return promise:set(nil, message, code)
+    else
+      return promise:set(acceptor)
+    end
+  end)
+end
+
 function class.connect_tcp(service, nodename, servname)
   return service:deferred(function (promise)
-    local future = service:getaddrinfo(nodename, servname, { ai_socktype = unix.SOCK_STREAM })
-    local result = future:get()
-    for i, ai in ipairs(result) do
-      local fd = assert(unix.socket(ai.ai_family, uint32.bor(ai.ai_socktype, unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC), ai.ai_protocol))
+    local addrinfo, message, code = service:getaddrinfo(nodename, servname, { ai_socktype = unix.SOCK_STREAM }):get()
+    if not addrinfo then
+      return promise:set(nil, message, code)
+    end
+    local future
+    for i, ai in ipairs(addrinfo) do
+      local fd = unix.socket(ai.ai_family, uint32.bor(ai.ai_socktype, unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK), ai.ai_protocol)
+      if not fd then
+        return promise:set(unix.get_last_error())
+      end
       future = service:connect(fd, ai.ai_addr)
       if future:get() then
         return promise:set(fd)

@@ -16,8 +16,14 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local uint32 = require "dromozoa.commons.uint32"
+local unpack = require "dromozoa.commons.unpack"
 local unix = require "dromozoa.unix"
 local future_service = require "dromozoa.socks.future_service"
+
+local nodename, servname = ...
+if nodename == "" then
+  nodename = nil
+end
 
 local addrinfo = assert(unix.getaddrinfo(nil, "4242", {
   ai_family = unix.AF_INET;
@@ -32,7 +38,10 @@ assert(fd:bind(ai.ai_addr))
 assert(fd:listen())
 
 local service = future_service()
-assert(service:dispatch(function (service)
+service:dispatch(function (service)
+  local fds = assert(service:bind_tcp(nodename, servname):get())
+  print(unpack(fds))
+
   local futures = {}
 
   for i = 1, 4 do
@@ -59,5 +68,7 @@ assert(service:dispatch(function (service)
     futures[k] = nil
   end
 
+  print(unpack(fds))
+
   service:stop()
-end))
+end)
