@@ -32,7 +32,7 @@ service:dispatch(function (service)
   local acceptors = {}
   for fd in assert(service:bind_tcp(nodename, servname):get()):each() do
     acceptors[fd:get()] = fd
-    futures[fd:get()] = service:accept(fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC))
+    futures[fd:get()] = service:accept(fd)
   end
 
   while true do
@@ -62,7 +62,7 @@ service:dispatch(function (service)
         assert(fd:close())
         return promise:set(true)
       end)
-      futures[k] = service:accept(acceptors[k], uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC))
+      futures[k] = service:accept(acceptors[k])
     else
       print(future:get())
     end

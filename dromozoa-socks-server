@@ -103,7 +103,7 @@ assert(service:dispatch(function (service)
 
   for i, fd in ipairs(server_fds) do
     key = key + 1
-    futures[i .. "/" .. key] = service:accept(fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC)):then_(process)
+    futures[i .. "/" .. key] = service:accept(fd):then_(process)
   end
 
   while true do
@@ -112,6 +112,6 @@ assert(service:dispatch(function (service)
     local i = tonumber(assert(k:match("^(%d+)/%d+$")))
     local fd = server_fds[i]
     key = key + 1
-    futures[i .. "/" .. key] = service:accept(fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC)):then_(process)
+    futures[i .. "/" .. key] = service:accept(fd):then_(process)
   end
 end))

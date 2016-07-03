@@ -42,7 +42,7 @@ service:dispatch(function (service)
       name = "acceptor";
       fd = fd;
     }
-    futures[fd:get()] = service:accept(fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC))
+    futures[fd:get()] = service:accept(fd)
   end
 
   while true do
@@ -106,7 +106,7 @@ service:dispatch(function (service)
         name = "tunnel";
         fd = server_fd;
       }
-      futures[key] = service:accept(fdmap[key].fd, uint32.bor(unix.SOCK_NONBLOCK, unix.SOCK_CLOEXEC))
+      futures[key] = service:accept(fdmap[key].fd)
     else
       print(future:get())
     end
