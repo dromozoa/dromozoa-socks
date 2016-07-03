@@ -20,6 +20,7 @@ local reader_buffer = require "dromozoa.socks.reader_buffer"
 local BUFFER_SIZE = 256
 
 local function fill(self)
+  -- [TODO] propagate error
   local result = self.source:read(BUFFER_SIZE):get()
   if result == "" then
     self.buffer:close()
