@@ -30,6 +30,11 @@ if nodename == "" then
   nodename = nil
 end
 
+local function socket_address_to_string(address)
+  local nodename, servname = assert(address:getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
+  return nodename .. ":" .. servname
+end
+
 local service = future_service()
 
 service:dispatch(function (service)
@@ -48,6 +53,7 @@ service:dispatch(function (service)
 
     if acceptors[key] then
       local fd1, address = assert(future:get())
+
       futures[fd1:get()] = service:deferred(function (promise)
         local reader1 = service:make_reader(fd1)
         local writer1 = service:make_writer(fd1)
@@ -207,6 +213,12 @@ service:dispatch(function (service)
           return promise:set(f:get())
         end
 
+        local message = ("[%d] %s -> %s [%d] %s -> %s"):format(
+            fd1:get(), socket_address_to_string(fd1:getpeername()), socket_address_to_string(fd1:getsockname()),
+            fd2:get(), socket_address_to_string(fd2:getsockname()), socket_address_to_string(fd2:getpeername()))
+
+        print("opened", message)
+
         local reader2 = service:make_reader(fd2)
         local writer2 = service:make_writer(fd2)
 
@@ -257,6 +269,8 @@ service:dispatch(function (service)
         service:when_all(f1, f2):get()
         assert(fd1:close())
         assert(fd2:close())
+
+        print("closed", message)
 
         local reslt, message = f1:get()
         if not result then
