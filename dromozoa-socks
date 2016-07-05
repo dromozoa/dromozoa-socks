@@ -30,9 +30,16 @@ if nodename == "" then
   nodename = nil
 end
 
-local function socket_address_to_string(address)
-  local nodename, servname = assert(address:getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
-  return nodename .. ":" .. servname
+local function socket_address_to_string(address, message, code)
+  if address then
+    local nodename, servname = assert(address:getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
+    return nodename .. ":" .. servname
+  else
+    if code == unix.EINVAL then
+      print("connection closed?")
+    end
+    return "!!! " .. message .. " !!!"
+  end
 end
 
 local service = future_service()
