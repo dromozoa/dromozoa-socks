@@ -109,7 +109,7 @@ service:dispatch(function (service)
             dst_addr = assert(reader1:read(4):get())
             dst_port = assert(reader1:read(2):get())
           elseif atyp == 0x03 then
-            local n = assert(reader1:read(1):get())
+            local n = assert(reader1:read(1):get()):byte()
             dst_addr = assert(reader1:read(n):get())
             dst_port = assert(reader1:read(2):get())
           elseif atyp == 0x04 then
@@ -149,6 +149,7 @@ service:dispatch(function (service)
         end
 
         local f
+        local hostname = ""
         if message.atyp == 0x01 then
           f = service:deferred(function (promise)
             local fd = unix.socket(unix.AF_INET, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK))
@@ -165,6 +166,7 @@ service:dispatch(function (service)
         elseif message.atyp == 0x03 then
           local a, b = message.dst_port:byte(1, 2)
           f = service:connect_tcp(message.dst_addr, a * 256 + b)
+          hostname = " (" .. message.dst_addr .. ")"
         elseif message.atyp == 0x04 then
           f = service:deferred(function (promise)
             local fd = unix.socket(unix.AF_INET6, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK))
@@ -213,11 +215,12 @@ service:dispatch(function (service)
           return promise:set(f:get())
         end
 
-        local message = ("[%d] %s -> %s [%d] %s -> %s"):format(
+        local message = ("[%d] %s -> %s [%d] %s -> %s%s"):format(
             fd1:get(), socket_address_to_string(fd1:getpeername()), socket_address_to_string(fd1:getsockname()),
-            fd2:get(), socket_address_to_string(fd2:getsockname()), socket_address_to_string(fd2:getpeername()))
+            fd2:get(), socket_address_to_string(fd2:getsockname()), socket_address_to_string(fd2:getpeername()),
+            hostname)
 
-        print("opened", message)
+        print("opened " .. message)
 
         local reader2 = service:make_reader(fd2)
         local writer2 = service:make_writer(fd2)
@@ -270,7 +273,7 @@ service:dispatch(function (service)
         assert(fd1:close())
         assert(fd2:close())
 
-        print("closed", message)
+        print("closed " .. message)
 
         local reslt, message = f1:get()
         if not result then
