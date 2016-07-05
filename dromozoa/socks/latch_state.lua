@@ -98,7 +98,6 @@ end
 function class:finish()
   state.finish(self)
   for that in each_state(self) do
-    assert(that:is_initial() or that:is_running() or that:is_ready())
     if that:is_running() then
       that:suspend()
     end
