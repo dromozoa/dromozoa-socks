@@ -15,18 +15,4 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local never_return = require "dromozoa.socks.never_return"
-
-local function check(result, message, ...)
-  if result then
-    return result, message, ...
-  else
-    if message ~= never_return then
-      error(message)
-    end
-  end
-end
-
-return function (thread, ...)
-  return check(coroutine.resume(thread, ...))
-end
+return function () end

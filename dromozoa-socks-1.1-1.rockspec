@@ -30,6 +30,7 @@ build = {
     ["dromozoa.socks.make_ready_future"] = "dromozoa/socks/make_ready_future.lua";
     ["dromozoa.socks.multimap"] = "dromozoa/socks/multimap.lua";
     ["dromozoa.socks.multimap_handle"] = "dromozoa/socks/multimap_handle.lua";
+    ["dromozoa.socks.never_return"] = "dromozoa/socks/never_return.lua";
     ["dromozoa.socks.pack"] = "dromozoa/socks/pack.lua";
     ["dromozoa.socks.promise"] = "dromozoa/socks/promise.lua";
     ["dromozoa.socks.rb_tree"] = "dromozoa/socks/rb_tree.lua";
