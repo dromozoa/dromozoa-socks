@@ -15,29 +15,26 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local class = {}
+local future_service = require "dromozoa.socks.future_service"
 
-function class.new(state)
-  return {
-    state = state;
-  }
-end
+future_service():dispatch(function (service)
+  local f1 = service:deferred(function (promise)
+    local f = function ()
+      promise:error("foo", 2)
+    end
+    f()
+    error("unreachable")
+  end)
 
-function class:set(...)
-  self.state:set(...)
-  return self
-end
+  print(f1:get())
 
-function class:error(message, level)
-  self.state:error(message, level)
-end
+  service:stop()
+end)
 
-local metatable = {
-  __index = class;
-}
-
-return setmetatable(class, {
-  __call = function (_, service, state)
-    return setmetatable(class.new(service, state), metatable)
-  end;
-})
+local thread = coroutine.create(function ()
+  local f = function ()
+    error("foo", 2)
+  end
+  f()
+end)
+print(coroutine.resume(thread))

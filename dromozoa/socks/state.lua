@@ -17,6 +17,7 @@
 
 local unpack = require "dromozoa.commons.unpack"
 local create_thread = require "dromozoa.socks.create_thread"
+local never_return = require "dromozoa.socks.never_return"
 local pack = require "dromozoa.socks.pack"
 local resume_thread = require "dromozoa.socks.resume_thread"
 
@@ -103,6 +104,22 @@ end
 function class:set(...)
   self.value = pack(...)
   self:set_ready()
+end
+
+function class:error(message, level)
+  if level == nil then
+    level = 1
+  end
+  if level ~= 0 then
+    local t = type(message)
+    if t == "number" or t == "string" then
+      local result
+      result, message = pcall(error, message, level + 3)
+    end
+  end
+  self.value = pack(nil, message)
+  self:set_ready()
+  error(never_return, 0)
 end
 
 function class:dispatch(timeout)
