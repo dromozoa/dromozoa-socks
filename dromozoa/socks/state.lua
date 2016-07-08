@@ -122,6 +122,24 @@ function class:error(message, level)
   error(never_return, 0)
 end
 
+function class:assert(result, message, ...)
+  if result then
+    return result, message, ...
+  else
+    if message == nil then
+      message = "assertion failed!"
+    end
+    local t = type(message)
+    if t == "number" or t == "string" then
+      local result
+      result, message = pcall(error, message, 4)
+    end
+    self.value = pack(nil, message)
+    self:set_ready()
+    error(never_return, 0)
+  end
+end
+
 function class:dispatch(timeout)
   if self:is_ready() then
     return true

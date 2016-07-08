@@ -15,33 +15,28 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local class = {}
+local equal = require "dromozoa.commons.equal"
+local future_service = require "dromozoa.socks.future_service"
 
-function class.new(state)
-  return {
-    state = state;
-  }
-end
+future_service():dispatch(function (service)
+  local f1 = service:deferred(function (promise)
+    assert(equal({ promise:assert(1, 2, 3) }, { 1, 2, 3 }))
+    local f = function ()
+      promise:assert(false, "foo")
+    end
+    f()
+    error("unreachable")
+  end)
 
-function class:set(...)
-  self.state:set(...)
-  return self
-end
+  print(f1:get())
 
-function class:error(message, level)
-  return self.state:error(message, level)
-end
+  service:stop()
+end)
 
-function class:assert(...)
-  return self.state:assert(...)
-end
-
-local metatable = {
-  __index = class;
-}
-
-return setmetatable(class, {
-  __call = function (_, service, state)
-    return setmetatable(class.new(service, state), metatable)
-  end;
-})
+local thread = coroutine.create(function ()
+  local f = function ()
+    assert(false, "foo")
+  end
+  f()
+end)
+print(coroutine.resume(thread))
