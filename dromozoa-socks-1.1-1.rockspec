@@ -37,6 +37,7 @@ build = {
     ["dromozoa.socks.reader_buffer"] = "dromozoa/socks/reader_buffer.lua";
     ["dromozoa.socks.reader_source"] = "dromozoa/socks/reader_source.lua";
     ["dromozoa.socks.ready_state"] = "dromozoa/socks/ready_state.lua";
+    ["dromozoa.socks.resume_thread"] = "dromozoa/socks/resume_thread.lua";
     ["dromozoa.socks.shared_future"] = "dromozoa/socks/shared_future.lua";
     ["dromozoa.socks.shared_reader"] = "dromozoa/socks/shared_reader.lua";
     ["dromozoa.socks.shared_state"] = "dromozoa/socks/shared_state.lua";
