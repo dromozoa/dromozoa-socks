@@ -18,7 +18,7 @@
 local future_service = require "dromozoa.socks.future_service"
 
 future_service():dispatch(function (service)
-  local f1 = service:deferred(function (promise)
+  local f = service:deferred(function (promise)
     local f = function ()
       promise:error("foo", 2)
     end
@@ -26,7 +26,7 @@ future_service():dispatch(function (service)
     error("unreachable")
   end)
 
-  print(f1:get())
+  print(f:get())
 
   service:stop()
 end)

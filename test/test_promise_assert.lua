@@ -18,8 +18,12 @@
 local equal = require "dromozoa.commons.equal"
 local future_service = require "dromozoa.socks.future_service"
 
+local function check(n, ...)
+  assert(select("#", ...) == n)
+end
+
 future_service():dispatch(function (service)
-  local f1 = service:deferred(function (promise)
+  local f = service:deferred(function (promise)
     assert(equal({ promise:assert(1, 2, 3) }, { 1, 2, 3 }))
     local f = function ()
       promise:assert(false, "foo")
@@ -28,7 +32,17 @@ future_service():dispatch(function (service)
     error("unreachable")
   end)
 
-  print(f1:get())
+  print(f:get())
+
+  local f = service:deferred(function (promise)
+    local f = service:deferred(function (promise)
+      return promise:set(42)
+    end)
+    check(1, promise:assert(f:get()))
+    return promise:set(42)
+  end)
+
+  f:get()
 
   service:stop()
 end)
