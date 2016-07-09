@@ -20,7 +20,7 @@ local future_service = require "dromozoa.socks.future_service"
 future_service():dispatch(function (service)
   local f = service:deferred(function (promise)
     local f = function ()
-      promise:error("foo", 2)
+      promise:error("foo")
     end
     f()
     error("unreachable")
@@ -33,7 +33,7 @@ end)
 
 local thread = coroutine.create(function ()
   local f = function ()
-    error("foo", 2)
+    error("foo")
   end
   f()
 end)

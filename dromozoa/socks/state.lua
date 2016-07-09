@@ -106,18 +106,8 @@ function class:set(...)
   self:set_ready()
 end
 
-function class:error(message, level)
-  if level == nil then
-    level = 1
-  end
-  if level ~= 0 then
-    local t = type(message)
-    if t == "number" or t == "string" then
-      local result
-      result, message = pcall(error, message, level + 3)
-    end
-  end
-  self.value = pack(nil, message)
+function class:error(message)
+  self.value = pack(nil, debug.traceback(message))
   self:set_ready()
   error(never_return, 0)
 end
@@ -130,11 +120,7 @@ function class:assert(...)
     if message == nil then
       message = "assertion failed!"
     end
-    local t = type(message)
-    if t == "number" or t == "string" then
-      result, message = pcall(error, message, 4)
-    end
-    self.value = pack(nil, message)
+    self.value = pack(nil, debug.traceback(message))
     self:set_ready()
     error(never_return, 0)
   end
