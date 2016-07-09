@@ -122,16 +122,16 @@ function class:error(message, level)
   error(never_return, 0)
 end
 
-function class:assert(result, message, ...)
-  if result then
-    return result, message, ...
+function class:assert(...)
+  if ... then
+    return ...
   else
+    local result, message = ...
     if message == nil then
       message = "assertion failed!"
     end
     local t = type(message)
     if t == "number" or t == "string" then
-      local result
       result, message = pcall(error, message, 4)
     end
     self.value = pack(nil, message)
