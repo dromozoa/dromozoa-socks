@@ -18,7 +18,6 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local sequence = require "dromozoa.commons.sequence"
-local unpack = require "dromozoa.commons.unpack"
 local uint32 = require "dromozoa.commons.uint32"
 local unix = require "dromozoa.unix"
 local future_service = require "dromozoa.socks.future_service"
@@ -186,7 +185,7 @@ service:dispatch(function (service)
               promise:assert(writer2:write(result):get())
               count = count + #result
             end
-            promise:assert(fd2:shutdown(unix.SHUT_WR))
+            fd2:shutdown(unix.SHUT_WR)
             return promise:set(count)
           end)
 
@@ -200,7 +199,7 @@ service:dispatch(function (service)
               promise:assert(writer1:write(result):get())
               count = count + #result
             end
-            promise:assert(fd1:shutdown(unix.SHUT_WR))
+            fd1:shutdown(unix.SHUT_WR)
             return promise:set(count)
           end)
 
@@ -208,8 +207,12 @@ service:dispatch(function (service)
           return promise:set(promise:assert(f1:get()), promise:assert(f2:get()))
         end)
 
-        print(f:get())
-        print(("closed%s%s"):format(connection1, connection2))
+        local result, message = f:get()
+        if result then
+          print(("closed%s%s up %d down %d"):format(connection1, connection2, result, message))
+        else
+          print(("error%s%s %s"):format(connection1, connection2, message))
+        end
 
         assert(fd1:close())
         if fd2 then
@@ -220,7 +223,7 @@ service:dispatch(function (service)
       end)
       futures[key] = service:accept(acceptors[key])
     else
-      print("?", future:get())
+      assert(future:get())
     end
   end
 end)
