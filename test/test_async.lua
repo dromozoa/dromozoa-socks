@@ -22,14 +22,14 @@ local unpack = require "dromozoa.commons.unpack"
 local unix = require "dromozoa.unix"
 local future_service = require "dromozoa.socks.future_service"
 
-local function check_repository(check)
+local function check_registry(check)
   local task
   for k, v in pairs(debug.getregistry()) do
     if type(k) == "userdata" and type(v) == "userdata" then
       task = v
     end
   end
-  print(check, task)
+  print("check_registry", check, task)
   if check then
     assert(task)
   else
@@ -40,23 +40,23 @@ end
 local service = future_service()
 
 assert(service:dispatch(function (service)
-  local f = service:nanosleep(0.5)
-  check_repository(false)
-  f:wait_for(0.2)
-  check_repository(true)
-  f:wait_for(0.2)
-  check_repository(true)
+  local f = service:nanosleep(1.5)
+  check_registry(false)
+  f:wait_for(0.5)
+  check_registry(true)
+  f:wait_for(0.5)
+  check_registry(true)
   assert(f:get())
-  check_repository(false)
+  check_registry(false)
 
-  local f = service:nanosleep(0.5)
-  check_repository(false)
-  f:wait_for(0.25)
-  check_repository(true)
-  unix.nanosleep(0.5)
-  check_repository(true)
+  local f = service:nanosleep(1.5)
+  check_registry(false)
+  f:wait_for(0.5)
+  check_registry(true)
+  unix.nanosleep(1)
+  check_registry(true)
   assert(f:get())
-  check_repository(false)
+  check_registry(false)
 
   local f1 = service:getaddrinfo("github.com", "https")
   local f2 = service:getaddrinfo("luarocks.org", "https")
