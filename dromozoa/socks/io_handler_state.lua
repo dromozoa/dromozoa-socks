@@ -18,6 +18,7 @@
 local create_thread = require "dromozoa.socks.create_thread"
 local io_handler = require "dromozoa.socks.io_handler"
 local promise = require "dromozoa.socks.promise"
+local resume_thread = require "dromozoa.socks.resume_thread"
 local state = require "dromozoa.socks.state"
 
 local class = {}
@@ -28,7 +29,7 @@ function class.new(service, fd, event, thread)
   self.io_handler = io_handler(fd, event, coroutine.create(function ()
     local promise = promise(self)
     while true do
-      assert(coroutine.resume(thread, promise))
+      resume_thread(thread, promise)
       if self:is_ready() then
         return
       end

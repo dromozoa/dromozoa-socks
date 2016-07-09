@@ -17,7 +17,9 @@
 
 local unpack = require "dromozoa.commons.unpack"
 local create_thread = require "dromozoa.socks.create_thread"
+local never_return = require "dromozoa.socks.never_return"
 local pack = require "dromozoa.socks.pack"
+local resume_thread = require "dromozoa.socks.resume_thread"
 
 local class = {}
 
@@ -95,13 +97,47 @@ function class:set_ready()
   local caller = self.caller
   if caller then
     self.caller = nil
-    assert(coroutine.resume(caller, "ready"))
+    resume_thread(caller, "ready")
   end
 end
 
 function class:set(...)
   self.value = pack(...)
   self:set_ready()
+end
+
+function class:error(message, level)
+  if level == nil then
+    level = 1
+  end
+  if level ~= 0 then
+    local t = type(message)
+    if t == "number" or t == "string" then
+      local result
+      result, message = pcall(error, message, level + 3)
+    end
+  end
+  self.value = pack(nil, message)
+  self:set_ready()
+  error(never_return, 0)
+end
+
+function class:assert(...)
+  if ... then
+    return ...
+  else
+    local result, message = ...
+    if message == nil then
+      message = "assertion failed!"
+    end
+    local t = type(message)
+    if t == "number" or t == "string" then
+      result, message = pcall(error, message, 4)
+    end
+    self.value = pack(nil, message)
+    self:set_ready()
+    error(never_return, 0)
+  end
 end
 
 function class:dispatch(timeout)
@@ -132,7 +168,7 @@ function class:dispatch(timeout)
           end
           local caller = self.caller
           self.caller = nil
-          assert(coroutine.resume(caller, "timeout"))
+          resume_thread(caller, "timeout")
         end)
         self.timer_handle = self.service:add_timer(self.timeout, self.timer)
       end
@@ -171,7 +207,7 @@ function class:then_(thread)
   local thread = create_thread(thread)
   return self.service:deferred(function (promise)
     self:wait()
-    assert(coroutine.resume(thread, self, promise))
+    resume_thread(thread, self, promise)
   end)
 end
 

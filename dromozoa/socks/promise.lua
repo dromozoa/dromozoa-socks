@@ -28,6 +28,14 @@ function class:set(...)
   return self
 end
 
+function class:error(message, level)
+  return self.state:error(message, level)
+end
+
+function class:assert(...)
+  return self.state:assert(...)
+end
+
 local metatable = {
   __index = class;
 }

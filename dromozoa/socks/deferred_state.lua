@@ -17,6 +17,7 @@
 
 local create_thread = require "dromozoa.socks.create_thread"
 local promise = require "dromozoa.socks.promise"
+local resume_thread = require "dromozoa.socks.resume_thread"
 local state = require "dromozoa.socks.state"
 
 local class = {}
@@ -26,7 +27,7 @@ function class.new(service, thread)
   local thread = create_thread(thread)
   self.deferred = coroutine.create(function ()
     local promise = promise(self)
-    assert(coroutine.resume(thread, promise))
+    resume_thread(thread, promise)
   end)
   return self
 end
@@ -35,7 +36,7 @@ function class:launch()
   state.launch(self)
   local deferred = self.deferred
   self.deferred = nil
-  assert(coroutine.resume(deferred))
+  resume_thread(deferred)
 end
 
 local metatable = {

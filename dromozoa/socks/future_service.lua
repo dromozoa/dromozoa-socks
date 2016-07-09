@@ -20,6 +20,7 @@ local create_thread = require "dromozoa.socks.create_thread"
 local futures = require "dromozoa.socks.futures"
 local io_handler = require "dromozoa.socks.io_handler"
 local io_service = require "dromozoa.socks.io_service"
+local resume_thread = require "dromozoa.socks.resume_thread"
 local timer_service = require "dromozoa.socks.timer_service"
 
 local class = {}
@@ -41,7 +42,7 @@ function class.new()
             local thread = self.async_threads[task]
             self.async_threads[task] = nil
             if thread then
-              assert(coroutine.resume(thread, task))
+              resume_thread(thread, task)
             end
           else
             break
@@ -100,7 +101,7 @@ end
 
 function class:dispatch(thread)
   if thread then
-    assert(coroutine.resume(create_thread(thread), self))
+    resume_thread(create_thread(thread), self)
     if self.stopped then
       return self
     end
