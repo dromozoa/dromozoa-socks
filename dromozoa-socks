@@ -62,6 +62,9 @@ service:dispatch(function (service)
         local connection1 = ""
         local connection2 = ""
 
+        local start_time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+        local time = start_time
+
         local f = service:deferred(function (promise)
           connection1 = (" [%d] %s -> %s"):format(fd1:get(), make_connection_string(fd1:getpeername()), make_connection_string(fd1:getsockname()))
           print(("opened%s"):format(connection1))
@@ -69,7 +72,7 @@ service:dispatch(function (service)
           local reader1 = service:make_reader(fd1)
           local writer1 = service:make_writer(fd1)
 
-          local version = promise:assert(promise:assert(reader1:read(1):get()):byte())
+          local version = promise:assert(reader1:read(1):get()):byte()
           if version == nil then
             promise:error("unexpected eof")
           end
@@ -88,7 +91,9 @@ service:dispatch(function (service)
             promise:error("client error")
           end
 
-          local version = promise:assert(promise:assert(reader1:read(1):get()):byte())
+          time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+
+          local version = promise:assert(reader1:read(1):get()):byte()
           if version == nil then
             promise:error("unexpected eof")
           end
@@ -121,6 +126,8 @@ service:dispatch(function (service)
             promise:error("client error")
           end
 
+          time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+
           local f
           local hostname = ""
           if atyp == 0x01 then
@@ -143,6 +150,8 @@ service:dispatch(function (service)
 
           local message, code
           fd2, message, code = promise:assert(f:get())
+
+          time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
 
           if not fd2 then
             local rep = "\1"
@@ -169,6 +178,8 @@ service:dispatch(function (service)
           end
           promise:assert(writer1:write("\5\0\0" .. bind_atyp .. bind_address:addr() .. bind_address:port()):get())
 
+          time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+
           connection2 = (" [%d] %s -> %s%s"):format(fd2:get(), make_connection_string(fd2:getsockname()), make_connection_string(fd2:getpeername()), hostname)
           print(("opened%s%s"):format(connection1, connection2))
 
@@ -179,13 +190,16 @@ service:dispatch(function (service)
             local count = 0
             while true do
               local result = promise:assert(reader1:read_any(256):get())
+              time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
               if result == "" then
                 break
               end
               promise:assert(writer2:write(result):get())
+              time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
               count = count + #result
             end
             fd2:shutdown(unix.SHUT_WR)
+            time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
             return promise:set(count)
           end)
 
@@ -193,13 +207,16 @@ service:dispatch(function (service)
             local count = 0
             while true do
               local result = promise:assert(reader2:read_any(256):get())
+              time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
               if result == "" then
                 break
               end
               promise:assert(writer1:write(result):get())
+              time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
               count = count + #result
             end
             fd1:shutdown(unix.SHUT_WR)
+            time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
             return promise:set(count)
           end)
 
@@ -207,11 +224,30 @@ service:dispatch(function (service)
           return promise:set(promise:assert(f1:get()), promise:assert(f2:get()))
         end)
 
-        local result, message = f:get()
-        if result then
-          print(("closed%s%s up %d down %d"):format(connection1, connection2, result, message))
+        local current_time
+
+        local timeout
+        while f:wait_for(1) == "timeout" do
+          current_time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+          local diff = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW) - time
+          if current_time - time > unix.timespec(300) then
+            timeout = true
+            break
+          end
+        end
+        current_time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+
+        local duration = tostring(current_time - start_time)
+
+        if timeout then
+          print(("timeout%s%s duration %s"):format(connection1, connection2, duration))
         else
-          print(("error%s%s %s"):format(connection1, connection2, message))
+          local result, message = f:get()
+          if result then
+            print(("closed%s%s duration %s up %d down %d"):format(connection1, connection2, duration, result, message))
+          else
+            print(("error%s%s duration %s message %s"):format(connection1, connection2, duration, message))
+          end
         end
 
         assert(fd1:close())
