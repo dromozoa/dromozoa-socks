@@ -72,7 +72,7 @@ service:dispatch(function (service)
           local reader1 = service:make_reader(fd1)
           local writer1 = service:make_writer(fd1)
 
-          local version = promise:assert(promise:assert(reader1:read(1):get()):byte())
+          local version = promise:assert(reader1:read(1):get()):byte()
           if version == nil then
             promise:error("unexpected eof")
           end
@@ -93,7 +93,7 @@ service:dispatch(function (service)
 
           time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
 
-          local version = promise:assert(promise:assert(reader1:read(1):get()):byte())
+          local version = promise:assert(reader1:read(1):get()):byte()
           if version == nil then
             promise:error("unexpected eof")
           end
