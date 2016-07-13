@@ -32,7 +32,9 @@ future_service():dispatch(function (service)
     error("unreachable")
   end)
 
-  print(f:get())
+  local result, message = f:get()
+  assert(not result)
+  assert(message)
 
   local f = service:deferred(function (promise)
     local f = service:deferred(function (promise)
