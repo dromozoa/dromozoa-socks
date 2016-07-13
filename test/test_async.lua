@@ -18,9 +18,16 @@
 local dumper = require "dromozoa.commons.dumper"
 local pairs = require "dromozoa.commons.pairs"
 local sequence = require "dromozoa.commons.sequence"
+local uint32 = require "dromozoa.commons.uint32"
 local unpack = require "dromozoa.commons.unpack"
+local dyld = require "dromozoa.dyld"
 local unix = require "dromozoa.unix"
 local future_service = require "dromozoa.socks.future_service"
+
+local symbol = dyld.RTLD_DEFAULT:dlsym("pthread_create")
+if not symbol or symbol:is_null() then
+  dyld.dlopen("libpthread.so.0", uint32.bor(dyld.RTLD_LAZY, dyld.RTLD_GLOBAL))
+end
 
 local function check_registry(check)
   local task

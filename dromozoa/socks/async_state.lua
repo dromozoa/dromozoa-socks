@@ -27,7 +27,7 @@ function class.new(service, task)
   self.task_thread = coroutine.create(function (task)
     local task_result = pack(task:result())
     if self:is_running() then
-      self:set(unpack(task_result))
+      self:set(unpack(task_result, 1, task_result.n))
     else
       self.task_result = task_result
     end
@@ -49,7 +49,7 @@ function class:resume()
   local task_result = self.task_result
   self.task_result = nil
   if task_result then
-    self:set(unpack(task_result))
+    self:set(unpack(task_result, 1, task_result.n))
   end
 end
 

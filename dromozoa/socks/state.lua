@@ -186,7 +186,7 @@ end
 
 function class:get()
   self:wait()
-  return unpack(self.value)
+  return unpack(self.value, 1, self.value.n)
 end
 
 function class:then_(thread)
