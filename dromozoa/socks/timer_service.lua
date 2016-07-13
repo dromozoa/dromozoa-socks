@@ -17,6 +17,7 @@
 
 local unix = require "dromozoa.unix"
 local create_thread = require "dromozoa.socks.create_thread"
+local resume_thread = require "dromozoa.socks.resume_thread"
 local multimap = require "dromozoa.socks.multimap"
 
 local class = {}
@@ -54,7 +55,7 @@ function class:dispatch()
   local range = self.threads:upper_bound(self:get_current_time())
   for _, thread, handle in range:each() do
     if thread then
-      assert(coroutine.resume(thread, handle))
+      resume_thread(thread, handle)
     end
   end
   for _, thread, handle in range:each() do

@@ -24,7 +24,7 @@ function class.new(service, source)
     service = service;
     source = source;
     buffer = reader_buffer();
-    buffer_size = 256;
+    buffer_size = 4096;
   }
 end
 

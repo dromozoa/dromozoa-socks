@@ -18,10 +18,15 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local sequence = require "dromozoa.commons.sequence"
-local unpack = require "dromozoa.commons.unpack"
 local uint32 = require "dromozoa.commons.uint32"
+local dyld = require "dromozoa.dyld"
 local unix = require "dromozoa.unix"
 local future_service = require "dromozoa.socks.future_service"
+
+local symbol = dyld.RTLD_DEFAULT:dlsym("pthread_create")
+if not symbol or symbol:is_null() then
+  dyld.dlopen("libpthread.so.0", uint32.bor(dyld.RTLD_LAZY, dyld.RTLD_GLOBAL))
+end
 
 assert(unix.block_signal(unix.SIGPIPE))
 
@@ -30,15 +35,12 @@ if nodename == "" then
   nodename = nil
 end
 
-local function socket_address_to_string(address, message, code)
+local function make_connection_string(address, message)
   if address then
     local nodename, servname = assert(address:getnameinfo(uint32.bor(unix.NI_NUMERICHOST, unix.NI_NUMERICSERV)))
     return nodename .. ":" .. servname
   else
-    if code == unix.EINVAL then
-      print("connection closed?")
-    end
-    return "!!! " .. message .. " !!!"
+    return "(" .. message .. ")"
   end
 end
 
@@ -62,239 +64,208 @@ service:dispatch(function (service)
       local fd1, address = assert(future:get())
 
       futures[fd1:get()] = service:deferred(function (promise)
-        local reader1 = service:make_reader(fd1)
-        local writer1 = service:make_writer(fd1)
+        local fd2
+        local connection1 = ""
+        local connection2 = ""
 
-        local result, message = pcall(function ()
-          local version = assert(reader1:read(1):get()):byte()
+        local start_time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+        local time = start_time
+
+        local f = service:deferred(function (promise)
+          connection1 = (" [%d] %s -> %s"):format(fd1:get(), make_connection_string(fd1:getpeername()), make_connection_string(fd1:getsockname()))
+          print(("opened%s"):format(connection1))
+
+          local reader1 = service:make_reader(fd1)
+          local writer1 = service:make_writer(fd1)
+
+          local version = promise:assert(reader1:read(1):get()):byte()
           if version == nil then
-            error("connection closed")
+            promise:error("unexpected eof")
           end
-          local n = assert(reader1:read(1):get()):byte()
-          local methods = sequence():push(assert(reader1:read(n):get()):byte(1, n))
-          return {
-            version = version;
-            methods = methods;
-          }
-        end)
+          local n = promise:assert(promise:assert(reader1:read(1):get()):byte())
+          local methods = sequence():push(promise:assert(reader1:read(n):get()):byte(1, n))
+          local no_authn
+          for method in methods:each() do
+            if method == 0x00 then
+              no_authn = true
+            end
+          end
+          if version == 0x05 and no_authn then
+            promise:assert(writer1:write("\5\0"):get())
+          else
+            promise:assert(writer1:write("\5\255"):get())
+            promise:error("client error")
+          end
 
-        if not result then
-          return promise:set(nil, message)
-        end
+          time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
 
-        local no_authn
-        for method in message.methods:each() do
-          if method == 0x00 then
-            no_authn = true
-            break
-          end
-        end
-        if message.version == 0x05 and no_authn then
-          local f = writer1:write("\5\0")
-          if not f:get() then
-            return promise:set(f:get())
-          end
-        else
-          local f = writer1:write("\5\255")
-          if not f:get() then
-            return promise:set(f:get())
-          end
-          return promise:set(nil, "protocol error")
-        end
-
-        local result, message = pcall(function ()
-          local version = assert(reader1:read(1):get()):byte()
+          local version = promise:assert(reader1:read(1):get()):byte()
           if version == nil then
-            error("connection closed")
+            promise:error("unexpected eof")
           end
-          local command = assert(reader1:read(1):get()):byte()
-          local reserved = assert(reader1:read(1):get()):byte()
-          local atyp = assert(reader1:read(1):get()):byte()
+          local command = promise:assert(promise:assert(reader1:read(1):get()):byte())
+          local reserved = promise:assert(promise:assert(reader1:read(1):get()):byte())
+          local atyp = promise:assert(promise:assert(reader1:read(1):get()):byte())
           local dst_addr
           local dst_port
           if atyp == 0x01 then
-            dst_addr = assert(reader1:read(4):get())
-            dst_port = assert(reader1:read(2):get())
+            dst_addr = promise:assert(reader1:read(4):get())
+            dst_port = promise:assert(reader1:read(2):get())
           elseif atyp == 0x03 then
-            local n = assert(reader1:read(1):get()):byte()
-            dst_addr = assert(reader1:read(n):get())
-            dst_port = assert(reader1:read(2):get())
+            local n = promise:assert(promise:assert(reader1:read(1):get()):byte())
+            dst_addr = promise:assert(reader1:read(n):get())
+            dst_port = promise:assert(reader1:read(2):get())
           elseif atyp == 0x04 then
-            dst_addr = assert(reader1:read(16):get())
-            dst_port = assert(reader1:read(2):get())
+            dst_addr = promise:assert(reader1:read(16):get())
+            dst_port = promise:assert(reader1:read(2):get())
           end
-          return {
-            version = version;
-            command = command;
-            reserved = reserved;
-            atyp = atyp;
-            dst_addr = dst_addr;
-            dst_port = dst_port;
-          }
-        end)
-
-        if not result then
-          return promise:set(nil, message)
-        end
-
-        local rep
-        if message.version ~= 0x05 then
-          rep = "\1"
-        elseif message.command ~= 0x01 then
-          rep = "\7"
-        elseif message.reserved ~= 0x00 then
-          rep = "\1"
-        elseif message.dst_addr == nil or message.dst_port == nil then
-          rep = "\8"
-        end
-        if rep then
-          local f = writer1:write("\5" .. rep .. "\0\1\0\0\0\0\0\0")
-          if not f:get() then
-            return promise:set(f:get())
-          end
-          return promise:set(nil, "protocol error")
-        end
-
-        local f
-        local hostname = ""
-        if message.atyp == 0x01 then
-          f = service:deferred(function (promise)
-            local fd = unix.socket(unix.AF_INET, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK))
-            if not fd then
-              return promise:set(unix.get_last_error())
-            end
-            local result, message, code = service:connect(fd, unix.sockaddr_in(message.dst_addr, message.dst_port)):get()
-            if not result then
-              fd:close()
-              return promise:set(nil, message, code)
-            end
-            return promise:set(fd)
-          end)
-        elseif message.atyp == 0x03 then
-          local a, b = message.dst_port:byte(1, 2)
-          f = service:connect_tcp(message.dst_addr, a * 256 + b)
-          hostname = " (" .. message.dst_addr .. ")"
-        elseif message.atyp == 0x04 then
-          f = service:deferred(function (promise)
-            local fd = unix.socket(unix.AF_INET6, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK))
-            if not fd then
-              return promise:set(unix.get_last_error())
-            end
-            local result, message, code = service:connect(fd, unix.sockaddr_in6(message.dst_addr, message.dst_port)):get()
-            if not result then
-              fd:close()
-              return promise:set(nil, message, code)
-            end
-            return promise:set(fd)
-          end)
-        end
-
-        local fd2, message, code = f:get()
-        if not fd2 then
-          if code == unix.ENETUNREACH then
-            rep = "\3"
-          elseif code == unix.EHOSTUNREACH then
-            rep = "\4"
-          elseif code == unix.ECONNREFUSED then
-            rep = "\5"
-          else
+          local rep
+          if version ~= 0x05 or reserved ~= 0x00 then
             rep = "\1"
+          elseif command ~= 0x01 then
+            rep = "\7"
+          elseif dst_port == nil then
+            rep = "\8"
           end
-          local f = writer1:write("\5" .. rep .. "\0\1\0\0\0\0\0\0")
-          if not f:get() then
-            return promise:set(f:get())
+          if rep then
+            promise:assert(writer1:write("\5" .. rep .. "\0\1\0\0\0\0\0\0"))
+            promise:error("client error")
           end
-          return promise:set(nil, "protocol error")
-        end
 
-        local buffer = "\5\0\0"
+          time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
 
-        local bind_address = fd2:getsockname()
-        if bind_address:family() == unix.AF_INET then
-          buffer = buffer .. "\1"
-        elseif bind_address:family() == unix.AF_INET6 then
-          buffer = buffer .. "\4"
-        end
-        buffer = buffer .. bind_address:addr() .. bind_address:port()
+          local f
+          local hostname = ""
+          if atyp == 0x01 then
+            f = service:deferred(function (promise)
+              local fd = promise:assert(unix.socket(unix.AF_INET, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK)))
+              promise:assert(service:connect(fd, unix.sockaddr_in(dst_addr, dst_port)):get())
+              return promise:set(fd)
+            end)
+          elseif atyp == 0x03 then
+            local a, b = dst_port:byte(1, 2)
+            f = service:connect_tcp(dst_addr, a * 256 + b)
+            hostname = " (" .. dst_addr .. ")"
+          elseif atyp == 0x04 then
+            f = service:deferred(function (promise)
+              local fd = promise:assert(unix.socket(unix.AF_INET6, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK)))
+              promise:assert(service:connect(fd, unix.sockaddr_in6(dst_addr, dst_port)):get())
+              return promise:set(fd)
+            end)
+          end
 
-        local f = writer1:write(buffer)
-        if not f:get() then
-          return promise:set(f:get())
-        end
+          local message, code
+          fd2, message, code = promise:assert(f:get())
 
-        local message = ("[%d] %s -> %s [%d] %s -> %s%s"):format(
-            fd1:get(), socket_address_to_string(fd1:getpeername()), socket_address_to_string(fd1:getsockname()),
-            fd2:get(), socket_address_to_string(fd2:getsockname()), socket_address_to_string(fd2:getpeername()),
-            hostname)
+          time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
 
-        print("opened " .. message)
-
-        local reader2 = service:make_reader(fd2)
-        local writer2 = service:make_writer(fd2)
-
-        local f1 = service:deferred(function (promise)
-          local count = 0
-          while true do
-            local f = reader1:read_any(256)
-            local result = f:get()
-            if not result then
-              return promise:set(f:get())
-            elseif result == "" then
-              break
+          if not fd2 then
+            local rep = "\1"
+            if code == unix.ENETUNREACH then
+              rep = "\3"
+            elseif code == unix.EHOSTUNREACH then
+              rep = "\4"
+            elseif code == unix.ECONNREFUSED then
+              rep = "\5"
             end
-            local f = writer2:write(result)
-            if not f:get() then
-              return promise:set(f:get())
+            promise:assert(writer1:write("\5" .. rep .. "\0\1\0\0\0\0\0\0"))
+            promise:error(message)
+          end
+
+          local bind_address = fd2:getsockname()
+          local bind_atyp
+          if bind_address:family() == unix.AF_INET then
+            bind_atyp = "\1"
+          elseif bind_address:family() == unix.AF_INET6 then
+            bind_atyp = "\4"
+          else
+            promise:assert(writer1:write("\5\1\0\1\0\0\0\0\0\0"))
+            promise:error("server error")
+          end
+          promise:assert(writer1:write("\5\0\0" .. bind_atyp .. bind_address:addr() .. bind_address:port()):get())
+
+          time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+
+          connection2 = (" [%d] %s -> %s%s"):format(fd2:get(), make_connection_string(fd2:getsockname()), make_connection_string(fd2:getpeername()), hostname)
+          print(("opened%s%s"):format(connection1, connection2))
+
+          local reader2 = service:make_reader(fd2)
+          local writer2 = service:make_writer(fd2)
+
+          local f1 = service:deferred(function (promise)
+            local count = 0
+            while true do
+              local result = promise:assert(reader1:read_any(256):get())
+              time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+              if result == "" then
+                break
+              end
+              promise:assert(writer2:write(result):get())
+              time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+              count = count + #result
             end
-            count = count + #result
-          end
-          if not fd2:shutdown(unix.SHUT_WR) then
-            return promise:set(unix.get_last_error())
-          end
-          return promise:set(count)
+            fd2:shutdown(unix.SHUT_WR)
+            time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+            return promise:set(count)
+          end)
+
+          local f2 = service:deferred(function (promise)
+            local count = 0
+            while true do
+              local result = promise:assert(reader2:read_any(256):get())
+              time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+              if result == "" then
+                break
+              end
+              promise:assert(writer1:write(result):get())
+              time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+              count = count + #result
+            end
+            fd1:shutdown(unix.SHUT_WR)
+            time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+            return promise:set(count)
+          end)
+
+          promise:assert(service:when_all(f1, f2):get())
+          return promise:set(promise:assert(f1:get()), promise:assert(f2:get()))
         end)
 
-        local f2 = service:deferred(function (promise)
-          local count = 0
-          while true do
-            local f = reader2:read_any(256)
-            local result = f:get()
-            if not result then
-              return promise:set(f:get())
-            elseif result == "" then
-              break
-            end
-            local f = writer1:write(result)
-            if not f:get() then
-              return promise:set(f:get())
-            end
-            count = count + #result
-          end
-          if not fd1:shutdown(unix.SHUT_WR) then
-            return promise:set(unix.get_last_error())
-          end
-          return promise:set(count)
-        end)
+        local current_time
 
-        service:when_all(f1, f2):get()
+        local timeout
+        while f:wait_for(1) == "timeout" do
+          current_time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+          local diff = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW) - time
+          if current_time - time > unix.timespec(300) then
+            timeout = true
+            break
+          end
+        end
+        current_time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+
+        local duration = tostring(current_time - start_time)
+
+        if timeout then
+          print(("timeout%s%s duration %s"):format(connection1, connection2, duration))
+        else
+          local result, message = f:get()
+          if result then
+            print(("closed%s%s duration %s up %d down %d"):format(connection1, connection2, duration, result, message))
+          else
+            print(("error%s%s duration %s message %s"):format(connection1, connection2, duration, message))
+          end
+        end
+
         assert(fd1:close())
-        assert(fd2:close())
-
-        print("closed " .. message)
-
-        local reslt, message = f1:get()
-        if not result then
-          print(message)
+        if fd2 then
+          assert(fd2:close())
         end
-        local reslt, message = f2:get()
-        if not result then
-          print(message)
-        end
+
         return promise:set(true)
       end)
       futures[key] = service:accept(acceptors[key])
     else
-      future:get()
+      assert(future:get())
     end
   end
 end)

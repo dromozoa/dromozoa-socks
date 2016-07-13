@@ -15,29 +15,28 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local create_thread = require "dromozoa.socks.create_thread"
-local resume_thread = require "dromozoa.socks.resume_thread"
+local future_service = require "dromozoa.socks.future_service"
 
-local class = {}
+future_service():dispatch(function (service)
+  local f = service:deferred(function (promise)
+    local f = function ()
+      promise:error("foo")
+    end
+    f()
+    error("unreachable")
+  end)
 
-function class.new(fd, event, thread)
-  return {
-    fd = fd;
-    event = event;
-    thread = create_thread(thread);
-  }
-end
+  local result, message = f:get()
+  assert(not result)
+  assert(message)
 
-function class:dispatch(service, event)
-  resume_thread(self.thread, service, self, event)
-end
+  service:stop()
+end)
 
-local metatable = {
-  __index = class;
-}
-
-return setmetatable(class, {
-  __call = function (_, fd, event, thread)
-    return setmetatable(class.new(fd, event, thread), metatable)
-  end;
-})
+local thread = coroutine.create(function ()
+  local f = function ()
+    error("foo")
+  end
+  f()
+end)
+print(coroutine.resume(thread))

@@ -1,8 +1,8 @@
 package = "dromozoa-socks"
-version = "1.1-1"
+version = "1.2-1"
 source = {
-  url = "https://github.com/dromozoa/dromozoa-socks/archive/v1.1.tar.gz";
-  file = "dromozoa-socks-1.1.tar.gz";
+  url = "https://github.com/dromozoa/dromozoa-socks/archive/v1.2.tar.gz";
+  file = "dromozoa-socks-1.2.tar.gz";
 }
 description = {
   summary = "Toolkit for network and I/O programming";
@@ -12,6 +12,7 @@ description = {
 }
 dependencies = {
   "dromozoa-commons";
+  "dromozoa-dyld";
   "dromozoa-unix";
 }
 build = {
@@ -30,6 +31,7 @@ build = {
     ["dromozoa.socks.make_ready_future"] = "dromozoa/socks/make_ready_future.lua";
     ["dromozoa.socks.multimap"] = "dromozoa/socks/multimap.lua";
     ["dromozoa.socks.multimap_handle"] = "dromozoa/socks/multimap_handle.lua";
+    ["dromozoa.socks.never_return"] = "dromozoa/socks/never_return.lua";
     ["dromozoa.socks.pack"] = "dromozoa/socks/pack.lua";
     ["dromozoa.socks.promise"] = "dromozoa/socks/promise.lua";
     ["dromozoa.socks.rb_tree"] = "dromozoa/socks/rb_tree.lua";
@@ -37,6 +39,7 @@ build = {
     ["dromozoa.socks.reader_buffer"] = "dromozoa/socks/reader_buffer.lua";
     ["dromozoa.socks.reader_source"] = "dromozoa/socks/reader_source.lua";
     ["dromozoa.socks.ready_state"] = "dromozoa/socks/ready_state.lua";
+    ["dromozoa.socks.resume_thread"] = "dromozoa/socks/resume_thread.lua";
     ["dromozoa.socks.shared_future"] = "dromozoa/socks/shared_future.lua";
     ["dromozoa.socks.shared_reader"] = "dromozoa/socks/shared_reader.lua";
     ["dromozoa.socks.shared_state"] = "dromozoa/socks/shared_state.lua";

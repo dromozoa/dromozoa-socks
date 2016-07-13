@@ -15,29 +15,18 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local create_thread = require "dromozoa.socks.create_thread"
-local resume_thread = require "dromozoa.socks.resume_thread"
+local never_return = require "dromozoa.socks.never_return"
 
-local class = {}
-
-function class.new(fd, event, thread)
-  return {
-    fd = fd;
-    event = event;
-    thread = create_thread(thread);
-  }
+local function check(result, message, ...)
+  if result then
+    return result, message, ...
+  else
+    if message ~= never_return then
+      error(message)
+    end
+  end
 end
 
-function class:dispatch(service, event)
-  resume_thread(self.thread, service, self, event)
+return function (thread, ...)
+  return check(coroutine.resume(thread, ...))
 end
-
-local metatable = {
-  __index = class;
-}
-
-return setmetatable(class, {
-  __call = function (_, fd, event, thread)
-    return setmetatable(class.new(fd, event, thread), metatable)
-  end;
-})

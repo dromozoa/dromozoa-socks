@@ -23,7 +23,7 @@ local class = {}
 function class.new()
   return {
     selector = unix.selector();
-    selector_timeout = unix.timespec(0.02, unix.TIMESPEC_TYPE_DURATION);
+    selector_timeout = unix.timespec(0.25, unix.TIMESPEC_TYPE_DURATION);
     read_handlers = {};
     write_handlers = {};
   }
