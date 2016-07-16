@@ -158,27 +158,28 @@ return function (key, salt)
   out:write(DS:sub(1, n))
   local S = out:concat()
 
-  local digest = A
+  local C_A = A
   for i = 0, rounds - 1 do
-    local context_c = sha256()
+    local C = sha256()
     if i % 2 == 1 then
-      context_c:update(P)
+      C:update(P)
     else
-      context_c:update(digest)
+      C:update(C_A)
     end
     if i % 3 ~= 0 then
-      context_c:update(S)
+      C:update(S)
     end
     if i % 7 ~= 0 then
-      context_c:update(P)
+      C:update(P)
     end
     if i % 2 == 1 then
-      context_c:update(digest)
+      C:update(C_A)
     else
-      context_c:update(P)
+      C:update(P)
     end
-    digest = context_c:finalize("bin")
+    C_A = C:finalize("bin")
   end
+  local C = C_A
 
   local out = sequence_writer()
   out:write("$5$")
@@ -186,16 +187,16 @@ return function (key, salt)
     out:write("rounds=", rounds, "$")
   end
   out:write(salt_string, "$")
-  encode(out, digest, 1, 11, 21)
-  encode(out, digest, 22, 2, 12)
-  encode(out, digest, 13, 23, 3)
-  encode(out, digest, 4, 14, 24)
-  encode(out, digest, 25, 5, 15)
-  encode(out, digest, 16, 26, 6)
-  encode(out, digest, 7, 17, 27)
-  encode(out, digest, 28, 8, 18)
-  encode(out, digest, 19, 29, 9)
-  encode(out, digest, 10, 20, 30)
-  encode(out, digest, 32, 31)
+  encode(out, C_A, 1, 11, 21)
+  encode(out, C_A, 22, 2, 12)
+  encode(out, C_A, 13, 23, 3)
+  encode(out, C_A, 4, 14, 24)
+  encode(out, C_A, 25, 5, 15)
+  encode(out, C_A, 16, 26, 6)
+  encode(out, C_A, 7, 17, 27)
+  encode(out, C_A, 28, 8, 18)
+  encode(out, C_A, 19, 29, 9)
+  encode(out, C_A, 10, 20, 30)
+  encode(out, C_A, 32, 31)
   return out:concat()
 end
