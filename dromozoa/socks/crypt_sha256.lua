@@ -127,35 +127,35 @@ local function crypt_sha256(key, salt)
 
   local digest_a = context_a:finalize("bin")
 
-  local context_dp = sha256()
+  local DP = sha256()
   for _ = 1, #key do
-    context_dp:update(key)
+    DP:update(key)
   end
-  local digest_dp = context_dp:finalize("bin")
+  local DP = DP:finalize("bin")
 
   local out = sequence_writer()
   local n = #key
   while n > 32 do
     n = n - 32
-    out:write(digest_dp)
+    out:write(DP)
   end
-  out:write(digest_dp:sub(1, n))
+  out:write(DP:sub(1, n))
   local p = out:concat()
 
-  local context_ds = sha256()
+  local DS = sha256()
   local n = 16 + digest_a:byte(1)
   for _ = 1, n do
-    context_ds:update(salt_string)
+    DS:update(salt_string)
   end
-  local digest_ds = context_ds:finalize("bin")
+  local DS = DS:finalize("bin")
 
   local out = sequence_writer()
   local n = #salt_string
   while n > 32 do
     n = n - 32
-    out:write(digest_ds:sub(1, n))
+    out:write(DS:sub(1, n))
   end
-  out:write(digest_ds:sub(1, n))
+  out:write(DS:sub(1, n))
   local s = out:concat()
 
   local digest = digest_a
