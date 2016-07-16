@@ -159,20 +159,20 @@ return function (key, salt)
   local S = out:concat()
 
   local C_A = A
-  for i = 0, rounds - 1 do
+  for i = 1, rounds do
     local C = sha256()
-    if i % 2 == 1 then
+    if i % 2 == 0 then
       C:update(P)
     else
       C:update(C_A)
     end
-    if i % 3 ~= 0 then
+    if i % 3 ~= 1 then
       C:update(S)
     end
-    if i % 7 ~= 0 then
+    if i % 7 ~= 1 then
       C:update(P)
     end
-    if i % 2 == 1 then
+    if i % 2 == 0 then
       C:update(C_A)
     else
       C:update(P)
