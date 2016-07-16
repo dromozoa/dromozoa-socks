@@ -75,6 +75,30 @@ local function encode(out, s, i, j, k)
   return out
 end
 
+local function loop(rounds, A_C, P, S)
+  for i = 1, rounds do
+    local C = sha256()
+    if i % 2 == 0 then
+      C:update(P)
+    else
+      C:update(A_C)
+    end
+    if i % 3 ~= 1 then
+      C:update(S)
+    end
+    if i % 7 ~= 1 then
+      C:update(P)
+    end
+    if i % 2 == 0 then
+      C:update(A_C)
+    else
+      C:update(P)
+    end
+    A_C = C:finalize("bin")
+  end
+  return A_C
+end
+
 return function (key, salt)
   local rounds, salt_string = salt:match("^%$5%$rounds=(%d+)%$([^%$]+)")
   local rounds_custom = false
@@ -98,23 +122,21 @@ return function (key, salt)
     rounds = ROUNDS_MAX
   end
 
-  local A = sha256()
-  A:update(key)
-  A:update(salt_string)
-
   local B = sha256()
   B:update(key)
   B:update(salt_string)
   B:update(key)
   local B = B:finalize("bin")
 
+  local A = sha256()
+  A:update(key)
+  A:update(salt_string)
   local n = #key
   while n > 32 do
     n = n - 32
     A:update(B)
   end
   A:update(B:sub(1, n))
-
   local n = #key
   while n > 0 do
     if uint32.band(n, 1) == 1 then
@@ -124,7 +146,6 @@ return function (key, salt)
     end
     n = uint32.shr(n, 1)
   end
-
   local A = A:finalize("bin")
 
   local DP = sha256()
@@ -132,7 +153,6 @@ return function (key, salt)
     DP:update(key)
   end
   local DP = DP:finalize("bin")
-
   local out = sequence_writer()
   local n = #key
   while n > 32 do
@@ -148,7 +168,6 @@ return function (key, salt)
     DS:update(salt_string)
   end
   local DS = DS:finalize("bin")
-
   local out = sequence_writer()
   local n = #salt_string
   while n > 32 do
@@ -158,28 +177,7 @@ return function (key, salt)
   out:write(DS:sub(1, n))
   local S = out:concat()
 
-  local C_A = A
-  for i = 0, rounds - 1 do
-    local C = sha256()
-    if i % 2 == 1 then
-      C:update(P)
-    else
-      C:update(C_A)
-    end
-    if i % 3 ~= 0 then
-      C:update(S)
-    end
-    if i % 7 ~= 0 then
-      C:update(P)
-    end
-    if i % 2 == 1 then
-      C:update(C_A)
-    else
-      C:update(P)
-    end
-    C_A = C:finalize("bin")
-  end
-  local C = C_A
+  local C = loop(rounds, A, P, S)
 
   local out = sequence_writer()
   out:write("$5$")
@@ -187,16 +185,16 @@ return function (key, salt)
     out:write("rounds=", rounds, "$")
   end
   out:write(salt_string, "$")
-  encode(out, C_A, 1, 11, 21)
-  encode(out, C_A, 22, 2, 12)
-  encode(out, C_A, 13, 23, 3)
-  encode(out, C_A, 4, 14, 24)
-  encode(out, C_A, 25, 5, 15)
-  encode(out, C_A, 16, 26, 6)
-  encode(out, C_A, 7, 17, 27)
-  encode(out, C_A, 28, 8, 18)
-  encode(out, C_A, 19, 29, 9)
-  encode(out, C_A, 10, 20, 30)
-  encode(out, C_A, 32, 31)
+  encode(out, C, 1, 11, 21)
+  encode(out, C, 22, 2, 12)
+  encode(out, C, 13, 23, 3)
+  encode(out, C, 4, 14, 24)
+  encode(out, C, 25, 5, 15)
+  encode(out, C, 16, 26, 6)
+  encode(out, C, 7, 17, 27)
+  encode(out, C, 28, 8, 18)
+  encode(out, C, 19, 29, 9)
+  encode(out, C, 10, 20, 30)
+  encode(out, C, 32, 31)
   return out:concat()
 end
