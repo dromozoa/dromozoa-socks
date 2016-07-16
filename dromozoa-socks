@@ -30,7 +30,7 @@ end
 
 assert(unix.block_signal(unix.SIGPIPE))
 
-local nodename, servname = ...
+local nodename, servname, username, password = ...
 if nodename == "" then
   nodename = nil
 end
@@ -84,17 +84,46 @@ service:dispatch(function (service)
           end
           local n = promise:assert(promise:assert(reader1:read(1):get()):byte())
           local methods = sequence():push(promise:assert(reader1:read(n):get()):byte(1, n))
-          local no_authn
+          local method_set = {}
           for method in methods:each() do
-            if method == 0x00 then
-              no_authn = true
+            method_set[method] = true
+          end
+          local method
+          if version == 0x05 then
+            if username and password then
+              if method_set[0x02] then
+                method = 0x02
+              end
+            else
+              if method_set[0x00] then
+                method = 0x00
+              end
             end
           end
-          if version == 0x05 and no_authn then
-            promise:assert(writer1:write("\5\0"):get())
+          if method then
+            promise:assert(writer1:write("\5" .. string.char(method)):get())
           else
             promise:assert(writer1:write("\5\255"):get())
             promise:error("client error")
+          end
+
+          time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
+
+          if method == 0x02 then
+            local version = promise:assert(reader1:read(1):get()):byte()
+            if version == nil then
+              promise:error("unexpected eof")
+            end
+            local n = promise:assert(promise:assert(reader1:read(1):get()):byte())
+            local request_username = promise:assert(reader1:read(n):get())
+            local n = promise:assert(promise:assert(reader1:read(1):get()):byte())
+            local request_password = promise:assert(reader1:read(n):get())
+            if version == 0x01 and username == request_username and password == request_password then
+              promise:assert(writer1:write("\1\0"):get())
+            else
+              promise:assert(writer1:write("\1\1"):get())
+              promise:error("client error")
+            end
           end
 
           time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
@@ -105,17 +134,17 @@ service:dispatch(function (service)
           end
           local command = promise:assert(promise:assert(reader1:read(1):get()):byte())
           local reserved = promise:assert(promise:assert(reader1:read(1):get()):byte())
-          local atyp = promise:assert(promise:assert(reader1:read(1):get()):byte())
+          local address_type = promise:assert(promise:assert(reader1:read(1):get()):byte())
           local dst_addr
           local dst_port
-          if atyp == 0x01 then
+          if address_type == 0x01 then
             dst_addr = promise:assert(reader1:read(4):get())
             dst_port = promise:assert(reader1:read(2):get())
-          elseif atyp == 0x03 then
+          elseif address_type == 0x03 then
             local n = promise:assert(promise:assert(reader1:read(1):get()):byte())
             dst_addr = promise:assert(reader1:read(n):get())
             dst_port = promise:assert(reader1:read(2):get())
-          elseif atyp == 0x04 then
+          elseif address_type == 0x04 then
             dst_addr = promise:assert(reader1:read(16):get())
             dst_port = promise:assert(reader1:read(2):get())
           end
@@ -136,17 +165,17 @@ service:dispatch(function (service)
 
           local f
           local hostname = ""
-          if atyp == 0x01 then
+          if address_type == 0x01 then
             f = service:deferred(function (promise)
               local fd = promise:assert(unix.socket(unix.AF_INET, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK)))
               promise:assert(service:connect(fd, unix.sockaddr_in(dst_addr, dst_port)):get())
               return promise:set(fd)
             end)
-          elseif atyp == 0x03 then
+          elseif address_type == 0x03 then
             local a, b = dst_port:byte(1, 2)
             f = service:connect_tcp(dst_addr, a * 256 + b)
             hostname = " (" .. dst_addr .. ")"
-          elseif atyp == 0x04 then
+          elseif address_type == 0x04 then
             f = service:deferred(function (promise)
               local fd = promise:assert(unix.socket(unix.AF_INET6, uint32.bor(unix.SOCK_STREAM, unix.SOCK_CLOEXEC, unix.SOCK_NONBLOCK)))
               promise:assert(service:connect(fd, unix.sockaddr_in6(dst_addr, dst_port)):get())
@@ -173,16 +202,16 @@ service:dispatch(function (service)
           end
 
           local bind_address = fd2:getsockname()
-          local bind_atyp
+          local bind_address_type
           if bind_address:family() == unix.AF_INET then
-            bind_atyp = "\1"
+            bind_address_type = "\1"
           elseif bind_address:family() == unix.AF_INET6 then
-            bind_atyp = "\4"
+            bind_address_type = "\4"
           else
             promise:assert(writer1:write("\5\1\0\1\0\0\0\0\0\0"))
             promise:error("server error")
           end
-          promise:assert(writer1:write("\5\0\0" .. bind_atyp .. bind_address:addr() .. bind_address:port()):get())
+          promise:assert(writer1:write("\5\0\0" .. bind_address_type .. bind_address:addr() .. bind_address:port()):get())
 
           time = unix.clock_gettime(unix.CLOCK_MONOTONIC_RAW)
 
