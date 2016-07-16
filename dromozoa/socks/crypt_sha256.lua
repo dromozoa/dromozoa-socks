@@ -54,23 +54,23 @@ local function encode(out, s, i, j, k)
     local a = s:byte(i)
     local b = s:byte(j)
     local c = s:byte(k)
-    local a = a * 65536 + b * 256 + c
-    local d = a % 64
-    local a = (a - d) / 64
-    local c = a % 64
-    local a = (a - c) / 64
-    local b = a % 64
-    local a = (a - b) / 64
-    out:write(encoder[d], encoder[c], encoder[b], encoder[a])
+    local d = a * 65536 + b * 256 + c
+    local a = d % 64
+    local d = (d - a) / 64
+    local b = d % 64
+    local d = (d - b) / 64
+    local c = d % 64
+    local d = (d - c) / 64
+    out:write(encoder[a], encoder[b], encoder[c], encoder[d])
   else
     local a = s:byte(i)
     local b = s:byte(j)
-    local a = a * 256 + b
-    local c = a % 64
-    local a = (a - c) / 64
-    local b = a % 64
-    local a = (a - b) / 64
-    out:write(encoder[c], encoder[b], encoder[a])
+    local c = a * 256 + b
+    local a = c % 64
+    local c = (c - a) / 64
+    local b = c % 64
+    local c = (c - b) / 64
+    out:write(encoder[a], encoder[b], encoder[c])
   end
   return out
 end
