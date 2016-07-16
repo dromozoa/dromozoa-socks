@@ -75,6 +75,30 @@ local function encode(out, s, i, j, k)
   return out
 end
 
+local function loop(rounds, A_C, P, S)
+  for i = 1, rounds do
+    local C = sha256()
+    if i % 2 == 0 then
+      C:update(P)
+    else
+      C:update(A_C)
+    end
+    if i % 3 ~= 1 then
+      C:update(S)
+    end
+    if i % 7 ~= 1 then
+      C:update(P)
+    end
+    if i % 2 == 0 then
+      C:update(A_C)
+    else
+      C:update(P)
+    end
+    A_C = C:finalize("bin")
+  end
+  return A_C
+end
+
 return function (key, salt)
   local rounds, salt_string = salt:match("^%$5%$rounds=(%d+)%$([^%$]+)")
   local rounds_custom = false
@@ -158,28 +182,7 @@ return function (key, salt)
   out:write(DS:sub(1, n))
   local S = out:concat()
 
-  local A_C = A
-  for i = 1, rounds do
-    local C = sha256()
-    if i % 2 == 0 then
-      C:update(P)
-    else
-      C:update(A_C)
-    end
-    if i % 3 ~= 1 then
-      C:update(S)
-    end
-    if i % 7 ~= 1 then
-      C:update(P)
-    end
-    if i % 2 == 0 then
-      C:update(A_C)
-    else
-      C:update(P)
-    end
-    A_C = C:finalize("bin")
-  end
-  local C = A_C
+  local C = loop(rounds, A, P, S)
 
   local out = sequence_writer()
   out:write("$5$")
