@@ -15,12 +15,12 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local crypt = require "dromozoa.socks.crypt"
+local crypt_sha256 = require "dromozoa.socks.crypt_sha256"
 
 local mode = ...
 
 local function test(key, salt_string, expected)
-  local result = crypt(key, salt_string)
+  local result = crypt_sha256(key, salt_string)
   print(result)
   assert(result == expected)
 end
