@@ -15,8 +15,6 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local base16 = require "dromozoa.commons.base16"
-local base64 = require "dromozoa.commons.base64"
 local sequence_writer = require "dromozoa.commons.sequence_writer"
 local sha256 = require "dromozoa.commons.sha256"
 local uint32 = require "dromozoa.commons.uint32"
@@ -135,13 +133,14 @@ local function crypt_sha256(key, salt)
   end
   local digest_dp = context_dp:finalize("bin")
 
-  local p = ""
+  local out = sequence_writer()
   local n = #key
   while n > 32 do
     n = n - 32
-    p = p .. digest_dp
+    out:write(digest_dp)
   end
-  p = p .. digest_dp:sub(1, n)
+  out:write(digest_dp:sub(1, n))
+  local p = out:concat()
 
   local context_ds = sha256()
   local n = 16 + digest_a:byte(1)
@@ -150,13 +149,14 @@ local function crypt_sha256(key, salt)
   end
   local digest_ds = context_ds:finalize("bin")
 
-  local s = ""
+  local out = sequence_writer()
   local n = #salt_string
   while n > 32 do
     n = n - 32
-    s = s .. digest_ds
+    out:write(digest_ds:sub(1, n))
   end
-  s = s .. digest_ds:sub(1, n)
+  out:write(digest_ds:sub(1, n))
+  local s = out:concat()
 
   local digest = digest_a
   for i = 0, rounds - 1 do
