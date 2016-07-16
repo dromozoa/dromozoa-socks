@@ -75,7 +75,7 @@ local function encode(out, s, i, j, k)
   return out
 end
 
-local function crypt_sha256(key, salt)
+return function (key, salt)
   local rounds, salt_string = salt:match("^%$5%$rounds=(%d+)%$([^%$]+)")
   local rounds_custom = false
   if rounds then
@@ -98,34 +98,34 @@ local function crypt_sha256(key, salt)
     rounds = ROUNDS_MAX
   end
 
-  local context_a = sha256()
-  context_a:update(key)
-  context_a:update(salt_string)
+  local A = sha256()
+  A:update(key)
+  A:update(salt_string)
 
-  local context_b = sha256()
-  context_b:update(key)
-  context_b:update(salt_string)
-  context_b:update(key)
-  local digest_b = context_b:finalize("bin")
+  local B = sha256()
+  B:update(key)
+  B:update(salt_string)
+  B:update(key)
+  local B = B:finalize("bin")
 
   local n = #key
   while n > 32 do
     n = n - 32
-    context_a:update(digest_b)
+    A:update(B)
   end
-  context_a:update(digest_b:sub(1, n))
+  A:update(B:sub(1, n))
 
   local n = #key
   while n > 0 do
     if uint32.band(n, 1) == 1 then
-      context_a:update(digest_b)
+      A:update(B)
     else
-      context_a:update(key)
+      A:update(key)
     end
     n = uint32.shr(n, 1)
   end
 
-  local digest_a = context_a:finalize("bin")
+  local A = A:finalize("bin")
 
   local DP = sha256()
   for _ = 1, #key do
@@ -140,10 +140,10 @@ local function crypt_sha256(key, salt)
     out:write(DP)
   end
   out:write(DP:sub(1, n))
-  local p = out:concat()
+  local P = out:concat()
 
   local DS = sha256()
-  local n = 16 + digest_a:byte(1)
+  local n = 16 + A:byte(1)
   for _ = 1, n do
     DS:update(salt_string)
   end
@@ -156,26 +156,26 @@ local function crypt_sha256(key, salt)
     out:write(DS:sub(1, n))
   end
   out:write(DS:sub(1, n))
-  local s = out:concat()
+  local S = out:concat()
 
-  local digest = digest_a
+  local digest = A
   for i = 0, rounds - 1 do
     local context_c = sha256()
     if i % 2 == 1 then
-      context_c:update(p)
+      context_c:update(P)
     else
       context_c:update(digest)
     end
     if i % 3 ~= 0 then
-      context_c:update(s)
+      context_c:update(S)
     end
     if i % 7 ~= 0 then
-      context_c:update(p)
+      context_c:update(P)
     end
     if i % 2 == 1 then
       context_c:update(digest)
     else
-      context_c:update(p)
+      context_c:update(P)
     end
     digest = context_c:finalize("bin")
   end
@@ -199,5 +199,3 @@ local function crypt_sha256(key, salt)
   encode(out, digest, 32, 31)
   return out:concat()
 end
-
-return crypt_sha256
