@@ -122,23 +122,21 @@ return function (key, salt)
     rounds = ROUNDS_MAX
   end
 
-  local A = sha256()
-  A:update(key)
-  A:update(salt_string)
-
   local B = sha256()
   B:update(key)
   B:update(salt_string)
   B:update(key)
   local B = B:finalize("bin")
 
+  local A = sha256()
+  A:update(key)
+  A:update(salt_string)
   local n = #key
   while n > 32 do
     n = n - 32
     A:update(B)
   end
   A:update(B:sub(1, n))
-
   local n = #key
   while n > 0 do
     if uint32.band(n, 1) == 1 then
@@ -148,7 +146,6 @@ return function (key, salt)
     end
     n = uint32.shr(n, 1)
   end
-
   local A = A:finalize("bin")
 
   local DP = sha256()
@@ -156,7 +153,6 @@ return function (key, salt)
     DP:update(key)
   end
   local DP = DP:finalize("bin")
-
   local out = sequence_writer()
   local n = #key
   while n > 32 do
@@ -172,7 +168,6 @@ return function (key, salt)
     DS:update(salt_string)
   end
   local DS = DS:finalize("bin")
-
   local out = sequence_writer()
   local n = #salt_string
   while n > 32 do
