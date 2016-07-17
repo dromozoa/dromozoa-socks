@@ -1,8 +1,8 @@
 package = "dromozoa-socks"
-version = "1.2-1"
+version = "1.3-1"
 source = {
-  url = "https://github.com/dromozoa/dromozoa-socks/archive/v1.2.tar.gz";
-  file = "dromozoa-socks-1.2.tar.gz";
+  url = "https://github.com/dromozoa/dromozoa-socks/archive/v1.3.tar.gz";
+  file = "dromozoa-socks-1.3.tar.gz";
 }
 description = {
   summary = "Toolkit for network and I/O programming";
@@ -20,6 +20,8 @@ build = {
   modules = {
     ["dromozoa.socks.async_state"] = "dromozoa/socks/async_state.lua";
     ["dromozoa.socks.create_thread"] = "dromozoa/socks/create_thread.lua";
+    ["dromozoa.socks.crypt_apache_sha1"] = "dromozoa/socks/crypt_apache_sha1.lua";
+    ["dromozoa.socks.crypt_sha256"] = "dromozoa/socks/crypt_sha256.lua";
     ["dromozoa.socks.deferred_state"] = "dromozoa/socks/deferred_state.lua";
     ["dromozoa.socks.future"] = "dromozoa/socks/future.lua";
     ["dromozoa.socks.future_service"] = "dromozoa/socks/future_service.lua";
