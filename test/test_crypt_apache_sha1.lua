@@ -15,7 +15,6 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local crypt_sha1 = require "dromozoa.socks.crypt_sha1"
+local crypt_apache_sha1 = require "dromozoa.socks.crypt_apache_sha1"
 
-assert(crypt_sha1("password") == "{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=")
-
+assert(crypt_apache_sha1("password") == "{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=")
