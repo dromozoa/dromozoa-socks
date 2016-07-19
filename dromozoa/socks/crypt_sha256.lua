@@ -61,7 +61,7 @@ return function (key, salt)
   if salt_string then
     salt_string = salt_string:sub(1, 16)
   else
-    error("unsupported salt")
+    return nil, "unsupported salt"
   end
 
   if rounds < ROUNDS_MIN then

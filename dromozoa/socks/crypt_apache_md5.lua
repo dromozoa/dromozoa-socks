@@ -49,7 +49,7 @@ return function (key, salt)
   if salt_string then
     salt_string = salt_string:sub(1, 8)
   else
-    error("unsupported salt")
+    return nil, "unsupported salt"
   end
 
   local B = md5()
