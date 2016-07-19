@@ -21,9 +21,7 @@ local sequence = require "dromozoa.commons.sequence"
 local uint32 = require "dromozoa.commons.uint32"
 local dyld = require "dromozoa.dyld"
 local unix = require "dromozoa.unix"
-local crypt_apache_md5 = require "dromozoa.socks.crypt_apache_md5"
-local crypt_apache_sha1 = require "dromozoa.socks.crypt_apache_sha1"
-local crypt_sha256 = require "dromozoa.socks.crypt_sha256"
+local crypt = require "dromozoa.socks.crypt"
 local future_service = require "dromozoa.socks.future_service"
 
 local symbol = dyld.RTLD_DEFAULT:dlsym("pthread_create")
@@ -42,13 +40,7 @@ local function authenticate(request_username, request_password)
   for line in io.lines(password_file) do
     local username, salt = line:match("^([^:]+):(.+)")
     if username == request_username then
-      if salt:match("^%$apr1%$") then
-        return crypt_apache_md5(request_password, salt) == salt
-      elseif salt:match("^{SHA}") then
-        return crypt_apache_sha1(request_password, salt) == salt
-      elseif salt:match("^%$5%$") then
-        return crypt_sha256(request_password, salt) == salt
-      end
+      return crypt(request_password, salt) == salt
     end
   end
   return false
