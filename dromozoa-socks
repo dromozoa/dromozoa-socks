@@ -21,6 +21,9 @@ local sequence = require "dromozoa.commons.sequence"
 local uint32 = require "dromozoa.commons.uint32"
 local dyld = require "dromozoa.dyld"
 local unix = require "dromozoa.unix"
+local crypt_apache_md5 = require "dromozoa.socks.crypt_apache_md5"
+local crypt_apache_sha1 = require "dromozoa.socks.crypt_apache_sha1"
+local crypt_sha256 = require "dromozoa.socks.crypt_sha256"
 local future_service = require "dromozoa.socks.future_service"
 
 local symbol = dyld.RTLD_DEFAULT:dlsym("pthread_create")
@@ -30,9 +33,25 @@ end
 
 assert(unix.block_signal(unix.SIGPIPE))
 
-local nodename, servname, username, password = ...
+local nodename, servname, password_file = ...
 if nodename == "" then
   nodename = nil
+end
+
+local function authenticate(request_username, request_password)
+  for line in io.lines(password_file) do
+    local username, salt = line:match("^([^:]+):(.+)")
+    if username == request_username then
+      if salt:match("^%$apr1%$") then
+        return crypt_apache_md5(request_password, salt) == salt
+      elseif salt:match("^{SHA}") then
+        return crypt_apache_sha1(request_password, salt) == salt
+      elseif salt:match("^%$5%$") then
+        return crypt_sha256(request_password, salt) == salt
+      end
+    end
+  end
+  return false
 end
 
 local function make_connection_string(address, message)
@@ -90,7 +109,7 @@ service:dispatch(function (service)
           end
           local method
           if version == 0x05 then
-            if username and password then
+            if password_file then
               if method_set[0x02] then
                 method = 0x02
               end
@@ -118,7 +137,7 @@ service:dispatch(function (service)
             local request_username = promise:assert(reader1:read(n):get())
             local n = promise:assert(promise:assert(reader1:read(1):get()):byte())
             local request_password = promise:assert(reader1:read(n):get())
-            if version == 0x01 and username == request_username and password == request_password then
+            if version == 0x01 and authenticate(request_username, request_password) then
               promise:assert(writer1:write("\1\0"):get())
             else
               promise:assert(writer1:write("\1\1"):get())
