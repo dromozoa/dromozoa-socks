@@ -1,8 +1,8 @@
 package = "dromozoa-socks"
-version = "1.3-1"
+version = "1.4-1"
 source = {
-  url = "https://github.com/dromozoa/dromozoa-socks/archive/v1.3.tar.gz";
-  file = "dromozoa-socks-1.3.tar.gz";
+  url = "https://github.com/dromozoa/dromozoa-socks/archive/v1.4.tar.gz";
+  file = "dromozoa-socks-1.4.tar.gz";
 }
 description = {
   summary = "Toolkit for network and I/O programming";
