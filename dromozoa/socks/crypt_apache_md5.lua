@@ -18,54 +18,7 @@
 local md5 = require "dromozoa.commons.md5"
 local sequence_writer = require "dromozoa.commons.sequence_writer"
 local uint32 = require "dromozoa.commons.uint32"
-
-local encoder = {
-  [0] = ".";
-  [1] = "/";
-}
-
-local n = ("0"):byte() - 2
-for i = 2, 11 do
-  local byte = i + n
-  local char = string.char(byte)
-  encoder[i] = char
-end
-
-local n = ("A"):byte() - 12
-for i = 12, 37 do
-  local byte = i + n
-  local char = string.char(byte)
-  encoder[i] = char
-end
-
-local n = ("a"):byte() - 38
-for i = 38, 63 do
-  local byte = i + n
-  local char = string.char(byte)
-  encoder[i] = char
-end
-
-local function encode(out, s, i, j, k)
-  if k then
-    local a = s:byte(i)
-    local b = s:byte(j)
-    local c = s:byte(k)
-    local d = a * 65536 + b * 256 + c
-    local a = d % 64
-    local d = (d - a) / 64
-    local b = d % 64
-    local d = (d - b) / 64
-    local c = d % 64
-    local d = (d - c) / 64
-    out:write(encoder[a], encoder[b], encoder[c], encoder[d])
-  else
-    local b = s:byte(i)
-    local a = b % 64
-    local b = (b - a) / 64
-    out:write(encoder[a], encoder[b])
-  end
-  return out
-end
+local crypt_base64 = require "dromozoa.socks.crypt_base64"
 
 return function (key, salt)
   local salt_string = salt:match("^%$apr1%$([^%$]+)")
@@ -127,11 +80,11 @@ return function (key, salt)
 
   local out = sequence_writer()
   out:write("$apr1$", salt_string, "$")
-  encode(out, A, 1, 7, 13)
-  encode(out, A, 2, 8, 14)
-  encode(out, A, 3, 9, 15)
-  encode(out, A, 4, 10, 16)
-  encode(out, A, 5, 11, 6)
-  encode(out, A, 12)
+  crypt_base64.encode(out, A, 1, 7, 13)
+  crypt_base64.encode(out, A, 2, 8, 14)
+  crypt_base64.encode(out, A, 3, 9, 15)
+  crypt_base64.encode(out, A, 4, 10, 16)
+  crypt_base64.encode(out, A, 5, 11, 6)
+  crypt_base64.encode(out, A, 12)
   return out:concat()
 end
