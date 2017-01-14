@@ -1,4 +1,4 @@
--- Copyright (C) 2016 Tomoyuki Fujimori <moyu@dromozoa.com>
+-- Copyright (C) 2016,2017 Tomoyuki Fujimori <moyu@dromozoa.com>
 --
 -- This file is part of dromozoa-socks.
 --
@@ -15,10 +15,10 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local multimap = require "dromozoa.commons.multimap"
 local unix = require "dromozoa.unix"
 local create_thread = require "dromozoa.socks.create_thread"
 local resume_thread = require "dromozoa.socks.resume_thread"
-local multimap = require "dromozoa.socks.multimap"
 
 local class = {}
 
@@ -45,7 +45,7 @@ function class:add_timer(timeout, thread)
   return self.threads:insert(timeout, create_thread(thread))
 end
 
-function class:delete_timer(handle)
+function class:remove_timer(handle)
   handle:set(nil)
   return self
 end
@@ -60,7 +60,7 @@ function class:dispatch()
   end
   for _, thread, handle in range:each() do
     if not thread then
-      handle:delete()
+      handle:remove()
     end
   end
   return self

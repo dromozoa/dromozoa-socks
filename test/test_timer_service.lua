@@ -1,4 +1,4 @@
--- Copyright (C) 2016 Tomoyuki Fujimori <moyu@dromozoa.com>
+-- Copyright (C) 2016,2017 Tomoyuki Fujimori <moyu@dromozoa.com>
 --
 -- This file is part of dromozoa-socks.
 --
@@ -24,11 +24,11 @@ local done
 local thread = coroutine.create(function ()
   local handle = service:add_timer(service:get_current_time(), coroutine.running())
   coroutine.yield()
-  service:delete_timer(handle)
+  service:remove_timer(handle)
 
   local handle = service:add_timer(service:get_current_time():add(0.2), coroutine.running())
   coroutine.yield()
-  service:delete_timer(handle)
+  service:remove_timer(handle)
 
   done = true
 end)

@@ -1,4 +1,4 @@
--- Copyright (C) 2016 Tomoyuki Fujimori <moyu@dromozoa.com>
+-- Copyright (C) 2016,2017 Tomoyuki Fujimori <moyu@dromozoa.com>
 --
 -- This file is part of dromozoa-socks.
 --
@@ -15,8 +15,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local pack = require "dromozoa.commons.pack"
 local unpack = require "dromozoa.commons.unpack"
-local pack = require "dromozoa.socks.pack"
 local state = require "dromozoa.socks.state"
 
 local class = {}

@@ -1,4 +1,4 @@
--- Copyright (C) 2016 Tomoyuki Fujimori <moyu@dromozoa.com>
+-- Copyright (C) 2016,2017 Tomoyuki Fujimori <moyu@dromozoa.com>
 --
 -- This file is part of dromozoa-socks.
 --
@@ -46,7 +46,7 @@ end
 
 function class:suspend()
   state.suspend(self)
-  assert(self.service:delete_handler(self.io_handler))
+  assert(self.service:remove_handler(self.io_handler))
 end
 
 function class:resume()
@@ -58,7 +58,7 @@ function class:finish()
   state.finish(self)
   local io_handler = self.io_handler
   self.io_handler = nil
-  assert(self.service:delete_handler(io_handler))
+  assert(self.service:remove_handler(io_handler))
 end
 
 local metatable = {
