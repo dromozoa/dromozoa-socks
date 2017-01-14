@@ -15,10 +15,10 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local pack = require "dromozoa.commons.pack"
 local unpack = require "dromozoa.commons.unpack"
 local create_thread = require "dromozoa.socks.create_thread"
 local never_return = require "dromozoa.socks.never_return"
-local pack = require "dromozoa.socks.pack"
 local resume_thread = require "dromozoa.socks.resume_thread"
 
 local class = {}

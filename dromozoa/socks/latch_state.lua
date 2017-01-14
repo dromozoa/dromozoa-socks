@@ -16,8 +16,8 @@
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
 local ipairs = require "dromozoa.commons.ipairs"
+local pack = require "dromozoa.commons.pack"
 local unpack = require "dromozoa.commons.unpack"
-local pack = require "dromozoa.socks.pack"
 local state = require "dromozoa.socks.state"
 
 local function count_down(self)

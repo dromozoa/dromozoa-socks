@@ -15,7 +15,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
-local pack = require "dromozoa.socks.pack"
+local pack = require "dromozoa.commons.pack"
 local state = require "dromozoa.socks.state"
 
 local class = {}
