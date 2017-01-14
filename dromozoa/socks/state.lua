@@ -1,4 +1,4 @@
--- Copyright (C) 2016 Tomoyuki Fujimori <moyu@dromozoa.com>
+-- Copyright (C) 2016,2017 Tomoyuki Fujimori <moyu@dromozoa.com>
 --
 -- This file is part of dromozoa-socks.
 --
@@ -15,10 +15,10 @@
 -- You should have received a copy of the GNU General Public License
 -- along with dromozoa-socks.  If not, see <http://www.gnu.org/licenses/>.
 
+local pack = require "dromozoa.commons.pack"
 local unpack = require "dromozoa.commons.unpack"
 local create_thread = require "dromozoa.socks.create_thread"
 local never_return = require "dromozoa.socks.never_return"
-local pack = require "dromozoa.socks.pack"
 local resume_thread = require "dromozoa.socks.resume_thread"
 
 local class = {}
@@ -60,7 +60,7 @@ function class:suspend()
   assert(self:is_running())
   self.status = "suspended"
   if self.timer_handle then
-    self.service:delete_timer(self.timer_handle)
+    self.service:remove_timer(self.timer_handle)
     self.timer_handle = nil
   end
 end
@@ -82,7 +82,7 @@ function class:finish()
   assert(self:is_running())
   self.status = "ready"
   if self.timer_handle then
-    self.service:delete_timer(self.timer_handle)
+    self.service:remove_timer(self.timer_handle)
     self.timer_handle = nil
   end
 end

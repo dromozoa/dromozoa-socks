@@ -1,4 +1,4 @@
--- Copyright (C) 2016 Tomoyuki Fujimori <moyu@dromozoa.com>
+-- Copyright (C) 2016,2017 Tomoyuki Fujimori <moyu@dromozoa.com>
 --
 -- This file is part of dromozoa-socks.
 --
@@ -62,8 +62,8 @@ function class:add_timer(timeout, thread)
   return self.timer_service:add_timer(timeout, thread)
 end
 
-function class:delete_timer(handle)
-  self.timer_service:delete_timer(handle)
+function class:remove_timer(handle)
+  self.timer_service:remove_timer(handle)
   return self
 end
 
@@ -75,8 +75,8 @@ function class:add_handler(handler)
   return self
 end
 
-function class:delete_handler(handler)
-  local result, message = self.io_service:delete_handler(handler)
+function class:remove_handler(handler)
+  local result, message = self.io_service:remove_handler(handler)
   if not result then
     return nil, message
   end

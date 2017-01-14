@@ -1,4 +1,4 @@
--- Copyright (C) 2016 Tomoyuki Fujimori <moyu@dromozoa.com>
+-- Copyright (C) 2016,2017 Tomoyuki Fujimori <moyu@dromozoa.com>
 --
 -- This file is part of dromozoa-socks.
 --
@@ -63,7 +63,7 @@ function class:add_handler(handler)
   end
 end
 
-function class:delete_handler(handler)
+function class:remove_handler(handler)
   local fd = unix.fd.get(handler.fd)
   local event = handler.event
   if event == "read" then

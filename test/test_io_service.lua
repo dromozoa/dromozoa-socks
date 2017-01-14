@@ -1,4 +1,4 @@
--- Copyright (C) 2016 Tomoyuki Fujimori <moyu@dromozoa.com>
+-- Copyright (C) 2016,2017 Tomoyuki Fujimori <moyu@dromozoa.com>
 --
 -- This file is part of dromozoa-socks.
 --
@@ -31,11 +31,11 @@ assert(service:dispatch())
 local done
 service:add_handler(io_handler(fd2, "write", function (service, handler, event)
   assert(event == "write")
-  service:delete_handler(handler)
+  service:remove_handler(handler)
   fd2:write("x")
   service:add_handler(io_handler(fd1, "read", function (service, handler, event)
     assert(event == "read")
-    service:delete_handler(handler)
+    service:remove_handler(handler)
     assert(fd1:read(1) == "x")
     done = true
   end))
