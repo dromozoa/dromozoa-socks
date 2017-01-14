@@ -45,7 +45,7 @@ function class:add_timer(timeout, thread)
   return self.threads:insert(timeout, create_thread(thread))
 end
 
-function class:delete_timer(handle)
+function class:remove_timer(handle)
   handle:set(nil)
   return self
 end

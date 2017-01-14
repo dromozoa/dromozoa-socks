@@ -60,7 +60,7 @@ function class:suspend()
   assert(self:is_running())
   self.status = "suspended"
   if self.timer_handle then
-    self.service:delete_timer(self.timer_handle)
+    self.service:remove_timer(self.timer_handle)
     self.timer_handle = nil
   end
 end
@@ -82,7 +82,7 @@ function class:finish()
   assert(self:is_running())
   self.status = "ready"
   if self.timer_handle then
-    self.service:delete_timer(self.timer_handle)
+    self.service:remove_timer(self.timer_handle)
     self.timer_handle = nil
   end
 end
