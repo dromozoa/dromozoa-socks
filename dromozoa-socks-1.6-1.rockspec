@@ -1,11 +1,11 @@
 package = "dromozoa-socks"
-version = "1.5-1"
+version = "1.6-1"
 source = {
-  url = "https://github.com/dromozoa/dromozoa-socks/archive/v1.5.tar.gz";
-  file = "dromozoa-socks-1.5.tar.gz";
+  url = "https://github.com/dromozoa/dromozoa-socks/archive/v1.6.tar.gz";
+  file = "dromozoa-socks-1.6.tar.gz";
 }
 description = {
-  summary = "Toolkit for network and I/O programming";
+  summary = "SOCKS utility";
   license = "GPL-3";
   homepage = "https://github.com/dromozoa/dromozoa-socks/";
   maintainer = "Tomoyuki Fujimori <moyu@dromozoa.com>";
